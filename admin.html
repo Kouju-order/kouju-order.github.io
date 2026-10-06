@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>注文一覧｜公珠</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root { --red:#a8231b; --ink:#231f1c; --muted:#7a716a; --bg:#f3eee6; --card:#fff; --line:#e3dacd; --warn:#d9822b; }
   * { box-sizing:border-box; }
@@ -24,6 +25,8 @@
   .card .sum { font-size:17px; font-weight:700; }
   button { border:0; border-radius:10px; font-size:17px; font-weight:700; padding:12px 18px; background:var(--red); color:#fff; }
   button.ghost { background:#fff; color:var(--muted); border:1px solid var(--line); font-size:14px; padding:8px 12px; }
+  .card .btns { display:flex; gap:8px; }
+  button.print { background:#fff; color:var(--red); border:1.5px solid var(--red); font-size:15px; padding:10px 12px; }
   h2 { font-size:16px; color:var(--muted); margin:28px 0 10px; }
   .done { background:#fff; border-radius:10px; padding:10px 14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--muted); }
   .empty { text-align:center; color:var(--muted); padding:60px 0; font-size:18px; }
@@ -72,12 +75,73 @@
   const yen = n => '¥' + Number(n).toLocaleString();
   let actx = null, lastMax = 0, loaded = false, busy = false;
 
-  $('go').onclick = () => {
+  function startAudio() {
+    if (actx) return;
     try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  }
+  function begin() {
     $('start').hidden = true;
     load();
     setInterval(load, 8000);
-  };
+  }
+  $('go').onclick = () => { startAudio(); begin(); };
+  if (new URLSearchParams(location.search).get('resume')) {
+    begin();
+    document.addEventListener('touchstart', startAudio, { once: true });
+    document.addEventListener('click', startAudio, { once: true });
+  }
+
+  // ===== 伝票印刷（SII URL Print Agent） =====
+  function slipCanvas(o) {
+    const W = 576, pad = 16, c = document.createElement('canvas'), g = c.getContext('2d');
+    const font = (px, bold) => (bold ? '700 ' : '') + px + 'px "Hiragino Sans","Noto Sans JP",sans-serif';
+    const lines = [];
+    const wrap = (text, px, bold) => {
+      g.font = font(px, bold);
+      String(text).split('\n').forEach(raw => {
+        let cur = '';
+        for (const ch of raw) {
+          if (g.measureText(cur + ch).width > W - pad * 2) { lines.push([cur, px, bold]); cur = ch; }
+          else cur += ch;
+        }
+        lines.push([cur, px, bold]);
+      });
+    };
+    wrap('テーブル ' + o.table, 56, true);
+    wrap('No.' + o.no + '　' + o.time, 28, false);
+    lines.push(['—', 20, false]);
+    wrap(o.items, 34, true);
+    if (o.note) { lines.push(['', 14, false]); wrap('備考：' + o.note, 28, false); }
+    lines.push(['—', 20, false]);
+    wrap('合計 ' + yen(o.total), 30, false);
+    const H = pad * 2 + lines.reduce((a, l) => a + l[1] * 1.35, 0);
+    c.width = W; c.height = Math.ceil(H);
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
+    g.fillStyle = '#000'; g.textBaseline = 'top';
+    let y = pad;
+    lines.forEach(([t, px, bold]) => {
+      g.font = font(px, bold);
+      if (t === '—') { g.fillRect(pad, y + px / 2, W - pad * 2, 2); }
+      else g.fillText(t, pad, y);
+      y += px * 1.35;
+    });
+    return c;
+  }
+  function printSlip(o) {
+    try {
+      const c = slipCanvas(o);
+      const wmm = 72, hmm = wmm * c.height / c.width;
+      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm] });
+      pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
+      const b64 = pdf.output('datauristring').split(',')[1];
+      const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1';
+      location.href = 'siiprintagent://1.0/print?Format=pdf&BtKeepConnect=no&ErrorDialog=yes'
+        + '&CallbackSuccess=' + encodeURIComponent(back) + '&CallbackFail=' + encodeURIComponent(back)
+        + '&Data=' + encodeURIComponent(b64);
+    } catch (e) {
+      alert('伝票を作れませんでした：' + e.message);
+    }
+  }
 
   function beep() {
     if (!actx) return;
@@ -118,7 +182,7 @@
       const c = document.createElement('div');
       c.className = 'card' + (mins >= 15 ? ' late' : '');
       c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
-        '<div class="foot"><span class="sum"></span><button>提供済み</button></div>';
+        '<div class="foot"><span class="sum"></span><div class="btns"><button class="print">伝票印刷</button><button class="doneBtn">提供済み</button></div></div>';
       c.querySelector('.tbl').textContent = 'テーブル ' + o.table;
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
       c.querySelector('.items').textContent = o.items;
@@ -127,7 +191,8 @@
         c.querySelector('.items').after(n);
       }
       c.querySelector('.sum').textContent = yen(o.total);
-      c.querySelector('button').onclick = e => setStatus(o.no, '完了', e.target);
+      c.querySelector('.doneBtn').onclick = e => setStatus(o.no, '完了', e.target);
+      c.querySelector('.print').onclick = () => printSlip(o);
       p.appendChild(c);
     });
 
