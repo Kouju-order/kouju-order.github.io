@@ -85,7 +85,11 @@
   async function call(params, body) {
     const opt = body ? { method: 'POST', body: JSON.stringify(body), credentials: 'omit' } : { credentials: 'omit' };
     const url = body ? API : API + '?' + new URLSearchParams(params).toString();
-    const r = await fetch(url, opt);
+    let r, err;
+    for (let i = 0; i < (body ? 1 : 3); i++) {
+      try { r = await fetch(url, opt); break; } catch (e) { err = e; await new Promise(s => setTimeout(s, 1500)); }
+    }
+    if (!r) throw err;
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
