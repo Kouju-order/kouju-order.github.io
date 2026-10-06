@@ -13,6 +13,13 @@
   header h1 { margin:0; font-size:21px; letter-spacing:.05em; }
   header .tbl { margin-top:4px; font-size:14px; opacity:.92; }
   main { padding:4px 16px; }
+  .tabs { position:sticky; top:0; z-index:5; display:flex; gap:8px; overflow-x:auto; padding:10px 16px; background:var(--bg); border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tabs[hidden] { display:none; }
+  .tabs button { flex:0 0 auto; border:1.5px solid var(--red); background:#fff; color:var(--red); border-radius:999px; padding:8px 14px; font-size:15px; font-weight:700; white-space:nowrap; }
+  .tabs button.on { background:var(--red); color:#fff; }
+  .group { scroll-margin-top:64px; }
+  h3.grp { font-size:19px; margin:26px 0 4px; color:var(--ink); }
   h2 { font-size:15px; color:var(--red); margin:22px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--line); }
   .item { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:12px; padding:14px; margin-bottom:8px; }
   .item .info { flex:1; min-width:0; }
@@ -44,6 +51,7 @@
   <h1>公珠 モバイルオーダー</h1>
   <div class="tbl" id="tblLabel"></div>
 </header>
+<nav class="tabs" id="tabs" hidden></nav>
 <main id="menu"><p class="muted center">メニューを読み込み中…</p></main>
 
 <div class="bar" id="bar"><button class="btn" id="toConfirm" disabled>商品を選んでください</button></div>
@@ -112,14 +120,44 @@
     .then(m => { menu = m; renderMenu(); })
     .catch(() => { $('menu').innerHTML = '<p class="center">メニューを読み込めませんでした。<br>スタッフにお声がけください。</p>'; });
 
+  // 大分類（お店のメニューの並び）
+  const GROUPS = [
+    ['餃子', ['餃子', '焼餃子', '水餃子']],
+    ['ワンタン', ['ワンタン', '雲呑', '揚げ雲呑']],
+    ['麺類', ['麺類']],
+    ['ご飯類', ['ご飯類']],
+    ['焼きそば', ['焼きそば']],
+    ['一品料理', ['一品料理', '麻婆豆腐', '野菜料理', '鶏・牛料理', 'エビ料理', '卵料理']],
+    ['点心', ['点心', '小菜・点心']],
+    ['前菜', ['前菜']],
+    ['デザート', ['デザート']],
+    ['中国茶', ['中国茶', '中国茶（お一人様用）']],
+    ['サワー', ['サワー']],
+    ['ビール', ['ビール', '生ビール', '瓶ビール・ビアカクテル']],
+    ['その他', ['その他', 'ハイボール', 'ウイスキー（ストレート・水割り・ロック）', '焼酎', 'リキュール', '紹興酒・白酒・日本酒・ワイン']],
+    ['ソフトドリンク', ['ソフトドリンク', '健康ドリンク']],
+  ];
+  const groupOf = cat => { const g = GROUPS.find(([, cs]) => cs.includes(cat)); return g ? g[0] : 'その他'; };
+
   function renderMenu() {
     const root = $('menu');
     root.innerHTML = '';
     if (!menu.length) { root.innerHTML = '<p class="center muted">現在ご注文いただける商品がありません</p>'; return; }
     const cats = [];
     menu.forEach(m => { if (!cats.includes(m.cat)) cats.push(m.cat); });
+    const usedGroups = [];
+    let curGroup = null, wrap = null;
     cats.forEach(cat => {
-      const h = document.createElement('h2'); h.textContent = cat; root.appendChild(h);
+      const gname = groupOf(cat);
+      if (gname !== curGroup) {
+        curGroup = gname;
+        wrap = document.createElement('section'); wrap.className = 'group'; wrap.id = 'g' + usedGroups.length;
+        wrap.dataset.group = gname;
+        const gh = document.createElement('h3'); gh.className = 'grp'; gh.textContent = gname; wrap.appendChild(gh);
+        root.appendChild(wrap);
+        usedGroups.push(gname);
+      }
+      if (cat !== gname) { const h = document.createElement('h2'); h.textContent = cat; wrap.appendChild(h); }
       menu.filter(m => m.cat === cat).forEach(m => {
         const el = document.createElement('div'); el.className = 'item';
         el.innerHTML = '<div class="info"><div class="name"></div><div class="price"></div></div>' +
@@ -131,10 +169,38 @@
         el.querySelector('.plus').onclick = () => { cart[m.name] = Math.min(50, (cart[m.name] || 0) + 1); sync(); };
         minus.onclick = () => { cart[m.name] = Math.max(0, (cart[m.name] || 0) - 1); if (!cart[m.name]) delete cart[m.name]; sync(); };
         sync();
-        root.appendChild(el);
+        wrap.appendChild(el);
       });
     });
+    renderTabs(usedGroups);
   }
+
+  function renderTabs(groups) {
+    const bar = $('tabs');
+    bar.innerHTML = '';
+    groups.forEach((g, i) => {
+      const b = document.createElement('button'); b.textContent = g; b.dataset.i = i;
+      b.onclick = () => { $('g' + i).scrollIntoView({ behavior: 'smooth', block: 'start' }); setActive(i); };
+      bar.appendChild(b);
+    });
+    bar.hidden = groups.length < 2;
+    setActive(0);
+  }
+  let activeTab = -1;
+  function setActive(i) {
+    if (i === activeTab) return;
+    activeTab = i;
+    const bar = $('tabs');
+    [...bar.children].forEach((b, k) => b.classList.toggle('on', k === i));
+    const b = bar.children[i];
+    if (b) bar.scrollTo({ left: b.offsetLeft - 16, behavior: 'smooth' });
+  }
+  window.addEventListener('scroll', () => {
+    const secs = document.querySelectorAll('section.group');
+    let cur = 0;
+    secs.forEach((s, i) => { if (s.getBoundingClientRect().top <= 80) cur = i; });
+    setActive(cur);
+  }, { passive: true });
 
   function cartItems() {
     return Object.keys(cart).map(name => {
