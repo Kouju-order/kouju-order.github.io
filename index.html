@@ -116,9 +116,18 @@
     if (v) { setTable(v); $('askTable').hidden = true; }
   };
 
+  // 前回のメニューがあれば先に表示し、裏で最新に更新する
+  try {
+    const cached = JSON.parse(localStorage.getItem('kouju_menu') || 'null');
+    if (Array.isArray(cached) && cached.length) { menu = cached; setTimeout(renderMenu, 0); }
+  } catch (e) {}
   call({ api: 'menu' })
-    .then(m => { menu = m; renderMenu(); })
-    .catch(() => { $('menu').innerHTML = '<p class="center">メニューを読み込めませんでした。<br>スタッフにお声がけください。</p>'; });
+    .then(m => {
+      const fresh = JSON.stringify(m);
+      if (fresh !== JSON.stringify(menu)) { menu = m; renderMenu(); }
+      try { localStorage.setItem('kouju_menu', fresh); } catch (e) {}
+    })
+    .catch(() => { if (!menu.length) $('menu').innerHTML = '<p class="center">メニューを読み込めませんでした。<br>スタッフにお声がけください。</p>'; });
 
   // 大分類（お店のメニューの並び）
   const GROUPS = [
