@@ -96,6 +96,7 @@
   }
   let table = (new URLSearchParams(location.search).get('table') || '').slice(0, 10);
   let menu = [];
+  let rid = null;
   const cart = {};
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -170,8 +171,10 @@
   $('send').onclick = () => {
     const btn = $('send');
     btn.disabled = true; btn.textContent = '送信中…';
-    call(null, { action: 'order', table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note: $('note').value })
+    rid = rid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+    call(null, { action: 'order', rid, table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note: $('note').value })
       .then(r => {
+        rid = null;
         Object.keys(cart).forEach(k => delete cart[k]);
         $('note').value = '';
         renderMenu();

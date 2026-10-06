@@ -93,27 +93,32 @@
 
   // ===== 伝票印刷（SII URL Print Agent） =====
   function slipCanvas(o) {
-    const W = 576, pad = 16, c = document.createElement('canvas'), g = c.getContext('2d');
+    const W = 384, pad = 8, c = document.createElement('canvas'), g = c.getContext('2d');
     const font = (px, bold) => (bold ? '700 ' : '') + px + 'px "Hiragino Sans","Noto Sans JP",sans-serif';
     const lines = [];
     const wrap = (text, px, bold) => {
       g.font = font(px, bold);
       String(text).split('\n').forEach(raw => {
+        // 「 × 数量」は途中で折り返さない
+        const m = raw.match(/^(.*?)(\s×\s\d+)$/);
+        const body = m ? m[1] : raw, tail = m ? m[2] : '';
         let cur = '';
-        for (const ch of raw) {
+        for (const ch of body) {
           if (g.measureText(cur + ch).width > W - pad * 2) { lines.push([cur, px, bold]); cur = ch; }
           else cur += ch;
         }
+        if (tail && g.measureText(cur + tail).width > W - pad * 2) { lines.push([cur, px, bold]); cur = '　' + tail.trim(); }
+        else cur += tail;
         lines.push([cur, px, bold]);
       });
     };
-    wrap('テーブル ' + o.table, 56, true);
-    wrap('No.' + o.no + '　' + o.time, 28, false);
-    lines.push(['—', 20, false]);
-    wrap(o.items, 34, true);
-    if (o.note) { lines.push(['', 14, false]); wrap('備考：' + o.note, 28, false); }
-    lines.push(['—', 20, false]);
-    wrap('合計 ' + yen(o.total), 30, false);
+    wrap('テーブル ' + o.table, 40, true);
+    wrap('No.' + o.no + '　' + o.time, 20, false);
+    lines.push(['—', 14, false]);
+    wrap(o.items, 26, true);
+    if (o.note) { lines.push(['', 8, false]); wrap('備考：' + o.note, 22, false); }
+    lines.push(['—', 14, false]);
+    wrap('合計 ' + yen(o.total), 22, false);
     const H = pad * 2 + lines.reduce((a, l) => a + l[1] * 1.35, 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
@@ -130,12 +135,12 @@
   function printSlip(o) {
     try {
       const c = slipCanvas(o);
-      const wmm = 72, hmm = wmm * c.height / c.width;
+      const wmm = 48, hmm = wmm * c.height / c.width;
       const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm] });
       pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
       const b64 = pdf.output('datauristring').split(',')[1];
       const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1';
-      location.href = 'siiprintagent://1.0/print?Format=pdf&BtKeepConnect=no&ErrorDialog=yes'
+      location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=no&ErrorDialog=yes'
         + '&CallbackSuccess=' + encodeURIComponent(back) + '&CallbackFail=' + encodeURIComponent(back)
         + '&Data=' + encodeURIComponent(b64);
     } catch (e) {
