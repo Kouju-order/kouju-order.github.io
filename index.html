@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="robots" content="noindex">
+<title>公珠 モバイルオーダー</title>
+<style>
+  :root { --red:#a8231b; --ink:#231f1c; --muted:#7a716a; --bg:#f8f4ee; --card:#fff; --line:#e7dfd4; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--ink); padding-bottom:110px; }
+  header { background:var(--red); color:#fff; padding:16px 16px 14px; }
+  header h1 { margin:0; font-size:21px; letter-spacing:.05em; }
+  header .tbl { margin-top:4px; font-size:14px; opacity:.92; }
+  main { padding:4px 16px; }
+  h2 { font-size:15px; color:var(--red); margin:22px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--line); }
+  .item { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:12px; padding:14px; margin-bottom:8px; }
+  .item .info { flex:1; min-width:0; }
+  .item .name { font-size:16px; font-weight:600; }
+  .item .price { font-size:14px; color:var(--muted); margin-top:2px; }
+  .step { display:flex; align-items:center; gap:8px; }
+  .step button { width:38px; height:38px; border-radius:50%; border:1.5px solid var(--red); background:#fff; color:var(--red); font-size:22px; line-height:1; }
+  .step button.plus { background:var(--red); color:#fff; }
+  .step .q { min-width:20px; text-align:center; font-size:17px; font-weight:700; }
+  .step button.minus[hidden], .step .q[hidden] { display:none; }
+  .bar { position:fixed; left:0; right:0; bottom:0; padding:12px 16px calc(12px + env(safe-area-inset-bottom)); background:#fff; border-top:1px solid var(--line); }
+  .btn { width:100%; border:0; border-radius:12px; background:var(--red); color:#fff; font-size:17px; font-weight:700; padding:15px; }
+  .btn:disabled { background:#c9bfb5; }
+  .btn.sub { background:#fff; color:var(--red); border:1.5px solid var(--red); margin-top:10px; }
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:10; }
+  .overlay[hidden] { display:none; }
+  .sheet { background:var(--bg); width:100%; max-height:88vh; overflow:auto; border-radius:18px 18px 0 0; padding:20px 16px calc(20px + env(safe-area-inset-bottom)); }
+  .sheet h3 { margin:0 0 12px; font-size:18px; }
+  .row { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:15px; }
+  .total { display:flex; justify-content:space-between; font-size:18px; font-weight:700; margin:14px 0; }
+  textarea, input { width:100%; font-size:16px; padding:10px; border:1px solid var(--line); border-radius:10px; font-family:inherit; }
+  .center { text-align:center; padding:40px 8px; }
+  .big { font-size:44px; font-weight:800; color:var(--red); margin:8px 0; }
+  .muted { color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
+<header>
+  <h1>公珠 モバイルオーダー</h1>
+  <div class="tbl" id="tblLabel"></div>
+</header>
+<main id="menu"><p class="muted center">メニューを読み込み中…</p></main>
+
+<div class="bar" id="bar"><button class="btn" id="toConfirm" disabled>商品を選んでください</button></div>
+
+<!-- 確認 -->
+<div class="overlay" id="confirm" hidden>
+  <div class="sheet">
+    <h3>ご注文内容の確認</h3>
+    <div id="cartList"></div>
+    <div class="total"><span>合計（税込）</span><span id="cartTotal"></span></div>
+    <textarea id="note" rows="2" maxlength="200" placeholder="ご要望（任意）例：辛さ控えめ"></textarea>
+    <p class="muted">お会計はお帰りの際にレジでお願いします。</p>
+    <button class="btn" id="send">この内容で注文する</button>
+    <button class="btn sub" id="back">戻る</button>
+  </div>
+</div>
+
+<!-- テーブル番号入力 -->
+<div class="overlay" id="askTable" hidden>
+  <div class="sheet">
+    <h3>テーブル番号を入力してください</h3>
+    <input id="tblInput" inputmode="numeric" maxlength="10" placeholder="例：3">
+    <button class="btn" id="tblOk" style="margin-top:12px">決定</button>
+  </div>
+</div>
+
+<!-- 完了 -->
+<div class="overlay" id="thanks" hidden>
+  <div class="sheet center">
+    <div class="muted">ご注文を受け付けました</div>
+    <div class="big" id="orderNo"></div>
+    <p>お料理ができるまで少々お待ちください。</p>
+    <button class="btn" id="again">追加で注文する</button>
+  </div>
+</div>
+
+<script>
+  const API = document.body.dataset.api;
+  async function call(params, body) {
+    const opt = body ? { method: 'POST', body: JSON.stringify(body), credentials: 'omit' } : { credentials: 'omit' };
+    const url = body ? API : API + '?' + new URLSearchParams(params).toString();
+    const r = await fetch(url, opt);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || '通信エラー');
+    return j.data;
+  }
+  let table = (new URLSearchParams(location.search).get('table') || '').slice(0, 10);
+  let menu = [];
+  const cart = {};
+  const $ = id => document.getElementById(id);
+  const yen = n => '¥' + Number(n).toLocaleString();
+
+  function setTable(t) { table = t; $('tblLabel').textContent = 'テーブル ' + t; }
+  if (table) setTable(table); else $('askTable').hidden = false;
+  $('tblOk').onclick = () => {
+    const v = $('tblInput').value.trim();
+    if (v) { setTable(v); $('askTable').hidden = true; }
+  };
+
+  call({ api: 'menu' })
+    .then(m => { menu = m; renderMenu(); })
+    .catch(() => { $('menu').innerHTML = '<p class="center">メニューを読み込めませんでした。<br>スタッフにお声がけください。</p>'; });
+
+  function renderMenu() {
+    const root = $('menu');
+    root.innerHTML = '';
+    if (!menu.length) { root.innerHTML = '<p class="center muted">現在ご注文いただける商品がありません</p>'; return; }
+    const cats = [];
+    menu.forEach(m => { if (!cats.includes(m.cat)) cats.push(m.cat); });
+    cats.forEach(cat => {
+      const h = document.createElement('h2'); h.textContent = cat; root.appendChild(h);
+      menu.filter(m => m.cat === cat).forEach(m => {
+        const el = document.createElement('div'); el.className = 'item';
+        el.innerHTML = '<div class="info"><div class="name"></div><div class="price"></div></div>' +
+          '<div class="step"><button class="minus" aria-label="減らす">−</button><span class="q"></span><button class="plus" aria-label="増やす">＋</button></div>';
+        el.querySelector('.name').textContent = m.name;
+        el.querySelector('.price').textContent = yen(m.price);
+        const q = el.querySelector('.q'), minus = el.querySelector('.minus');
+        const sync = () => { const n = cart[m.name] || 0; q.textContent = n; q.hidden = minus.hidden = n === 0; updateBar(); };
+        el.querySelector('.plus').onclick = () => { cart[m.name] = Math.min(50, (cart[m.name] || 0) + 1); sync(); };
+        minus.onclick = () => { cart[m.name] = Math.max(0, (cart[m.name] || 0) - 1); if (!cart[m.name]) delete cart[m.name]; sync(); };
+        sync();
+        root.appendChild(el);
+      });
+    });
+  }
+
+  function cartItems() {
+    return Object.keys(cart).map(name => {
+      const m = menu.find(x => x.name === name);
+      return { name, qty: cart[name], price: m ? m.price : 0 };
+    });
+  }
+
+  function updateBar() {
+    const items = cartItems();
+    const count = items.reduce((a, i) => a + i.qty, 0);
+    const total = items.reduce((a, i) => a + i.qty * i.price, 0);
+    const b = $('toConfirm');
+    b.disabled = count === 0;
+    b.textContent = count ? `注文を確認する（${count}点 ${yen(total)}）` : '商品を選んでください';
+  }
+
+  $('toConfirm').onclick = () => {
+    if (!table) { $('askTable').hidden = false; return; }
+    const list = $('cartList'); list.innerHTML = '';
+    let total = 0;
+    cartItems().forEach(i => {
+      total += i.qty * i.price;
+      const r = document.createElement('div'); r.className = 'row';
+      const a = document.createElement('span'); a.textContent = `${i.name} × ${i.qty}`;
+      const b = document.createElement('span'); b.textContent = yen(i.qty * i.price);
+      r.append(a, b); list.appendChild(r);
+    });
+    $('cartTotal').textContent = yen(total);
+    $('confirm').hidden = false;
+  };
+  $('back').onclick = () => { $('confirm').hidden = true; };
+
+  $('send').onclick = () => {
+    const btn = $('send');
+    btn.disabled = true; btn.textContent = '送信中…';
+    call(null, { action: 'order', table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note: $('note').value })
+      .then(r => {
+        Object.keys(cart).forEach(k => delete cart[k]);
+        $('note').value = '';
+        renderMenu();
+        $('confirm').hidden = true;
+        $('orderNo').textContent = '注文番号 ' + r.no;
+        $('thanks').hidden = false;
+        btn.disabled = false; btn.textContent = 'この内容で注文する';
+      })
+      .catch(e => {
+        alert('送信できませんでした：' + (e && e.message ? e.message : 'もう一度お試しください'));
+        btn.disabled = false; btn.textContent = 'この内容で注文する';
+      });
+  };
+  $('again').onclick = () => { $('thanks').hidden = true; window.scrollTo(0, 0); };
+</script>
+</body>
+</html>

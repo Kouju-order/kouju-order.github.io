@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>注文一覧｜公珠</title>
+<style>
+  :root { --red:#a8231b; --ink:#231f1c; --muted:#7a716a; --bg:#f3eee6; --card:#fff; --line:#e3dacd; --warn:#d9822b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--ink); }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--red); color:#fff; padding:14px 20px; position:sticky; top:0; z-index:5; }
+  header h1 { margin:0; font-size:22px; }
+  #status { font-size:14px; opacity:.92; }
+  main { padding:16px 20px 40px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+  .card { background:var(--card); border-radius:14px; padding:16px; border-top:6px solid var(--red); display:flex; flex-direction:column; }
+  .card.late { border-top-color:var(--warn); }
+  .card .tbl { font-size:26px; font-weight:800; }
+  .card .meta { color:var(--muted); font-size:14px; margin:2px 0 10px; }
+  .card .items { font-size:19px; line-height:1.6; white-space:pre-line; flex:1; }
+  .card .note { background:#fff4d6; border-radius:8px; padding:8px 10px; margin-top:10px; font-size:15px; }
+  .card .foot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
+  .card .sum { font-size:17px; font-weight:700; }
+  button { border:0; border-radius:10px; font-size:17px; font-weight:700; padding:12px 18px; background:var(--red); color:#fff; }
+  button.ghost { background:#fff; color:var(--muted); border:1px solid var(--line); font-size:14px; padding:8px 12px; }
+  h2 { font-size:16px; color:var(--muted); margin:28px 0 10px; }
+  .done { background:#fff; border-radius:10px; padding:10px 14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--muted); }
+  .empty { text-align:center; color:var(--muted); padding:60px 0; font-size:18px; }
+  .start { position:fixed; inset:0; background:rgba(35,31,28,.75); display:flex; align-items:center; justify-content:center; z-index:20; }
+  .start[hidden] { display:none; }
+  .start div { background:#fff; border-radius:16px; padding:28px; text-align:center; max-width:360px; }
+  .err { background:#fde3e1; color:var(--red); padding:14px; border-radius:10px; margin-bottom:14px; }
+</style>
+</head>
+<body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
+<header>
+  <h1>注文一覧</h1>
+  <span id="status">読み込み中…</span>
+</header>
+<main>
+  <div id="err" class="err" hidden></div>
+  <div id="pending" class="grid"></div>
+  <h2>完了（直近10件）</h2>
+  <div id="done"></div>
+</main>
+
+<div class="start" id="start">
+  <div>
+    <p style="font-size:18px;font-weight:700;margin-top:0">受付を開始します</p>
+    <p style="color:#7a716a;font-size:14px">新しい注文が来たら音でお知らせします。</p>
+    <button id="go">受付開始</button>
+  </div>
+</div>
+
+<script>
+  const API = document.body.dataset.api;
+  async function call(params, body) {
+    const opt = body ? { method: 'POST', body: JSON.stringify(body), credentials: 'omit' } : { credentials: 'omit' };
+    const url = body ? API : API + '?' + new URLSearchParams(params).toString();
+    const r = await fetch(url, opt);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || '通信エラー');
+    return j.data;
+  }
+  const KEY = new URLSearchParams(location.search).get('key') || '';
+  const $ = id => document.getElementById(id);
+  const yen = n => '¥' + Number(n).toLocaleString();
+  let actx = null, lastMax = 0, loaded = false, busy = false;
+
+  $('go').onclick = () => {
+    try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    $('start').hidden = true;
+    load();
+    setInterval(load, 8000);
+  };
+
+  function beep() {
+    if (!actx) return;
+    [0, 0.25, 0.5].forEach((t, i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = i === 1 ? 1175 : 880;
+      g.gain.setValueAtTime(0.0001, actx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.4, actx.currentTime + t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + t + 0.2);
+      o.connect(g).connect(actx.destination);
+      o.start(actx.currentTime + t); o.stop(actx.currentTime + t + 0.22);
+    });
+  }
+
+  function load() {
+    if (busy) return;
+    busy = true;
+    call({ api: 'orders', key: KEY })
+      .then(d => { busy = false; $('err').hidden = true; show(d); })
+      .catch(e => {
+        busy = false;
+        $('err').textContent = (e && e.message) || '読み込みに失敗しました';
+        $('err').hidden = false;
+      });
+  }
+
+  function show(d) {
+    const maxAt = d.pending.reduce((a, o) => Math.max(a, o.at), 0);
+    if (loaded && maxAt > lastMax) beep();
+    lastMax = Math.max(lastMax, maxAt);
+    loaded = true;
+
+    const now = Date.now();
+    const p = $('pending'); p.innerHTML = '';
+    if (!d.pending.length) p.innerHTML = '<div class="empty">未対応の注文はありません</div>';
+    d.pending.slice().sort((a, b) => a.at - b.at).forEach(o => {
+      const mins = Math.floor((now - o.at) / 60000);
+      const c = document.createElement('div');
+      c.className = 'card' + (mins >= 15 ? ' late' : '');
+      c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
+        '<div class="foot"><span class="sum"></span><button>提供済み</button></div>';
+      c.querySelector('.tbl').textContent = 'テーブル ' + o.table;
+      c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
+      c.querySelector('.items').textContent = o.items;
+      if (o.note) {
+        const n = document.createElement('div'); n.className = 'note'; n.textContent = '📝 ' + o.note;
+        c.querySelector('.items').after(n);
+      }
+      c.querySelector('.sum').textContent = yen(o.total);
+      c.querySelector('button').onclick = e => setStatus(o.no, '完了', e.target);
+      p.appendChild(c);
+    });
+
+    const dn = $('done'); dn.innerHTML = '';
+    d.done.forEach(o => {
+      const r = document.createElement('div'); r.className = 'done';
+      const s = document.createElement('span');
+      s.textContent = `No.${o.no}　テーブル ${o.table}　${o.time}　${yen(o.total)}`;
+      const b = document.createElement('button'); b.className = 'ghost'; b.textContent = '未対応に戻す';
+      b.onclick = () => setStatus(o.no, '未対応', b);
+      r.append(s, b); dn.appendChild(r);
+    });
+
+    const t = new Date();
+    $('status').textContent = '最終更新 ' + t.toTimeString().slice(0, 8);
+  }
+
+  function setStatus(no, status, btn) {
+    btn.disabled = true;
+    call(null, { action: 'status', key: KEY, no, status })
+      .then(load)
+      .catch(e => { btn.disabled = false; alert((e && e.message) || '更新できませんでした'); });
+  }
+</script>
+</body>
+</html>
