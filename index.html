@@ -11,6 +11,11 @@
   body { margin:0; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--ink); padding-bottom:110px; }
   header { background:var(--red); color:#fff; padding:16px 16px 14px; }
   header h1 { margin:0; font-size:21px; letter-spacing:.05em; }
+  html[lang^="zh-Hans"] body { font-family:-apple-system,"PingFang SC","Noto Sans SC",sans-serif; }
+  html[lang^="zh-Hant"] body { font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif; }
+  .langs { display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; }
+  .langs button { border:1px solid rgba(255,255,255,.7); background:transparent; color:#fff; border-radius:999px; padding:5px 11px; font-size:13px; font-weight:700; }
+  .langs button.on { background:#fff; color:var(--red); border-color:#fff; }
   header .tbl { margin-top:4px; font-size:14px; opacity:.92; }
   main { padding:4px 16px; }
   .tabs { position:sticky; top:0; z-index:5; display:flex; gap:8px; overflow-x:auto; padding:10px 16px; background:var(--bg); border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -24,7 +29,10 @@
   .item { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:12px; padding:14px; margin-bottom:8px; }
   .item .info { flex:1; min-width:0; }
   .item .name { font-size:16px; font-weight:600; }
+  .item .ja { font-size:12px; color:var(--muted); margin-top:2px; }
+  .item .ja:empty { display:none; }
   .item .price { font-size:14px; color:var(--muted); margin-top:2px; }
+  .row .ja { display:block; font-size:12px; color:var(--muted); }
   .step { display:flex; align-items:center; gap:8px; }
   .step button { width:38px; height:38px; border-radius:50%; border:1.5px solid var(--red); background:#fff; color:var(--red); font-size:22px; line-height:1; }
   .step button.plus { background:var(--red); color:#fff; }
@@ -48,46 +56,48 @@
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
 <header>
-  <h1>公珠 モバイルオーダー</h1>
+  <h1 data-t="title">公珠 モバイルオーダー</h1>
   <div class="tbl" id="tblLabel"></div>
+  <div class="langs" id="langs"></div>
 </header>
 <nav class="tabs" id="tabs" hidden></nav>
-<main id="menu"><p class="muted center">メニューを読み込み中…</p></main>
+<main id="menu"><p class="muted center" data-t="loading">メニューを読み込み中…</p></main>
 
-<div class="bar" id="bar"><button class="btn" id="toConfirm" disabled>商品を選んでください</button></div>
+<div class="bar" id="bar"><button class="btn" id="toConfirm" disabled data-t="pick">商品を選んでください</button></div>
 
 <!-- 確認 -->
 <div class="overlay" id="confirm" hidden>
   <div class="sheet">
-    <h3>ご注文内容の確認</h3>
+    <h3 data-t="confirmTitle">ご注文内容の確認</h3>
     <div id="cartList"></div>
-    <div class="total"><span>合計（税込）</span><span id="cartTotal"></span></div>
-    <textarea id="note" rows="2" maxlength="200" placeholder="ご要望（任意）例：辛さ控えめ"></textarea>
-    <p class="muted">お会計はお帰りの際にレジでお願いします。</p>
-    <button class="btn" id="send">この内容で注文する</button>
-    <button class="btn sub" id="back">戻る</button>
+    <div class="total"><span data-t="total">合計（税込）</span><span id="cartTotal"></span></div>
+    <textarea id="note" rows="2" maxlength="200" placeholder="ご要望（任意）例：辛さ控えめ" data-tp="notePh"></textarea>
+    <p class="muted" data-t="payNote">お会計はお帰りの際にレジでお願いします。</p>
+    <button class="btn" id="send" data-t="send">この内容で注文する</button>
+    <button class="btn sub" id="back" data-t="back">戻る</button>
   </div>
 </div>
 
 <!-- テーブル番号入力 -->
 <div class="overlay" id="askTable" hidden>
   <div class="sheet">
-    <h3>テーブル番号を入力してください</h3>
-    <input id="tblInput" inputmode="numeric" maxlength="10" placeholder="例：3">
-    <button class="btn" id="tblOk" style="margin-top:12px">決定</button>
+    <h3 data-t="askTable">テーブル番号を入力してください</h3>
+    <input id="tblInput" inputmode="numeric" maxlength="10" placeholder="例：3" data-tp="tablePh">
+    <button class="btn" id="tblOk" style="margin-top:12px" data-t="ok">決定</button>
   </div>
 </div>
 
 <!-- 完了 -->
 <div class="overlay" id="thanks" hidden>
   <div class="sheet center">
-    <div class="muted">ご注文を受け付けました</div>
+    <div class="muted" data-t="thanks">ご注文を受け付けました</div>
     <div class="big" id="orderNo"></div>
-    <p>お料理ができるまで少々お待ちください。</p>
-    <button class="btn" id="again">追加で注文する</button>
+    <p data-t="wait">お料理ができるまで少々お待ちください。</p>
+    <button class="btn" id="again" data-t="again">追加で注文する</button>
   </div>
 </div>
 
+<script src="i18n.js?v=1"></script>
 <script>
   const API = document.body.dataset.api;
   async function call(params, body) {
@@ -109,7 +119,55 @@
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
 
-  function setTable(t) { table = t; $('tblLabel').textContent = 'テーブル ' + t; }
+  // ===== 言語切り替え（お店に届く注文は常に日本語の商品名） =====
+  const I = window.I18N || { items: {}, cats: {}, ui: {} };
+  const LANGS = [['ja', '日本語', 'ja'], ['en', 'English', 'en'], ['zhs', '简体中文', 'zh-Hans'], ['zht', '繁體中文', 'zh-Hant']];
+  function detectLang() {
+    const q = new URLSearchParams(location.search).get('lang');
+    if (LANGS.some(l => l[0] === q)) return q;
+    try { const s = localStorage.getItem('kouju_lang'); if (LANGS.some(l => l[0] === s)) return s; } catch (e) {}
+    for (const raw of (navigator.languages || [navigator.language || 'ja'])) {
+      const l = String(raw).toLowerCase();
+      if (l.startsWith('ja')) return 'ja';
+      if (l.startsWith('zh')) return /hant|tw|hk|mo/.test(l) ? 'zht' : 'zhs';
+      if (l.startsWith('en')) return 'en';
+    }
+    return 'en';
+  }
+  let lang = detectLang();
+  const T = (k, v) => {
+    const e = I.ui[k];
+    let s = e ? (e[lang] !== undefined ? e[lang] : e.ja) : k;
+    Object.entries(v || {}).forEach(([a, b]) => { s = s.split('{' + a + '}').join(b); });
+    return s;
+  };
+  const N = name => (lang !== 'ja' && I.items[name] && I.items[name][lang]) || name;
+  const C = cat => (lang !== 'ja' && I.cats[cat] && I.cats[cat][lang]) || cat;
+  function applyLang() {
+    document.documentElement.lang = LANGS.find(l => l[0] === lang)[2];
+    document.title = T('title');
+    document.querySelectorAll('[data-t]').forEach(el => { el.innerHTML = T(el.dataset.t); });
+    document.querySelectorAll('[data-tp]').forEach(el => { el.placeholder = T(el.dataset.tp); });
+    if (table) $('tblLabel').textContent = T('table', { t: table });
+    const box = $('langs'); box.innerHTML = '';
+    LANGS.forEach(([code, label, tag]) => {
+      const b = document.createElement('button'); b.textContent = label; b.lang = tag;
+      b.classList.toggle('on', code === lang);
+      b.onclick = () => {
+        if (code === lang) return;
+        lang = code;
+        try { localStorage.setItem('kouju_lang', code); } catch (e) {}
+        applyLang();
+        if (menu.length) renderMenu();
+        updateBar();
+        if (!$('confirm').hidden) $('toConfirm').onclick();
+      };
+      box.appendChild(b);
+    });
+  }
+
+  function setTable(t) { table = t; $('tblLabel').textContent = T('table', { t }); }
+  applyLang();
   if (table) setTable(table); else $('askTable').hidden = false;
   $('tblOk').onclick = () => {
     const v = $('tblInput').value.trim();
@@ -127,10 +185,11 @@
       if (fresh !== JSON.stringify(menu)) { menu = m; renderMenu(); }
       try { localStorage.setItem('kouju_menu', fresh); } catch (e) {}
     })
-    .catch(() => { if (!menu.length) $('menu').innerHTML = '<p class="center">メニューを読み込めませんでした。<br>スタッフにお声がけください。</p>'; });
+    .catch(() => { if (!menu.length) $('menu').innerHTML = '<p class="center">' + T('loadFail') + '</p>'; });
 
   // 大分類（お店のメニューの並び）
   const GROUPS = [
+    ['ランチ', ['ランチ', 'ランチ サイド', 'ランチ 生ビール']],
     ['餃子', ['餃子', '焼餃子', '水餃子']],
     ['ワンタン', ['ワンタン', '雲呑', '揚げ雲呑']],
     ['麺類', ['麺類']],
@@ -151,7 +210,7 @@
   function renderMenu() {
     const root = $('menu');
     root.innerHTML = '';
-    if (!menu.length) { root.innerHTML = '<p class="center muted">現在ご注文いただける商品がありません</p>'; return; }
+    if (!menu.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
     menu.forEach(m => { if (!cats.includes(m.cat)) cats.push(m.cat); });
     const usedGroups = [];
@@ -162,16 +221,20 @@
         curGroup = gname;
         wrap = document.createElement('section'); wrap.className = 'group'; wrap.id = 'g' + usedGroups.length;
         wrap.dataset.group = gname;
-        const gh = document.createElement('h3'); gh.className = 'grp'; gh.textContent = gname; wrap.appendChild(gh);
+        const gh = document.createElement('h3'); gh.className = 'grp'; gh.textContent = C(gname); wrap.appendChild(gh);
         root.appendChild(wrap);
         usedGroups.push(gname);
       }
-      if (cat !== gname) { const h = document.createElement('h2'); h.textContent = cat; wrap.appendChild(h); }
+      if (cat !== gname) { const h = document.createElement('h2'); h.textContent = C(cat); wrap.appendChild(h); }
       menu.filter(m => m.cat === cat).forEach(m => {
         const el = document.createElement('div'); el.className = 'item';
-        el.innerHTML = '<div class="info"><div class="name"></div><div class="price"></div></div>' +
-          '<div class="step"><button class="minus" aria-label="減らす">−</button><span class="q"></span><button class="plus" aria-label="増やす">＋</button></div>';
-        el.querySelector('.name').textContent = m.name;
+        el.innerHTML = '<div class="info"><div class="name"></div><div class="ja" lang="ja"></div><div class="price"></div></div>' +
+          '<div class="step"><button class="minus">−</button><span class="q"></span><button class="plus">＋</button></div>';
+        el.querySelector('.minus').setAttribute('aria-label', T('less'));
+        el.querySelector('.plus').setAttribute('aria-label', T('more'));
+        const shown = N(m.name);
+        el.querySelector('.name').textContent = shown;
+        el.querySelector('.ja').textContent = shown !== m.name ? m.name : '';
         el.querySelector('.price').textContent = yen(m.price);
         const q = el.querySelector('.q'), minus = el.querySelector('.minus');
         const sync = () => { const n = cart[m.name] || 0; q.textContent = n; q.hidden = minus.hidden = n === 0; updateBar(); };
@@ -188,7 +251,7 @@
     const bar = $('tabs');
     bar.innerHTML = '';
     groups.forEach((g, i) => {
-      const b = document.createElement('button'); b.textContent = g; b.dataset.i = i;
+      const b = document.createElement('button'); b.textContent = C(g); b.dataset.i = i;
       b.onclick = () => { $('g' + i).scrollIntoView({ behavior: 'smooth', block: 'start' }); setActive(i); };
       bar.appendChild(b);
     });
@@ -224,7 +287,7 @@
     const total = items.reduce((a, i) => a + i.qty * i.price, 0);
     const b = $('toConfirm');
     b.disabled = count === 0;
-    b.textContent = count ? `注文を確認する（${count}点 ${yen(total)}）` : '商品を選んでください';
+    b.textContent = count ? T('review', { n: count, y: yen(total) }) : T('pick');
   }
 
   $('toConfirm').onclick = () => {
@@ -234,7 +297,8 @@
     cartItems().forEach(i => {
       total += i.qty * i.price;
       const r = document.createElement('div'); r.className = 'row';
-      const a = document.createElement('span'); a.textContent = `${i.name} × ${i.qty}`;
+      const a = document.createElement('span'); a.textContent = `${N(i.name)} × ${i.qty}`;
+      if (N(i.name) !== i.name) { const j = document.createElement('span'); j.className = 'ja'; j.lang = 'ja'; j.textContent = i.name; a.appendChild(j); }
       const b = document.createElement('span'); b.textContent = yen(i.qty * i.price);
       r.append(a, b); list.appendChild(r);
     });
@@ -245,22 +309,25 @@
 
   $('send').onclick = () => {
     const btn = $('send');
-    btn.disabled = true; btn.textContent = '送信中…';
+    btn.disabled = true; btn.textContent = T('sending');
     rid = rid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
-    call(null, { action: 'order', rid, table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note: $('note').value })
+    // お店側（iPad・メール）には日本語の商品名で届く。外国語のお客様は備考の先頭に言語を付ける
+    const tag = T('noteTag');
+    const note = (tag ? '【' + tag + '】' : '') + $('note').value;
+    call(null, { action: 'order', rid, table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note })
       .then(r => {
         rid = null;
         Object.keys(cart).forEach(k => delete cart[k]);
         $('note').value = '';
         renderMenu();
         $('confirm').hidden = true;
-        $('orderNo').textContent = '注文番号 ' + r.no;
+        $('orderNo').textContent = T('orderNo', { n: r.no });
         $('thanks').hidden = false;
-        btn.disabled = false; btn.textContent = 'この内容で注文する';
+        btn.disabled = false; btn.textContent = T('send');
       })
       .catch(e => {
-        alert('送信できませんでした：' + (e && e.message ? e.message : 'もう一度お試しください'));
-        btn.disabled = false; btn.textContent = 'この内容で注文する';
+        alert(T('sendFail') + (lang === 'ja' && e && e.message ? e.message : T('retry')));
+        btn.disabled = false; btn.textContent = T('send');
       });
   };
   $('again').onclick = () => { $('thanks').hidden = true; window.scrollTo(0, 0); };
