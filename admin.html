@@ -130,7 +130,7 @@
     wrap('テーブル ' + o.table, 40, true);
     wrap('No.' + o.no + '　' + o.time, 20, false);
     lines.push(['—', 14, false]);
-    wrap(shortItems(o.items), 28, true);
+    wrap((o.slip || shortItems(o.items)), 28, true);
     if (o.note) { lines.push(['', 8, false]); wrap('備考：' + o.note, 22, false); }
     lines.push(['—', 14, false]);
     wrap('合計 ' + yen(o.total), 22, false);
@@ -205,7 +205,7 @@
         '<div class="foot"><span class="sum"></span><div class="btns"><button class="print">伝票印刷</button><button class="doneBtn">提供済み</button></div></div>';
       c.querySelector('.tbl').textContent = 'テーブル ' + o.table;
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
-      c.querySelector('.items').textContent = shortItems(o.items);
+      c.querySelector('.items').textContent = (o.slip || shortItems(o.items));
       if (o.note) {
         const n = document.createElement('div'); n.className = 'note'; n.textContent = '📝 ' + o.note;
         c.querySelector('.items').after(n);
