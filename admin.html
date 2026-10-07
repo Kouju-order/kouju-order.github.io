@@ -204,7 +204,7 @@
         '<div class="foot"><span class="sum"></span><div class="btns"><button class="print">伝票印刷</button><button class="doneBtn">提供済み</button></div></div>';
       c.querySelector('.tbl').textContent = 'テーブル ' + o.table;
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
-      c.querySelector('.items').textContent = o.items;
+      c.querySelector('.items').textContent = shortItems(o.items);
       if (o.note) {
         const n = document.createElement('div'); n.className = 'note'; n.textContent = '📝 ' + o.note;
         c.querySelector('.items').after(n);
