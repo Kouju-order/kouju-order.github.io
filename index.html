@@ -52,6 +52,7 @@
   .center { text-align:center; padding:40px 8px; }
   .big { font-size:44px; font-weight:800; color:var(--red); margin:8px 0; }
   .muted { color:var(--muted); font-size:14px; }
+  .ask { font-size:15px; font-weight:700; margin:4px 0 2px; }
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
@@ -71,7 +72,7 @@
     <h3 data-t="confirmTitle">ご注文内容の確認</h3>
     <div id="cartList"></div>
     <div class="total"><span data-t="total">合計（税込）</span><span id="cartTotal"></span></div>
-    <textarea id="note" rows="2" maxlength="200" placeholder="ご要望（任意）例：辛さ控えめ" data-tp="notePh"></textarea>
+    <p class="ask" data-t="callStaff">ご要望がある場合は、店員をお呼びください。</p>
     <p class="muted" data-t="payNote">お会計はお帰りの際にレジでお願いします。</p>
     <button class="btn" id="send" data-t="send">この内容で注文する</button>
     <button class="btn sub" id="back" data-t="back">戻る</button>
@@ -98,7 +99,7 @@
 </div>
 
 <script src="i18n.js?v=1"></script>
-<script src="i18n2.js?v=5"></script>
+<script src="i18n2.js?v=6"></script>
 <script>
   const API = document.body.dataset.api;
   async function call(params, body) {
@@ -315,12 +316,11 @@
     rid = rid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
     // お店側（iPad・メール）には日本語の商品名で届く。外国語のお客様は備考の先頭に言語を付ける
     const tag = T('noteTag');
-    const note = (tag ? '【' + tag + '】' : '') + $('note').value;
+    const note = tag ? '【' + tag + '】' : '';
     call(null, { action: 'order', rid, table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note })
       .then(r => {
         rid = null;
         Object.keys(cart).forEach(k => delete cart[k]);
-        $('note').value = '';
         renderMenu();
         $('confirm').hidden = true;
         $('orderNo').textContent = T('orderNo', { n: r.no });
