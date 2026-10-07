@@ -94,6 +94,7 @@
   // ===== 伝票印刷（SII URL Print Agent） =====
   // 伝票用の短い品名（かっこ書き・容量を省く）
   const SHORT = [
+    [/横浜名物 公珠サンマー麺/, 'サンマー麺'],
     [/生ビール 一口ジョッキ/, '生小'], [/生ビール 中ジョッキ/, '生中'],
     [/生ビール タワージョッキ/, 'タワー'], [/生ビール 寸胴ジョッキ/, '寸胴'],
     [/ノンアルコールビール/, 'ノンアル'], [/アサヒスーパードライ 中瓶/, 'SD中瓶'],
@@ -107,7 +108,7 @@
     }).join('\n');
   }
   function slipCanvas(o) {
-    const W = 384, pad = 8, MAXW = 316, c = document.createElement('canvas'), g = c.getContext('2d');
+    const W = 384, pad = 8, c = document.createElement('canvas'), g = c.getContext('2d');
     const font = (px, bold) => (bold ? '700 ' : '') + px + 'px "Hiragino Sans","Noto Sans JP",sans-serif';
     const lines = [];
     const wrap = (text, px, bold) => {
@@ -118,10 +119,10 @@
         const body = m ? m[1] : raw, tail = m ? m[2] : '';
         let cur = '';
         for (const ch of body) {
-          if (g.measureText(cur + ch).width > MAXW) { lines.push([cur, px, bold]); cur = ch; }
+          if (g.measureText(cur + ch).width > W - pad * 2) { lines.push([cur, px, bold]); cur = ch; }
           else cur += ch;
         }
-        if (tail && g.measureText(cur + tail).width > MAXW) { lines.push([cur, px, bold]); cur = '　' + tail.trim(); }
+        if (tail && g.measureText(cur + tail).width > W - pad * 2) { lines.push([cur, px, bold]); cur = '　' + tail.trim(); }
         else cur += tail;
         lines.push([cur, px, bold]);
       });
