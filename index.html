@@ -265,7 +265,7 @@
   function renderMenu() {
     const root = $('menu');
     root.innerHTML = '';
-    const mm = TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat) || /【お持ち帰り】/.test(m.name)) : menu.filter(m => !/^テイクアウト/.test(m.cat));
+    const mm = TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)).concat(menu.filter(m => /【お持ち帰り】/.test(m.name))) : menu.filter(m => !/^テイクアウト/.test(m.cat));
     if (!mm.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
     mm.forEach(m => { if (!cats.includes(m.cat)) cats.push(m.cat); });
