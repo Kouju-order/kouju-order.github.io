@@ -19,7 +19,10 @@
   .card.late { border-top-color:var(--warn); }
   .card .tbl { font-size:26px; font-weight:800; }
   .card .meta { color:var(--muted); font-size:14px; margin:2px 0 10px; }
-  .card .items { font-size:19px; line-height:1.6; white-space:pre-line; flex:1; }
+  .card .items { font-size:19px; line-height:1.6; flex:1; }
+  .items .it { padding-left:1em; text-indent:-1em; }
+  .items .qn { white-space:nowrap; }
+  .items .q2 { background:#a8231b; color:#fff; border-radius:6px; padding:0 7px; font-weight:800; font-size:21px; }
   .card .note { background:#fff4d6; border-radius:8px; padding:8px 10px; margin-top:10px; font-size:15px; }
   .card .foot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
   .card .sum { font-size:17px; font-weight:700; }
@@ -130,7 +133,24 @@
     wrap('テーブル ' + o.table, 40, true);
     wrap('No.' + o.no + '　' + o.time, 20, false);
     lines.push(['—', 14, false]);
-    wrap((o.slip || shortItems(o.items)), 28, true);
+    (o.slip || shortItems(o.items)).split('\n').forEach(raw => {
+      if (!raw.trim()) return;
+      const px = 28; g.font = font(px, true);
+      const m = raw.match(/^(.*?)\s×\s(\d+)$/);
+      const name = '・' + (m ? m[1] : raw).trim(), q = m ? Number(m[2]) : 0;
+      const ind = g.measureText('・').width;
+      g.font = font(q >= 2 ? px + 4 : px, true);
+      const qw = q ? g.measureText('×' + q).width + (q >= 2 ? 24 : 10) : 0;
+      g.font = font(px, true);
+      const rows = []; let cur = '';
+      for (const ch of name) {
+        const lim = MAXW - (rows.length ? ind : 0);
+        if (g.measureText(cur + ch).width > lim) { rows.push(cur); cur = ch; } else cur += ch;
+      }
+      if (q && g.measureText(cur).width + qw > MAXW - (rows.length ? ind : 0)) { rows.push(cur); cur = ''; }
+      rows.push(cur);
+      rows.forEach((t, i) => lines.push([t, px, true, i ? ind : 0, i === rows.length - 1 ? q : 0]));
+    });
     if (o.note) { lines.push(['', 8, false]); wrap('備考：' + o.note, 22, false); }
     lines.push(['—', 14, false]);
     wrap('合計 ' + yen(o.total), 22, false);
@@ -139,10 +159,23 @@
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
     g.fillStyle = '#000'; g.textBaseline = 'top';
     let y = pad;
-    lines.forEach(([t, px, bold]) => {
+    lines.forEach(([t, px, bold, ind, q]) => {
       g.font = font(px, bold);
       if (t === '—') { g.fillRect(pad, y + px / 2, W - pad * 2, 2); }
-      else g.fillText(t, pad, y);
+      else {
+        const x = pad + (ind || 0);
+        g.fillText(t, x, y);
+        if (q) {
+          const qx = x + g.measureText(t).width + (t ? 10 : 0);
+          if (q >= 2) {
+            // 2個以上は白抜きで目立たせる
+            const s = '×' + q; g.font = font(px + 4, true);
+            const w = g.measureText(s).width + 14;
+            g.fillRect(qx, y - 4, w, px + 8);
+            g.fillStyle = '#fff'; g.fillText(s, qx + 7, y - 2); g.fillStyle = '#000';
+          } else g.fillText('×' + q, qx, y);
+        }
+      }
       y += px * 1.35;
     });
     return c;
@@ -205,7 +238,15 @@
         '<div class="foot"><span class="sum"></span><div class="btns"><button class="print">伝票印刷</button><button class="doneBtn">提供済み</button></div></div>';
       c.querySelector('.tbl').textContent = 'テーブル ' + o.table;
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
-      c.querySelector('.items').textContent = (o.slip || shortItems(o.items));
+      const box = c.querySelector('.items');
+      (o.slip || shortItems(o.items)).split('\n').forEach(raw => {
+        if (!raw.trim()) return;
+        const m = raw.match(/^(.*?)\s×\s(\d+)$/);
+        const row = document.createElement('div'); row.className = 'it';
+        row.textContent = '・' + (m ? m[1] : raw).trim() + ' ';
+        if (m) { const s = document.createElement('span'); s.className = Number(m[2]) >= 2 ? 'qn q2' : 'qn'; s.textContent = '×' + m[2]; row.appendChild(s); }
+        box.appendChild(row);
+      });
       if (o.note) {
         const n = document.createElement('div'); n.className = 'note'; n.textContent = '📝 ' + o.note;
         c.querySelector('.items').after(n);
