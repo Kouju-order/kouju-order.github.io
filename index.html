@@ -24,7 +24,11 @@
   .tabs button { flex:0 0 auto; border:1.5px solid var(--red); background:#fff; color:var(--red); border-radius:999px; padding:8px 14px; font-size:15px; font-weight:700; white-space:nowrap; }
   .tabs button.on { background:var(--red); color:#fff; }
   .group { scroll-margin-top:64px; }
-  h3.grp { font-size:19px; margin:26px 0 4px; color:var(--ink); }
+  .ghd { display:flex; align-items:center; gap:10px; margin:26px 0 6px; background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; min-height:104px; }
+  .ghd .tx { flex:1; min-width:0; padding:12px 0 12px 16px; }
+  h3.grp { font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:22px; line-height:1.25; margin:0; color:var(--ink); display:inline-block; border-bottom:2px solid #b08a4a; padding-bottom:3px; }
+  .ghd .sub { display:block; font-size:11px; letter-spacing:.12em; color:#b08a4a; margin-top:6px; }
+  .ghd img { width:124px; height:104px; object-fit:cover; flex:0 0 auto; -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 32%); mask-image:linear-gradient(90deg,transparent 0,#000 32%); }
   h2 { font-size:15px; color:var(--red); margin:22px 0 8px; padding-bottom:6px; border-bottom:2px solid var(--line); }
   .item { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:12px; padding:14px; margin-bottom:8px; }
   .item .info { flex:1; min-width:0; }
@@ -212,6 +216,7 @@
     ['ソフトドリンク', ['ソフトドリンク', '健康ドリンク']],
   ];
   const CATNOTE = { 'ランチ限定 お得ドリンク': 'lunchDeal' };
+  const GIMG = { 'ランチ':'lunch', '黒板メニュー':'board', '餃子':'gyoza', 'ワンタン':'wantan', '麺類':'men', 'ご飯類':'gohan', '焼きそば':'yakisoba', '一品料理':'ippin', '点心':'tenshin', '前菜':'zensai', 'デザート':'dessert', '中国茶':'tea', 'サワー':'sour', 'ビール':'beer', 'ハイボールその他':'highball', 'ソフトドリンク':'soft' };
   const groupOf = cat => { const g = GROUPS.find(([, cs]) => cs.includes(cat)); return g ? g[0] : 'ハイボールその他'; };
 
   function renderMenu() {
@@ -228,7 +233,14 @@
         curGroup = gname;
         wrap = document.createElement('section'); wrap.className = 'group'; wrap.id = 'g' + usedGroups.length;
         wrap.dataset.group = gname;
-        const gh = document.createElement('h3'); gh.className = 'grp'; gh.textContent = C(gname); wrap.appendChild(gh);
+        const hd = document.createElement('div'); hd.className = 'ghd';
+        const tx = document.createElement('div'); tx.className = 'tx';
+        const gh = document.createElement('h3'); gh.className = 'grp'; gh.textContent = C(gname); tx.appendChild(gh);
+        const sub = lang === 'ja' ? ((I.cats[gname] && I.cats[gname].en) || '') : gname;
+        if (sub) { const sp = document.createElement('span'); sp.className = 'sub'; sp.textContent = sub; tx.appendChild(sp); }
+        hd.appendChild(tx);
+        if (GIMG[gname]) { const im = document.createElement('img'); im.src = 'c_' + GIMG[gname] + '.webp?v=1'; im.alt = ''; im.loading = 'lazy'; hd.appendChild(im); }
+        wrap.appendChild(hd);
         root.appendChild(wrap);
         usedGroups.push(gname);
       }
