@@ -110,7 +110,7 @@
 </div>
 
 <script src="i18n.js?v=3"></script>
-<script src="i18n2.js?v=11"></script>
+<script src="i18n2.js?v=12"></script>
 <script>
   const API = document.body.dataset.api;
   async function call(params, body) {
@@ -156,7 +156,7 @@
     return s;
   };
   const N = name => (lang !== 'ja' && I.items[name] && I.items[name][lang]) || name;
-  const C = cat => (lang !== 'ja' && I.cats[cat] && I.cats[cat][lang]) || cat;
+  const C = cat => (I.cats[cat] && I.cats[cat][lang]) || cat;
   function applyLang() {
     document.documentElement.lang = LANGS.find(l => l[0] === lang)[2];
     document.title = T('title');
@@ -223,7 +223,7 @@
     ['ハイボールその他', ['その他', 'ハイボール', 'ウイスキー（ストレート・水割り・ロック）', '焼酎', 'リキュール']],
     ['ソフトドリンク', ['ソフトドリンク', '健康ドリンク']],
   ];
-  const CATNOTE = { 'ランチ限定 お得ドリンク': 'lunchDeal' };
+  const CATNOTE = { 'ランチ限定 お得ドリンク': 'lunchDeal', '健康ドリンク': 'healthHome' };
   const REGP = { 'ひとくちジョッキ 生ビール': 420, 'ランチ生中ビール': 620 };
   const ITEMIMG = { '香港焼きソバ': 'i_hkyakisoba' };
   const GIMG = { 'ランチ':'lunch2', '黒板メニュー':'board', '餃子':'gyoza', 'ワンタン':'wantan', '麺類':'men', 'ご飯類':'gohan', '焼きそば':'yakisoba', '一品料理':'ippin', '点心':'tenshin', '前菜':'zensai', 'デザート':'dessert', '中国茶':'tea', 'サワー':'sour', 'ビール':'beer2', '紹興酒・白酒':'shaoxing', 'ハイボールその他':'highball', 'ソフトドリンク':'soft' };
