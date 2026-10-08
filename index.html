@@ -48,8 +48,8 @@
   .btn.sub { background:#fff; color:var(--red); border:1.5px solid var(--red); margin-top:10px; }
   .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:10; }
   .overlay[hidden] { display:none; }
-.tblq { display:flex; gap:8px; margin-top:10px; }
-.tblq button { flex:1; font-size:20px; font-weight:700; padding:12px 0; border:1.5px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); }
+.tblq { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px; }
+.tblq button { font-size:20px; font-weight:700; padding:12px 0; border:1.5px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); }
   .sheet { background:var(--bg); width:100%; max-height:88vh; overflow:auto; border-radius:18px 18px 0 0; padding:20px 16px calc(20px + env(safe-area-inset-bottom)); }
   .sheet h3 { margin:0 0 12px; font-size:18px; }
   .row { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:15px; }
@@ -90,9 +90,9 @@
 <div class="overlay" id="askTable" hidden>
   <div class="sheet">
     <h3 data-t="askTable">テーブル番号を入力してください</h3>
-    <input id="tblInput" inputmode="numeric" maxlength="10" placeholder="例：3" data-tp="tablePh">
-    <div class="tblq"><button type="button">A</button><button type="button">B</button><button type="button">C</button><button type="button">D</button></div>
-    <button class="btn" id="tblOk" style="margin-top:12px" data-t="ok">決定</button>
+    <input id="tblInput" hidden inputmode="numeric" maxlength="10" placeholder="例：3" data-tp="tablePh">
+    <div class="tblq"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button><button type="button">6</button><button type="button">7</button><button type="button">A</button><button type="button">B</button><button type="button">C</button><button type="button">D</button></div>
+    <button class="btn" id="tblOk" hidden style="margin-top:12px" data-t="ok">決定</button>
   </div>
 </div>
 
