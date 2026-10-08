@@ -36,6 +36,8 @@
   .item .ja { font-size:12px; color:var(--muted); margin-top:2px; }
   .item .ja:empty { display:none; }
   .item .price { font-size:14px; color:var(--muted); margin-top:2px; }
+  .item .price s { color:#9a9088; }
+  .item .price .dealp { color:#c0281c; font-size:17px; }
   .row .ja { display:block; font-size:12px; color:var(--muted); }
   .step { display:flex; align-items:center; gap:8px; }
   .step button { width:38px; height:38px; border-radius:50%; border:1.5px solid var(--red); background:#fff; color:var(--red); font-size:22px; line-height:1; }
@@ -220,6 +222,7 @@
     ['ソフトドリンク', ['ソフトドリンク', '健康ドリンク']],
   ];
   const CATNOTE = { 'ランチ限定 お得ドリンク': 'lunchDeal' };
+  const REGP = { 'ひとくちジョッキ 生ビール': 420, 'ランチ生中ビール': 620 };
   const GIMG = { 'ランチ':'lunch', '黒板メニュー':'board', '餃子':'gyoza', 'ワンタン':'wantan', '麺類':'men', 'ご飯類':'gohan', '焼きそば':'yakisoba', '一品料理':'ippin', '点心':'tenshin', '前菜':'zensai', 'デザート':'dessert', '中国茶':'tea', 'サワー':'sour', 'ビール':'beer', 'ハイボールその他':'highball', 'ソフトドリンク':'soft' };
   const groupOf = cat => { const g = GROUPS.find(([, cs]) => cs.includes(cat)); return g ? g[0] : 'ハイボールその他'; };
 
@@ -259,7 +262,8 @@
         const shown = N(m.name);
         el.querySelector('.name').textContent = shown;
         el.querySelector('.ja').textContent = shown !== m.name ? m.name : '';
-        el.querySelector('.price').textContent = m.price > 0 ? yen(m.price) : T('askPrice');
+        const pe = el.querySelector('.price'); pe.textContent = m.price > 0 ? yen(m.price) : T('askPrice');
+        if (REGP[m.name] && m.price > 0 && REGP[m.name] > m.price) { pe.textContent = ''; const s = document.createElement('s'); s.textContent = yen(REGP[m.name]); const b = document.createElement('b'); b.className = 'dealp'; b.textContent = yen(m.price); pe.append(s, ' → ', b); }
         const q = el.querySelector('.q'), minus = el.querySelector('.minus');
         const sync = () => { const n = cart[m.name] || 0; q.textContent = n; q.hidden = minus.hidden = n === 0; updateBar(); };
         el.querySelector('.plus').onclick = () => { cart[m.name] = Math.min(50, (cart[m.name] || 0) + 1); sync(); };
