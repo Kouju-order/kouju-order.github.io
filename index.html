@@ -48,6 +48,8 @@
   .btn.sub { background:#fff; color:var(--red); border:1.5px solid var(--red); margin-top:10px; }
   .overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:flex-end; z-index:10; }
   .overlay[hidden] { display:none; }
+.tblq { display:flex; gap:8px; margin-top:10px; }
+.tblq button { flex:1; font-size:20px; font-weight:700; padding:12px 0; border:1.5px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); }
   .sheet { background:var(--bg); width:100%; max-height:88vh; overflow:auto; border-radius:18px 18px 0 0; padding:20px 16px calc(20px + env(safe-area-inset-bottom)); }
   .sheet h3 { margin:0 0 12px; font-size:18px; }
   .row { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--line); font-size:15px; }
@@ -89,6 +91,7 @@
   <div class="sheet">
     <h3 data-t="askTable">テーブル番号を入力してください</h3>
     <input id="tblInput" inputmode="numeric" maxlength="10" placeholder="例：3" data-tp="tablePh">
+    <div class="tblq"><button type="button">A</button><button type="button">B</button><button type="button">C</button><button type="button">D</button></div>
     <button class="btn" id="tblOk" style="margin-top:12px" data-t="ok">決定</button>
   </div>
 </div>
@@ -179,9 +182,10 @@
   applyLang();
   if (table) setTable(table); else $('askTable').hidden = false;
   $('tblOk').onclick = () => {
-    const v = $('tblInput').value.trim();
+    const v = $('tblInput').value.trim().replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).toUpperCase();
     if (v) { setTable(v); $('askTable').hidden = true; }
   };
+  document.querySelectorAll('.tblq button').forEach(b => b.onclick = () => { setTable(b.textContent); $('askTable').hidden = true; });
 
   // 前回のメニューがあれば先に表示し、裏で最新に更新する
   try {
