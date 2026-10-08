@@ -22,6 +22,7 @@
   .card .items { font-size:19px; line-height:1.6; flex:1; }
   .items .it { padding-left:1em; text-indent:-1em; }
   .items .qn { white-space:nowrap; }
+  .items .st { background:#231f1c; color:#fff; border-radius:6px; padding:0 7px; font-weight:800; white-space:nowrap; }
   .items .q2 { background:#a8231b; color:#fff; border-radius:6px; padding:0 7px; font-weight:800; font-size:21px; }
   .card .note { background:#fff4d6; border-radius:8px; padding:8px 10px; margin-top:10px; font-size:15px; }
   .card .foot { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
@@ -137,8 +138,11 @@
       if (!raw.trim()) return;
       const px = 28; g.font = font(px, true);
       const m = raw.match(/^(.*?)\s×\s(\d+)$/);
-      const name = '・' + (m ? m[1] : raw).trim(), q = m ? Number(m[2]) : 0;
+      let base = (m ? m[1] : raw).trim(); const sm = base.match(/\s?(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温)$/); const st = sm ? sm[1] : '';
+      if (sm) base = base.slice(0, base.length - sm[0].length).trim();
+      const name = '・' + base, q = m ? Number(m[2]) : 0;
       const ind = g.measureText('・').width;
+      const sw = st ? g.measureText(st).width + 24 : 0;
       g.font = font(q >= 2 ? px + 4 : px, true);
       const qw = q ? g.measureText('×' + q).width + (q >= 2 ? 24 : 10) : 0;
       g.font = font(px, true);
@@ -147,9 +151,9 @@
         const lim = MAXW - (rows.length ? ind : 0);
         if (g.measureText(cur + ch).width > lim) { rows.push(cur); cur = ch; } else cur += ch;
       }
-      if (q && g.measureText(cur).width + qw > MAXW - (rows.length ? ind : 0)) { rows.push(cur); cur = ''; }
+      if ((q || st) && g.measureText(cur).width + sw + qw > MAXW - (rows.length ? ind : 0)) { rows.push(cur); cur = ''; }
       rows.push(cur);
-      rows.forEach((t, i) => lines.push([t, px, true, i ? ind : 0, i === rows.length - 1 ? q : 0]));
+      rows.forEach((t, i) => lines.push([t, px, true, i ? ind : 0, i === rows.length - 1 ? q : 0, i === rows.length - 1 ? st : '']));
     });
     if (o.note) { lines.push(['', 8, false]); wrap('備考：' + o.note, 22, false); }
     lines.push(['—', 14, false]);
@@ -159,14 +163,21 @@
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
     g.fillStyle = '#000'; g.textBaseline = 'top';
     let y = pad;
-    lines.forEach(([t, px, bold, ind, q]) => {
+    lines.forEach(([t, px, bold, ind, q, st]) => {
       g.font = font(px, bold);
       if (t === '—') { g.fillRect(pad, y + px / 2, W - pad * 2, 2); }
       else {
         const x = pad + (ind || 0);
         g.fillText(t, x, y);
+        let qx = x + g.measureText(t).width + (t ? 10 : 0);
+        if (st) {
+          // 飲み方も白抜き
+          const w = g.measureText(st).width + 14;
+          g.fillRect(qx, y - 4, w, px + 8);
+          g.fillStyle = '#fff'; g.fillText(st, qx + 7, y); g.fillStyle = '#000';
+          qx += w + 10;
+        }
         if (q) {
-          const qx = x + g.measureText(t).width + (t ? 10 : 0);
           if (q >= 2) {
             // 2個以上は白抜きで目立たせる
             const s = '×' + q; g.font = font(px + 4, true);
@@ -243,7 +254,10 @@
         if (!raw.trim()) return;
         const m = raw.match(/^(.*?)\s×\s(\d+)$/);
         const row = document.createElement('div'); row.className = 'it';
-        row.textContent = '・' + (m ? m[1] : raw).trim() + ' ';
+        let base = (m ? m[1] : raw).trim(); const sm = base.match(/\s?(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温)$/);
+        if (sm) base = base.slice(0, base.length - sm[0].length).trim();
+        row.textContent = '・' + base + ' ';
+        if (sm) { const t = document.createElement('span'); t.className = 'st'; t.textContent = sm[1]; row.appendChild(t); row.appendChild(document.createTextNode(' ')); }
         if (m) { const s = document.createElement('span'); s.className = Number(m[2]) >= 2 ? 'qn q2' : 'qn'; s.textContent = '×' + m[2]; row.appendChild(s); }
         box.appendChild(row);
       });
