@@ -135,7 +135,7 @@
     wrap('No.' + o.no + '　' + o.time, 20, false);
     lines.push(['—', 14, false]);
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
-    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し)/;
+    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル)/;
     (o.slip || shortItems(o.items)).split('\n').forEach(raw => {
       if (!raw.trim()) return;
       const px = 28; g.font = font(px, true);
@@ -243,7 +243,7 @@
         if (!raw.trim()) return;
         const m = raw.match(/^(.*?)\s×\s(\d+)$/);
         const row = document.createElement('div'); row.className = 'it';
-        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し)/;
+        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル)/;
         row.appendChild(document.createTextNode('・'));
         (m ? m[1] : raw).trim().split(HL).filter(Boolean).forEach(t => {
           if (HL.test(t) && t.match(HL)[0] === t) { const sp = document.createElement('span'); sp.className = 'st'; sp.textContent = t; row.appendChild(sp); }
