@@ -30,6 +30,11 @@
   button { border:0; border-radius:10px; font-size:17px; font-weight:700; padding:12px 18px; background:var(--red); color:#fff; }
   button.ghost { background:#fff; color:var(--muted); border:1px solid var(--line); font-size:14px; padding:8px 12px; }
   .card .btns { display:flex; gap:8px; }
+  .card { transition: opacity .3s, transform .3s; }
+  .card.leaving { opacity:0; transform:translateX(60px); pointer-events:none; }
+  button { transition: transform .08s, filter .08s; -webkit-tap-highlight-color: transparent; }
+  button:active { transform:scale(.94); filter:brightness(.8); }
+  button.ok { background:#2e7d32; }
   button.print { background:#fff; color:var(--red); border:1.5px solid var(--red); font-size:15px; padding:10px 12px; }
   h2 { font-size:16px; color:var(--muted); margin:28px 0 10px; }
   .done { background:#fff; border-radius:10px; padding:10px 14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--muted); }
@@ -237,8 +242,9 @@
 
     const now = Date.now();
     const p = $('pending'); p.innerHTML = '';
-    if (!d.pending.length) p.innerHTML = '<div class="empty">未対応の注文はありません</div>';
-    d.pending.slice().sort((a, b) => a.at - b.at).forEach(o => {
+    const pend = d.pending.filter(o => !hiding.has(o.no));
+    if (!pend.length) p.innerHTML = '<div class="empty">未対応の注文はありません</div>';
+    pend.slice().sort((a, b) => a.at - b.at).forEach(o => {
       const mins = Math.floor((now - o.at) / 60000);
       const c = document.createElement('div');
       c.className = 'card' + (mins >= 15 ? ' late' : '');
@@ -266,7 +272,7 @@
         c.querySelector('.items').after(n);
       }
       c.querySelector('.sum').textContent = yen(o.total);
-      c.querySelector('.doneBtn').onclick = e => setStatus(o.no, '完了', e.target);
+      c.querySelector('.doneBtn').onclick = e => doneNow(o.no, c, e.currentTarget);
       c.querySelector('.print').onclick = () => printSlip(o);
       p.appendChild(c);
     });
@@ -285,6 +291,19 @@
     $('status').textContent = '最終更新 ' + t.toTimeString().slice(0, 8);
   }
 
+  const hiding = new Set();
+  function doneNow(no, card, btn) {
+    hiding.add(no);
+    btn.disabled = true; btn.textContent = '✓ 提供済み'; btn.classList.add('ok');
+    setTimeout(() => card.classList.add('leaving'), 150);
+    setTimeout(() => {
+      card.remove();
+      if (!$('pending').querySelector('.card')) $('pending').innerHTML = '<div class="empty">未対応の注文はありません</div>';
+    }, 480);
+    call(null, { action: 'status', key: KEY, no, status: '完了' })
+      .then(() => { hiding.delete(no); load(); })
+      .catch(e => { hiding.delete(no); alert('No.' + no + ' を提供済みにできませんでした。もう一度押してください'); load(); });
+  }
   function setStatus(no, status, btn) {
     btn.disabled = true;
     call(null, { action: 'status', key: KEY, no, status })
