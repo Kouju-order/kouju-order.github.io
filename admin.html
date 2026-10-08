@@ -30,6 +30,7 @@
   button { border:0; border-radius:10px; font-size:17px; font-weight:700; padding:12px 18px; background:var(--red); color:#fff; }
   button.ghost { background:#fff; color:var(--muted); border:1px solid var(--line); font-size:14px; padding:8px 12px; }
   .card .btns { display:flex; gap:8px; }
+  .card .tbl .tno { background:#231f1c; color:#fff; border-radius:8px; padding:0 10px; margin-left:4px; }
   .card { transition: opacity .3s, transform .3s; }
   .card.leaving { opacity:0; transform:translateX(60px); pointer-events:none; }
   button { transition: transform .08s, filter .08s; -webkit-tap-highlight-color: transparent; }
@@ -136,7 +137,8 @@
         lines.push([cur, px, bold]);
       });
     };
-    wrap('テーブル ' + o.table, 40, true);
+    lines.push(['@', 48, true, 0, 0, [{ t: 'テーブル', hl: false }, { t: String(o.table), hl: true }]]);
+    lines.push(['', 6, false]);
     wrap('No.' + o.no + '　' + o.time, 20, false);
     if (part === 'drink') wrap('■ ドリンク', 34, true);
     if (part === 'food') wrap('■ 料理', 34, true);
@@ -145,7 +147,7 @@
     const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル)/;
     (part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
-      const px = 34; g.font = font(px, true);
+      const px = 42; g.font = font(px, true);
       const m = raw.match(/^(.*?)\s×\s(\d+)$/);
       const name = '・' + (m ? m[1] : raw).trim(), q = m ? Number(m[2]) : 0;
       const ind = g.measureText('・').width;
@@ -251,7 +253,7 @@
       c.className = 'card' + (mins >= 15 ? ' late' : '');
       c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
         '<div class="foot"><span class="sum"></span><div class="btns"><button class="print">伝票印刷</button><button class="doneBtn">提供済み</button></div></div>';
-      c.querySelector('.tbl').textContent = 'テーブル ' + o.table;
+      { const tb = c.querySelector('.tbl'); tb.textContent = 'テーブル '; const b = document.createElement('b'); b.className = 'tno'; b.textContent = o.table; tb.appendChild(b); }
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
       const box = c.querySelector('.items');
       (o.slip || shortItems(o.items)).split('\n').forEach(raw => {
