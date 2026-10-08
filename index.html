@@ -94,6 +94,7 @@
   <div class="sheet">
     <h3 data-t="toTitle">お持ち帰りのご注文</h3>
     <input id="toName" maxlength="20" autocomplete="name" placeholder="お名前" data-tp="toNamePh">
+    <input id="toTel" type="tel" inputmode="tel" maxlength="15" autocomplete="tel" placeholder="電話番号" data-tp="toTelPh" style="margin-top:10px">
     <p class="muted" style="margin:12px 0 4px" data-t="toTimeNote">受け取り時間</p>
     <input id="toTime" type="time" step="300">
     <p id="toMsg" style="color:#c0281c;margin:8px 0 0"></p>
@@ -122,7 +123,7 @@
 </div>
 
 <script src="i18n.js?v=3"></script>
-<script src="i18n2.js?v=16"></script>
+<script src="i18n2.js?v=17"></script>
 <script>
   const API = document.body.dataset.api;
   async function call(params, body) {
@@ -139,7 +140,7 @@
   }
   const STAFF = new URLSearchParams(location.search).get('staff') === '1';
   const TAKEOUT = new URLSearchParams(location.search).get('takeout') === '1';
-  let toInfo = '';
+  let toInfo = '', toTel = '';
   let table = TAKEOUT ? '持帰' : STAFF ? '' : (new URLSearchParams(location.search).get('table') || '').slice(0, 10);
   let menu = [];
   let rid = null;
@@ -205,13 +206,15 @@
   };
   document.querySelectorAll('.tblq button').forEach(b => b.onclick = () => { setTable(b.textContent); $('askTable').hidden = true; });
   if (TAKEOUT) {
+    const h1 = document.querySelector('header h1'); h1.dataset.t = 'toAppTitle'; h1.innerHTML = T('toAppTitle'); document.title = T('toAppTitle');
     const pn = document.querySelector('[data-t="payNote"]'); if (pn) { pn.dataset.t = 'payTo'; pn.innerHTML = T('payTo'); }
     $('tblLabel').textContent = T('toLabel', { t: '—' });
     $('tblLabel').onclick = () => { $('askTo').hidden = false; };
     $('askTo').hidden = false;
     $('toOk').onclick = () => {
-      const n = $('toName').value.trim(), tm = $('toTime').value;
-      if (!n || !tm) { $('toMsg').textContent = T('toNeed'); return; }
+      const n = $('toName').value.trim(), tm = $('toTime').value, tel = $('toTel').value.replace(/[^0-9０-９+\-－]/g, '');
+      if (!n || !tm || tel.replace(/[^0-9０-９]/g, '').length < 10) { $('toMsg').textContent = T('toNeed'); return; }
+      toTel = tel;
       toInfo = n + '様 ' + tm; $('toMsg').textContent = '';
       $('tblLabel').textContent = T('toLabel', { t: toInfo });
       $('askTo').hidden = true;
@@ -265,7 +268,7 @@
   function renderMenu() {
     const root = $('menu');
     root.innerHTML = '';
-    const mm = TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)).concat(menu.filter(m => /【お持ち帰り】/.test(m.name))) : menu.filter(m => !/^テイクアウト/.test(m.cat));
+    const mm = TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)) : menu.filter(m => !/^テイクアウト/.test(m.cat));
     if (!mm.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
     mm.forEach(m => { if (!cats.includes(m.cat)) cats.push(m.cat); });
@@ -383,7 +386,7 @@
     rid = rid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
     // お店側（iPad・メール）には日本語の商品名で届く。外国語のお客様は備考の先頭に言語を付ける
     const tag = T('noteTag');
-    const note = (TAKEOUT ? '【お持ち帰り】' + toInfo + ' 受取' : '') + (tag ? '【' + tag + '】' : '');
+    const note = (TAKEOUT ? '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel : '') + (tag ? '【' + tag + '】' : '');
     call(null, { action: 'order', rid, table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note })
       .then(r => {
         rid = null;
