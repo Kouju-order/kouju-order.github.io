@@ -145,7 +145,7 @@
     const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル)/;
     (part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
-      const px = 28; g.font = font(px, true);
+      const px = 34; g.font = font(px, true);
       const m = raw.match(/^(.*?)\s×\s(\d+)$/);
       const name = '・' + (m ? m[1] : raw).trim(), q = m ? Number(m[2]) : 0;
       const ind = g.measureText('・').width;
@@ -160,10 +160,11 @@
       });
       if (q) { g.font = font(q >= 2 ? px + 4 : px, true); const qw = g.measureText('×' + q).width + (q >= 2 ? 24 : 10); g.font = font(px, true); if (wsum + qw > lim()) nl(); }
       rows.forEach((r, i) => lines.push(['@', px, true, i ? ind : 0, i === rows.length - 1 ? q : 0, r]));
+      lines.push(['', 14, false]);
     });
-    if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 22, false); }
+    if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
-    if (part !== 'drink') wrap('合計 ' + yen(o.total), 22, false);
+    if (part !== 'drink') wrap('合計 ' + yen(o.total), 26, false);
     const H = pad * 2 + lines.reduce((a, l) => a + l[1] * 1.35, 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
