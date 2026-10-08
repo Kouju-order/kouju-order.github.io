@@ -111,7 +111,7 @@
       return s;
     }).join('\n');
   }
-  function slipCanvas(o) {
+  function slipCanvas(o, part) {
     const W = 384, pad = 8, MAXW = 316, c = document.createElement('canvas'), g = c.getContext('2d');
     const font = (px, bold) => (bold ? '700 ' : '') + px + 'px "Hiragino Sans","Noto Sans JP",sans-serif';
     const lines = [];
@@ -133,10 +133,12 @@
     };
     wrap('テーブル ' + o.table, 40, true);
     wrap('No.' + o.no + '　' + o.time, 20, false);
+    if (part === 'drink') wrap('■ ドリンク', 34, true);
+    if (part === 'food') wrap('■ 料理', 34, true);
     lines.push(['—', 14, false]);
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
     const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル)/;
-    (o.slip || shortItems(o.items)).split('\n').forEach(raw => {
+    (part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
       const px = 28; g.font = font(px, true);
       const m = raw.match(/^(.*?)\s×\s(\d+)$/);
@@ -154,9 +156,9 @@
       if (q) { g.font = font(q >= 2 ? px + 4 : px, true); const qw = g.measureText('×' + q).width + (q >= 2 ? 24 : 10); g.font = font(px, true); if (wsum + qw > lim()) nl(); }
       rows.forEach((r, i) => lines.push(['@', px, true, i ? ind : 0, i === rows.length - 1 ? q : 0, r]));
     });
-    if (o.note) { lines.push(['', 8, false]); wrap('備考：' + o.note, 22, false); }
+    if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 22, false); }
     lines.push(['—', 14, false]);
-    wrap('合計 ' + yen(o.total), 22, false);
+    if (part !== 'drink') wrap('合計 ' + yen(o.total), 22, false);
     const H = pad * 2 + lines.reduce((a, l) => a + l[1] * 1.35, 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
@@ -182,10 +184,16 @@
   }
   function printSlip(o) {
     try {
-      const c = slipCanvas(o);
-      const wmm = 48, hmm = wmm * c.height / c.width;
-      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm] });
-      pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
+      // 料理とドリンクが両方あるときは2枚に分ける
+      const parts = (o.slipFood && o.slipDrink) ? ['food', 'drink'] : [null];
+      const wmm = 48; let pdf = null;
+      parts.forEach(p => {
+        const c = slipCanvas(o, p); const hmm = wmm * c.height / c.width;
+        const ori = hmm >= wmm ? 'portrait' : 'landscape';
+        if (!pdf) pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm], orientation: ori });
+        else pdf.addPage([wmm, hmm], ori);
+        pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
+      });
       const b64 = pdf.output('datauristring').split(',')[1];
       const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1';
       location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
