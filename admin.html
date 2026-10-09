@@ -97,6 +97,14 @@
     $('start').hidden = true;
     load();
     setInterval(load, 8000);
+    // 画面が新しくなっていたら自動で読み込み直す（再読み込みの手間をなくす）
+    let ver = null;
+    const chk = () => fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.text()).then(t => {
+      const h = t.length + ':' + t.slice(-200);
+      if (ver === null) ver = h;
+      else if (h !== ver && !document.querySelector('.leaving')) location.replace(location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1');
+    }).catch(() => {});
+    chk(); setInterval(chk, 60000);
   }
   $('go').onclick = () => { startAudio(); begin(); };
   if (new URLSearchParams(location.search).get('resume')) {
