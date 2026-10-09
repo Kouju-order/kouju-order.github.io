@@ -232,6 +232,8 @@
       const sel = $('toTime'); sel.innerHTML = '';
       const now = new Date(); const jst = new Date(now.getTime() + (now.getTimezoneOffset() + 540) * 60000);
       const msg = $('toMsg');
+      window.TODAY = (jst.getMonth() + 1) + '/' + jst.getDate() + '(' + '日月火水木金土'[jst.getDay()] + ')';
+      { const p = document.createElement('p'); p.style.cssText = 'margin:4px 0 6px;font-weight:700;font-size:16px'; p.textContent = '受け取り日：本日 ' + window.TODAY; sel.before(p); }
       if (jst.getDay() === 3) { sel.innerHTML = '<option value="">本日は定休日です</option>'; sel.disabled = true; $('toOk').disabled = true; msg.textContent = '水曜日は定休日のため、本日のご注文は承れません。'; return; }
       const nowMin = jst.getHours() * 60 + jst.getMinutes() + 15;
       const ranges = [[11 * 60 + 45, 14 * 60 + 30], [17 * 60 + 30, 21 * 60 + 15]];
@@ -244,7 +246,7 @@
       const n = $('toName').value.trim(), tm = $('toTime').value, tel = $('toTel').value.replace(/[^0-9０-９+\-－]/g, '');
       if (!n || !tm || tel.replace(/[^0-9０-９]/g, '').length < 10) { $('toMsg').textContent = T('toNeed'); return; }
       toTel = tel;
-      toInfo = n + '様 ' + tm; $('toMsg').textContent = '';
+      toInfo = n + '様 ' + (window.TODAY || '') + ' ' + tm; $('toMsg').textContent = '';
       $('tblLabel').textContent = T('toLabel', { t: toInfo });
       $('askTo').hidden = true;
     };
