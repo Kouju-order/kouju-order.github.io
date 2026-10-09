@@ -84,7 +84,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261009-2240'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261009-2345'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -208,12 +208,50 @@
     });
     return c;
   }
-  function printSlip(o) { printSlips([o]); }
+  // 同じテーブルのまだ印刷していない注文は、1枚の伝票にまとめる（持帰・8番の予約は別のお客様なのでまとめない）
+  let curPend = [];
+  const NOMERGE = t => t === '持帰' || t === '8';
+  function sumLines(arr) {
+    const s = arr.filter(Boolean).join('\n');
+    if (!s) return arr[0];
+    const ord = [], q = {};
+    s.split('\n').forEach(raw => {
+      if (!raw.trim()) return;
+      const m = raw.match(/^(.*?)\s×\s(\d+)$/);
+      const k = m ? m[1] : raw;
+      if (!(k in q)) { ord.push(k); q[k] = 0; }
+      q[k] += m ? Number(m[2]) : 0;
+    });
+    return ord.map(k => q[k] ? k + ' × ' + q[k] : k).join('\n');
+  }
+  function mergeByTable(list) {
+    const out = [], map = {};
+    list.forEach(o => {
+      const k = String(o.table);
+      if (NOMERGE(k)) { out.push(o); return; }
+      if (!map[k]) { map[k] = Object.assign({}, o, { _nos: [o.no] }); out.push(map[k]); return; }
+      const m = map[k];
+      if (!m.slip) m.slip = shortItems(m.items || []);
+      const os = o.slip || shortItems(o.items || []);
+      m._nos.push(o.no); m.no = m._nos.join('・');
+      m.total = Number(m.total) + Number(o.total);
+      m.slip = sumLines([m.slip, os]);
+      m.slipFood = sumLines([m.slipFood, o.slipFood]);
+      m.slipDrink = sumLines([m.slipDrink, o.slipDrink]);
+      m.items = (m.items || []).concat(o.items || []);
+      if (o.note) m.note = (m.note ? m.note + ' / ' : '') + o.note;
+    });
+    return out;
+  }
+  function printSlip(o) {
+    const same = NOMERGE(String(o.table)) ? [o] : curPend.filter(x => String(x.table) === String(o.table));
+    printSlips(same.length ? same : [o]);
+  }
   // 何件かの伝票を1回でまとめて印刷する
   function printSlips(list) {
     try {
       const wmm = 48; let pdf = null;
-      list.forEach(o => {
+      mergeByTable(list).forEach(o => {
       // 料理とドリンクが両方あるときは2枚に分ける
       const parts = (o.slipFood && o.slipDrink) ? ['food', 'drink'] : [null];
       parts.forEach(p => {
@@ -270,6 +308,7 @@
     const pend = d.pending.filter(o => !hiding.has(o.no));
     if (!pend.length) p.innerHTML = '<div class="empty">未対応の注文はありません</div>';
     const pa = $('printAll'); const sorted = pend.slice().sort((a, b) => a.at - b.at);
+    curPend = sorted;
     pa.hidden = sorted.length < 2; pa.textContent = '🖨 まとめて印刷（' + sorted.length + '件）';
     pa.onclick = () => printSlips(sorted);
     sorted.forEach(o => {
