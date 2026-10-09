@@ -161,20 +161,21 @@
         else for (const ch of sg.t) { const w = g.measureText(ch).width; if (wsum + w > lim()) nl(); add(ch, false, w); }
       });
       if (q) { g.font = font(q >= 2 ? px + 4 : px, true); const qw = g.measureText('×' + q).width + (q >= 2 ? 24 : 10); g.font = font(px, true); if (wsum + qw > lim()) nl(); }
-      rows.forEach((r, i) => lines.push(['@', px, true, i ? ind : 0, i === rows.length - 1 ? q : 0, r]));
-      lines.push(['', 14, false]);
+      // 同じ商品の折り返しは行間を詰め、商品と商品の間は広く空ける
+      rows.forEach((r, i) => lines.push(['@', px, true, i ? ind : 0, i === rows.length - 1 ? q : 0, r, i < rows.length - 1 ? 1.08 : 1.35]));
+      lines.push(['', 34, false]);
     });
     if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
     if (part !== 'drink') wrap('合計 ' + yen(o.total), 26, false);
     const TOPM = 120; // 伝票ホルダーに挟むための上の余白（約15mm）
-    const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * 1.35, 0);
+    const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * (l[6] || 1.35), 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
     g.fillStyle = '#000'; g.textBaseline = 'top';
     let y = TOPM + pad;
     const box = (s, x, y, px) => { const w = g.measureText(s).width + 14; g.fillRect(x, y - 4, w, px + 8); g.fillStyle = '#fff'; g.fillText(s, x + 7, y); g.fillStyle = '#000'; return w; };
-    lines.forEach(([t, px, bold, ind, q, segs]) => {
+    lines.forEach(([t, px, bold, ind, q, segs, lh]) => {
       g.font = font(px, bold);
       if (t === '—') { g.fillRect(pad, y + px / 2, W - pad * 2, 2); }
       else {
@@ -187,7 +188,7 @@
           else g.fillText('×' + q, qx, y);
         }
       }
-      y += px * 1.35;
+      y += px * (lh || 1.35);
     });
     return c;
   }
