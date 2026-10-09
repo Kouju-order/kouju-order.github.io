@@ -153,14 +153,14 @@
     if (part === 'food') wrap('■ 料理', 34, true);
     lines.push(['—', 14, false]);
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
-    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル)/;
+    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆))/;
     (part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
       const px = 42; g.font = font(px, true);
       const m = raw.match(/^(.*?)\s×\s(\d+)$/);
       const name = '・' + (m ? m[1] : raw).trim(), q = m ? Number(m[2]) : 0;
       const ind = g.measureText('・').width;
-      const segs = name.split(HL).filter(Boolean).map(t => ({ t, hl: HL.test(t) && t.match(HL)[0] === t }));
+      const segs = name.split(HL).map((t, i) => ({ t, hl: i % 2 === 1 })).filter(s => s.t);
       const rows = [[]]; let wsum = 0;
       const lim = () => MAXW - (rows.length > 1 ? ind : 0);
       const add = (t, hl, w) => { const r = rows[rows.length - 1]; const last = r[r.length - 1]; if (!hl && last && !last.hl) last.t += t; else r.push({ t, hl }); wsum += w; };
@@ -278,10 +278,11 @@
         if (!raw.trim()) return;
         const m = raw.match(/^(.*?)\s×\s(\d+)$/);
         const row = document.createElement('div'); row.className = 'it';
-        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル)/;
+        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆))/;
         row.appendChild(document.createTextNode('・'));
-        (m ? m[1] : raw).trim().split(HL).filter(Boolean).forEach(t => {
-          if (HL.test(t) && t.match(HL)[0] === t) { const sp = document.createElement('span'); sp.className = 'st'; sp.textContent = t; row.appendChild(sp); }
+        (m ? m[1] : raw).trim().split(HL).forEach((t, i) => {
+          if (!t) return;
+          if (i % 2 === 1) { const sp = document.createElement('span'); sp.className = 'st'; sp.textContent = t; row.appendChild(sp); }
           else row.appendChild(document.createTextNode(t));
         });
         row.appendChild(document.createTextNode(' '));
