@@ -84,6 +84,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
+  const BUILD = '20261009-2240'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -98,11 +99,9 @@
     load();
     setInterval(load, 8000);
     // 画面が新しくなっていたら自動で読み込み直す（再読み込みの手間をなくす）
-    let ver = null;
     const chk = () => fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.text()).then(t => {
-      const h = t.length + ':' + t.slice(-200);
-      if (ver === null) ver = h;
-      else if (h !== ver && !document.querySelector('.leaving')) location.replace(location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1');
+      if (t.indexOf("const BUILD = '") > 0 && t.indexOf("const BUILD = '" + BUILD + "'") < 0 && !document.querySelector('.leaving'))
+        location.replace(location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now());
     }).catch(() => {});
     chk(); setInterval(chk, 60000);
   }
@@ -111,7 +110,7 @@
     // 印刷できたら、その注文を提供済みにしてから一覧を表示する
     const pn = new URLSearchParams(location.search).get('printed');
     if (pn) {
-      history.replaceState(null, '', location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1');
+      history.replaceState(null, '', location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now());
       Promise.all(pn.split(',').filter(Boolean).map(x => call(null, { action: 'status', key: KEY, no: isNaN(Number(x)) ? x : Number(x), status: '完了' }).catch(() => {}))).then(begin);
     } else begin();
     document.addEventListener('touchstart', startAudio, { once: true });
@@ -226,7 +225,7 @@
       });
       });
       const b64 = pdf.output('datauristring').split(',')[1];
-      const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1';
+      const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now();
       location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
         + '&CallbackSuccess=' + encodeURIComponent(back + '&printed=' + encodeURIComponent(list.map(o => o.no).join(','))) + '&CallbackFail=' + encodeURIComponent(back)
         + '&Data=' + encodeURIComponent(b64);
