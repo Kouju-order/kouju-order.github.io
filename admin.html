@@ -44,6 +44,9 @@
   .start[hidden] { display:none; }
   .start div { background:#fff; border-radius:16px; padding:28px; text-align:center; max-width:360px; }
   .err { background:#fde3e1; color:var(--red); padding:14px; border-radius:10px; margin-bottom:14px; }
+  .printAll { display:block; width:100%; margin:0 0 14px; padding:16px; font-size:20px; font-weight:700; border:0; border-radius:12px; background:#1a1a1a; color:#fff; }
+  .printAll[hidden] { display:none; }
+  .printAll:active { transform:scale(.98); opacity:.85; }
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
@@ -53,6 +56,7 @@
 </header>
 <main>
   <div id="err" class="err" hidden></div>
+  <button id="printAll" class="printAll" hidden></button>
   <div id="pending" class="grid"></div>
   <h2>完了（直近10件）</h2>
   <div id="done"></div>
@@ -100,7 +104,7 @@
     const pn = new URLSearchParams(location.search).get('printed');
     if (pn) {
       history.replaceState(null, '', location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1');
-      call(null, { action: 'status', key: KEY, no: isNaN(Number(pn)) ? pn : Number(pn), status: '完了' }).catch(() => {}).then(begin);
+      Promise.all(pn.split(',').filter(Boolean).map(x => call(null, { action: 'status', key: KEY, no: isNaN(Number(x)) ? x : Number(x), status: '完了' }).catch(() => {}))).then(begin);
     } else begin();
     document.addEventListener('touchstart', startAudio, { once: true });
     document.addEventListener('click', startAudio, { once: true });
@@ -197,11 +201,14 @@
     });
     return c;
   }
-  function printSlip(o) {
+  function printSlip(o) { printSlips([o]); }
+  // 何件かの伝票を1回でまとめて印刷する
+  function printSlips(list) {
     try {
+      const wmm = 48; let pdf = null;
+      list.forEach(o => {
       // 料理とドリンクが両方あるときは2枚に分ける
       const parts = (o.slipFood && o.slipDrink) ? ['food', 'drink'] : [null];
-      const wmm = 48; let pdf = null;
       parts.forEach(p => {
         const c = slipCanvas(o, p); const hmm = wmm * c.height / c.width;
         const ori = hmm >= wmm ? 'portrait' : 'landscape';
@@ -209,10 +216,11 @@
         else pdf.addPage([wmm, hmm], ori);
         pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
       });
+      });
       const b64 = pdf.output('datauristring').split(',')[1];
       const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1';
       location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
-        + '&CallbackSuccess=' + encodeURIComponent(back + '&printed=' + encodeURIComponent(o.no)) + '&CallbackFail=' + encodeURIComponent(back)
+        + '&CallbackSuccess=' + encodeURIComponent(back + '&printed=' + encodeURIComponent(list.map(o => o.no).join(','))) + '&CallbackFail=' + encodeURIComponent(back)
         + '&Data=' + encodeURIComponent(b64);
     } catch (e) {
       alert('伝票を作れませんでした：' + e.message);
@@ -254,7 +262,10 @@
     const p = $('pending'); p.innerHTML = '';
     const pend = d.pending.filter(o => !hiding.has(o.no));
     if (!pend.length) p.innerHTML = '<div class="empty">未対応の注文はありません</div>';
-    pend.slice().sort((a, b) => a.at - b.at).forEach(o => {
+    const pa = $('printAll'); const sorted = pend.slice().sort((a, b) => a.at - b.at);
+    pa.hidden = sorted.length < 2; pa.textContent = '🖨 まとめて印刷（' + sorted.length + '件）';
+    pa.onclick = () => printSlips(sorted);
+    sorted.forEach(o => {
       const mins = Math.floor((now - o.at) / 60000);
       const c = document.createElement('div');
       c.className = 'card' + (mins >= 15 ? ' late' : '');
