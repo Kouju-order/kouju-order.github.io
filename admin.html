@@ -167,11 +167,12 @@
     if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
     if (part !== 'drink') wrap('合計 ' + yen(o.total), 26, false);
-    const H = pad * 2 + lines.reduce((a, l) => a + l[1] * 1.35, 0);
+    const TOPM = 120; // 伝票ホルダーに挟むための上の余白（約15mm）
+    const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * 1.35, 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
     g.fillStyle = '#000'; g.textBaseline = 'top';
-    let y = pad;
+    let y = TOPM + pad;
     const box = (s, x, y, px) => { const w = g.measureText(s).width + 14; g.fillRect(x, y - 4, w, px + 8); g.fillStyle = '#fff'; g.fillText(s, x + 7, y); g.fillStyle = '#000'; return w; };
     lines.forEach(([t, px, bold, ind, q, segs]) => {
       g.font = font(px, bold);
