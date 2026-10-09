@@ -96,7 +96,8 @@
     <input id="toName" maxlength="20" autocomplete="name" placeholder="お名前" data-tp="toNamePh">
     <input id="toTel" type="tel" inputmode="tel" maxlength="15" autocomplete="tel" placeholder="電話番号" data-tp="toTelPh" style="margin-top:10px">
     <p class="muted" style="margin:12px 0 4px" data-t="toTimeNote">受け取り時間</p>
-    <input id="toTime" type="time" step="300">
+    <select id="toTime" style="width:100%;padding:12px;font-size:17px;border:1px solid #ccc;border-radius:10px;background:#fff"></select>
+    <p class="muted" id="toHours" style="margin:6px 0 0;font-size:13px">受取時間 11:45〜14:30 / 17:30〜21:15（水曜定休）</p>
     <p id="toMsg" style="color:#c0281c;margin:8px 0 0"></p>
     <button class="btn" id="toOk" style="margin-top:12px" data-t="ok">決定</button>
   </div>
@@ -226,6 +227,19 @@
     $('tblLabel').textContent = T('toLabel', { t: '—' });
     $('tblLabel').onclick = () => { $('askTo').hidden = false; };
     $('askTo').hidden = false;
+    // 受け取り時間：11:45〜14:30 / 17:30〜21:15、水曜定休。今から15分後以降を15分刻みで選べる
+    (function fillTimes() {
+      const sel = $('toTime'); sel.innerHTML = '';
+      const now = new Date(); const jst = new Date(now.getTime() + (now.getTimezoneOffset() + 540) * 60000);
+      const msg = $('toMsg');
+      if (jst.getDay() === 3) { sel.innerHTML = '<option value="">本日は定休日です</option>'; sel.disabled = true; $('toOk').disabled = true; msg.textContent = '水曜日は定休日のため、本日のご注文は承れません。'; return; }
+      const nowMin = jst.getHours() * 60 + jst.getMinutes() + 15;
+      const ranges = [[11 * 60 + 45, 14 * 60 + 30], [17 * 60 + 30, 21 * 60 + 15]];
+      const opts = [];
+      ranges.forEach(([a, b]) => { for (let m = a; m <= b; m += 15) if (m >= nowMin) opts.push(m); });
+      if (!opts.length) { sel.innerHTML = '<option value="">本日の受付は終了しました</option>'; sel.disabled = true; $('toOk').disabled = true; msg.textContent = '本日の受付は終了しました。またのご利用をお待ちしております。'; return; }
+      sel.innerHTML = '<option value="">受け取り時間を選んでください</option>' + opts.map(m => { const t = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); return '<option value="' + t + '">' + t + '</option>'; }).join('');
+    })();
     $('toOk').onclick = () => {
       const n = $('toName').value.trim(), tm = $('toTime').value, tel = $('toTel').value.replace(/[^0-9０-９+\-－]/g, '');
       if (!n || !tm || tel.replace(/[^0-9０-９]/g, '').length < 10) { $('toMsg').textContent = T('toNeed'); return; }
