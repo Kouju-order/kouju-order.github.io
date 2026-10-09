@@ -102,6 +102,17 @@
   </div>
 </div>
 
+<!-- ご予約のお客様：お名前だけ -->
+<div class="overlay" id="askRv" hidden>
+  <div class="sheet">
+    <h3>ご予約のお客様の事前注文</h3>
+    <p class="muted" style="margin:4px 0 10px">ご予約のお名前を入れてください</p>
+    <input id="rvName" maxlength="20" autocomplete="name" placeholder="お名前">
+    <p id="rvMsg" style="color:#c0281c;margin:8px 0 0"></p>
+    <button class="btn" id="rvOk" style="margin-top:12px">決定</button>
+  </div>
+</div>
+
 <!-- テーブル番号入力 -->
 <div class="overlay" id="askTable" hidden>
   <div class="sheet">
@@ -141,6 +152,9 @@
   const STAFF = new URLSearchParams(location.search).get('staff') === '1';
   const TAKEOUT = new URLSearchParams(location.search).get('takeout') === '1';
   let toInfo = '', toTel = '';
+  // 予約のお客様の事前注文（table=8）：お名前だけ入れてもらう
+  const RESV = !TAKEOUT && !STAFF && (new URLSearchParams(location.search).get('table') || '') === '8';
+  let rvName = '';
   let table = TAKEOUT ? '持帰' : STAFF ? '' : (new URLSearchParams(location.search).get('table') || '').slice(0, 10);
   let menu = [];
   let rid = null;
@@ -178,6 +192,7 @@
     document.querySelectorAll('[data-t]').forEach(el => { el.innerHTML = T(el.dataset.t); });
     document.querySelectorAll('[data-tp]').forEach(el => { el.placeholder = T(el.dataset.tp); });
     if (TAKEOUT) $('tblLabel').textContent = T('toLabel', { t: toInfo || '—' });
+    else if (RESV) $('tblLabel').textContent = 'ご予約：' + (rvName ? rvName + ' 様' : '—');
     else if (table) $('tblLabel').textContent = T('table', { t: table });
     const box = $('langs'); box.innerHTML = '';
     LANGS.forEach(([code, label, tag]) => {
@@ -218,6 +233,18 @@
       toInfo = n + '様 ' + tm; $('toMsg').textContent = '';
       $('tblLabel').textContent = T('toLabel', { t: toInfo });
       $('askTo').hidden = true;
+    };
+  }
+  if (RESV) {
+    $('tblLabel').textContent = 'ご予約：—';
+    $('tblLabel').onclick = () => { $('askRv').hidden = false; };
+    $('askRv').hidden = false;
+    $('rvOk').onclick = () => {
+      const n = $('rvName').value.trim();
+      if (!n) { $('rvMsg').textContent = 'お名前を入れてください'; return; }
+      rvName = n; $('rvMsg').textContent = '';
+      $('tblLabel').textContent = 'ご予約：' + rvName + ' 様';
+      $('askRv').hidden = true;
     };
   }
 
@@ -381,12 +408,13 @@
 
   $('send').onclick = () => {
     if (TAKEOUT && !toInfo) { $('confirm').hidden = true; $('askTo').hidden = false; return; }
+    if (RESV && !rvName) { $('confirm').hidden = true; $('askRv').hidden = false; return; }
     const btn = $('send');
     btn.disabled = true; btn.textContent = T('sending');
     rid = rid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
     // お店側（iPad・メール）には日本語の商品名で届く。外国語のお客様は備考の先頭に言語を付ける
     const tag = T('noteTag');
-    const note = (TAKEOUT ? '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel : '') + (tag ? '【' + tag + '】' : '');
+    const note = (TAKEOUT ? '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel : '') + (RESV ? '【ご予約】' + rvName + '様' : '') + (tag ? '【' + tag + '】' : '');
     call(null, { action: 'order', rid, table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note })
       .then(r => {
         rid = null;
