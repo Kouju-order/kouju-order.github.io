@@ -96,7 +96,12 @@
   }
   $('go').onclick = () => { startAudio(); begin(); };
   if (new URLSearchParams(location.search).get('resume')) {
-    begin();
+    // 印刷できたら、その注文を提供済みにしてから一覧を表示する
+    const pn = new URLSearchParams(location.search).get('printed');
+    if (pn) {
+      history.replaceState(null, '', location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1');
+      call(null, { action: 'status', key: KEY, no: isNaN(Number(pn)) ? pn : Number(pn), status: '完了' }).catch(() => {}).then(begin);
+    } else begin();
     document.addEventListener('touchstart', startAudio, { once: true });
     document.addEventListener('click', startAudio, { once: true });
   }
@@ -207,7 +212,7 @@
       const b64 = pdf.output('datauristring').split(',')[1];
       const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1';
       location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
-        + '&CallbackSuccess=' + encodeURIComponent(back) + '&CallbackFail=' + encodeURIComponent(back)
+        + '&CallbackSuccess=' + encodeURIComponent(back + '&printed=' + encodeURIComponent(o.no)) + '&CallbackFail=' + encodeURIComponent(back)
         + '&Data=' + encodeURIComponent(b64);
     } catch (e) {
       alert('伝票を作れませんでした：' + e.message);
