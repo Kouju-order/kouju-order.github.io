@@ -156,7 +156,7 @@
 </div>
 
 <script src="i18n.js?v=3"></script>
-<script src="i18n2.js?v=18"></script>
+<script src="i18n2.js?v=19"></script>
 <script>
   const API = document.body.dataset.api;
   async function call(params, body) {
@@ -206,7 +206,8 @@
     Object.entries(v || {}).forEach(([a, b]) => { s = s.split('{' + a + '}').join(b); });
     return s;
   };
-  const N = name => ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || name).replace(/^【持帰】/, '');
+  const JDISP = { 'ライス 小碗': 'ライス小', 'ライス 御碗': 'ライス中', 'ライス 大盛': 'ライス大' };
+  const N = name => ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || (lang === 'ja' && JDISP[name]) || name).replace(/^【持帰】/, '');
   const C = cat => (I.cats[cat] && I.cats[cat][lang]) || cat;
   function applyLang() {
     document.documentElement.lang = LANGS.find(l => l[0] === lang)[2];
