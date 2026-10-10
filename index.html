@@ -75,6 +75,18 @@
 <main id="menu"><p class="muted center" data-t="loading">メニューを読み込み中…</p></main>
 
 <button id="histBtn" hidden style="position:fixed;right:12px;bottom:88px;z-index:5;border:0;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:700;background:#fff;color:#a8261b;box-shadow:0 3px 10px rgba(0,0,0,.25)"></button>
+<div class="overlay" id="askGlass" hidden>
+  <div class="sheet center">
+    <h3 id="glTitle"></h3>
+    <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin:14px 0">
+      <button type="button" id="glMinus" style="width:52px;height:52px;border-radius:50%;border:1px solid #ccc;background:#fff;font-size:26px">−</button>
+      <span id="glNum" style="font-size:30px;font-weight:700;min-width:70px"></span>
+      <button type="button" id="glPlus" style="width:52px;height:52px;border-radius:50%;border:1px solid #ccc;background:#fff;font-size:26px">＋</button>
+    </div>
+    <button class="btn" id="glOk"></button>
+    <button class="btn sub" id="glNone" style="margin-top:8px"></button>
+  </div>
+</div>
 <div class="overlay" id="hist" hidden>
   <div class="sheet">
     <h3 id="histTitle"></h3>
@@ -333,7 +345,7 @@
   function renderMenu() {
     const root = $('menu');
     root.innerHTML = '';
-    const mm = (TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)) : menu.filter(m => !/^テイクアウト/.test(m.cat))).filter(m => m.cat !== 'リクエスト');
+    const mm = (TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)) : menu.filter(m => !/^テイクアウト/.test(m.cat))).filter(m => m.cat !== 'リクエスト' && !/^【グラス】/.test(m.name));
     // 黒板メニューの品は、ふだんのカテゴリーにも「黒板メニュー」の印つきで出す
     const BOARD_DUP = { '横浜名物 公珠サンマー麺': '麺類', '馬拉糕（中国風蒸しカステラ）2個': '小菜・点心', 'ジャスミン柚子の冷茶（茉莉柚茶）': 'ソフトドリンク', '烏蘇（ウースー）ビール 500ml': '瓶ビール・ビアカクテル', 'ハルピンビール': '瓶ビール・ビアカクテル', 'ギネスビール': '瓶ビール・ビアカクテル', '青島スタウト': '瓶ビール・ビアカクテル', '横浜IPAブラック（はま黒）': '瓶ビール・ビアカクテル' };
     // ふだんのカテゴリーの品を、黒板メニューにも出す（ふだんの方に「黒板メニュー」の印）
@@ -462,6 +474,7 @@
   $('send').onclick = () => {
     if (TAKEOUT && !toInfo) { $('confirm').hidden = true; $('askTo').hidden = false; return; }
     if (RESV && !rvName) { $('confirm').hidden = true; $('askRv').hidden = false; return; }
+    if (glassQty === null && cartItems().some(i => BOTTLE.test(i.name))) { askGlass(); return; }
     const btn = $('send');
     btn.disabled = true; btn.textContent = T('sending');
     rid = rid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
@@ -469,10 +482,10 @@
     const tag = T('noteTag');
     const note = (TAKEOUT ? '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel : '') + (RESV ? '【ご予約】' + rvName + '様' : '') + (tag ? '【' + tag + '】' : '');
     const sent = cartItems();
-    call(null, { action: 'order', rid, table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note })
+    call(null, { action: 'order', rid, table, items: withGlass(cartItems().map(i => ({ name: i.name, qty: i.qty }))), note })
       .then(r => {
         rid = null;
-        saveHist(r.no, sent);
+        saveHist(r.no, sent); glassQty = null;
         Object.keys(cart).forEach(k => delete cart[k]);
         renderMenu();
         $('confirm').hidden = true;
@@ -485,6 +498,29 @@
         btn.disabled = false; btn.textContent = T('send');
       });
   };
+  // ===== ボトル（中瓶・紹興酒ボトル・十年紹興酒）はグラスの数を聞く =====
+  const BOTTLE = /中瓶|紹興酒3年 ボトル|十年紹興酒/;
+  let glassQty = null;
+  const GT = { ja: ['グラスはいくつお持ちしますか？', '個', 'この数で注文する', 'グラスはいりません'], en: ['How many glasses do you need?', '', 'Order with these glasses', 'No glasses needed'], zhs: ['需要几个杯子？', '个', '确定', '不需要杯子'], zht: ['需要幾個杯子？', '個', '確定', '不需要杯子'] };
+  const gt = i => (GT[lang] || GT.ja)[i];
+  function askGlass() {
+    let n = 2; const show = () => { $('glNum').textContent = n + gt(1); };
+    $('glTitle').textContent = gt(0); $('glOk').textContent = gt(2); $('glNone').textContent = gt(3); show();
+    $('glMinus').onclick = () => { n = Math.max(1, n - 1); show(); };
+    $('glPlus').onclick = () => { n = Math.min(20, n + 1); show(); };
+    $('glOk').onclick = () => { glassQty = n; $('askGlass').hidden = true; $('send').click(); };
+    $('glNone').onclick = () => { glassQty = 0; $('askGlass').hidden = true; $('send').click(); };
+    $('askGlass').hidden = false;
+  }
+  // グラスは最後のボトルのすぐ後ろに入れる（伝票でボトルにくっつけて出す）
+  function withGlass(items) {
+    if (!glassQty) return items;
+    let at = -1; items.forEach((it, i) => { if (BOTTLE.test(it.name)) at = i; });
+    if (at < 0) return items;
+    const out = items.slice(); out.splice(at + 1, 0, { name: '【グラス】グラス', qty: glassQty }); return out;
+  }
+  $('back').addEventListener('click', () => { glassQty = null; });
+
   // ===== 注文履歴（この端末で今日注文した分） =====
   const HT = { ja: ['🧾 注文履歴', '注文履歴', '合計', 'この端末から本日ご注文いただいた内容です', '閉じる'], en: ['🧾 My orders', 'Your orders today', 'Total', 'Orders placed from this phone today', 'Close'], zhs: ['🧾 点单记录', '今日点单记录', '合计', '本手机今天的点单', '关闭'], zht: ['🧾 點單紀錄', '今日點單紀錄', '合計', '本手機今天的點單', '關閉'] };
   const ht = i => (HT[lang] || HT.ja)[i];
