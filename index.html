@@ -74,6 +74,17 @@
 <nav class="tabs" id="tabs" hidden></nav>
 <main id="menu"><p class="muted center" data-t="loading">メニューを読み込み中…</p></main>
 
+<button id="histBtn" hidden style="position:fixed;right:12px;bottom:88px;z-index:5;border:0;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:700;background:#fff;color:#a8261b;box-shadow:0 3px 10px rgba(0,0,0,.25)"></button>
+<div class="overlay" id="hist" hidden>
+  <div class="sheet">
+    <h3 id="histTitle"></h3>
+    <div id="histList"></div>
+    <div class="total"><span id="histTotalL"></span><span id="histTotal"></span></div>
+    <p class="muted" id="histNote" style="font-size:13px"></p>
+    <button class="btn sub" id="histClose"></button>
+  </div>
+</div>
+
 <div class="bar" id="bar"><button class="btn" id="toConfirm" disabled data-t="pick">商品を選んでください</button></div>
 
 <!-- 確認 -->
@@ -431,9 +442,11 @@
     // お店側（iPad・メール）には日本語の商品名で届く。外国語のお客様は備考の先頭に言語を付ける
     const tag = T('noteTag');
     const note = (TAKEOUT ? '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel : '') + (RESV ? '【ご予約】' + rvName + '様' : '') + (tag ? '【' + tag + '】' : '');
+    const sent = cartItems();
     call(null, { action: 'order', rid, table, items: cartItems().map(i => ({ name: i.name, qty: i.qty })), note })
       .then(r => {
         rid = null;
+        saveHist(r.no, sent);
         Object.keys(cart).forEach(k => delete cart[k]);
         renderMenu();
         $('confirm').hidden = true;
@@ -446,6 +459,41 @@
         btn.disabled = false; btn.textContent = T('send');
       });
   };
+  // ===== 注文履歴（この端末で今日注文した分） =====
+  const HT = { ja: ['🧾 注文履歴', '注文履歴', '合計', 'この端末から本日ご注文いただいた内容です', '閉じる'], en: ['🧾 My orders', 'Your orders today', 'Total', 'Orders placed from this phone today', 'Close'], zhs: ['🧾 点单记录', '今日点单记录', '合计', '本手机今天的点单', '关闭'], zht: ['🧾 點單紀錄', '今日點單紀錄', '合計', '本手機今天的點單', '關閉'] };
+  const ht = i => (HT[lang] || HT.ja)[i];
+  const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  function loadHist() {
+    try { return (JSON.parse(localStorage.getItem('kouju_hist') || '[]') || []).filter(h => h.d === today() && h.table === table); } catch (e) { return []; }
+  }
+  function saveHist(no, items) {
+    try {
+      const all = (JSON.parse(localStorage.getItem('kouju_hist') || '[]') || []).filter(h => h.d === today());
+      const d = new Date();
+      all.push({ d: today(), table, no, t: String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })) });
+      localStorage.setItem('kouju_hist', JSON.stringify(all));
+    } catch (e) {}
+    showHistBtn();
+  }
+  function showHistBtn() { const h = loadHist(); $('histBtn').hidden = !h.length || STAFF; $('histBtn').textContent = ht(0); }
+  $('histBtn').onclick = () => {
+    const h = loadHist(); const box = $('histList'); box.innerHTML = ''; let sum = 0;
+    h.forEach(o => {
+      const head = document.createElement('div'); head.style.cssText = 'margin:10px 0 4px;font-weight:700;color:#a8261b'; head.textContent = 'No.' + o.no + '　' + o.t; box.appendChild(head);
+      o.items.forEach(i => {
+        const r = document.createElement('div'); r.style.cssText = 'display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid #eee';
+        const nm = document.createElement('span'); nm.textContent = (typeof N === 'function' ? N(i.name) : i.name) + ' ×' + i.qty;
+        const pr = document.createElement('span'); pr.textContent = yen(i.price * i.qty); pr.style.whiteSpace = 'nowrap';
+        r.append(nm, pr); box.appendChild(r); sum += i.price * i.qty;
+      });
+    });
+    $('histTitle').textContent = ht(1); $('histTotalL').textContent = ht(2); $('histTotal').textContent = yen(sum);
+    $('histNote').textContent = ht(3); $('histClose').textContent = ht(4);
+    $('hist').hidden = false;
+  };
+  $('histClose').onclick = () => { $('hist').hidden = true; };
+  setTimeout(showHistBtn, 0);
+  document.addEventListener('click', e => { if (e.target && e.target.closest && e.target.closest('#langs')) setTimeout(showHistBtn, 50); });
   $('again').onclick = () => { $('thanks').hidden = true; window.scrollTo(0, 0); if (STAFF) { $('tblInput').value = ''; $('askTable').hidden = false; } };
 </script>
 </body>
