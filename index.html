@@ -381,7 +381,7 @@
         const shown = N(m.name);
         el.querySelector('.name').textContent = shown;
         if (m.board) { const bt = document.createElement('span'); bt.textContent = ({ en: 'Chalkboard', zhs: '黑板菜单', zht: '黑板菜單' })[lang] || '黒板メニュー'; bt.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#2f3b33;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(bt); }
-        el.querySelector('.ja').textContent = shown !== m.name.replace(/^【持帰】/, '') ? m.name.replace(/^【持帰】/, '') : '';
+        { const jn = (JDISP[m.name] || m.name).replace(/^【持帰】/, ''); el.querySelector('.ja').textContent = shown !== jn ? jn : ''; }
         const ii = ITEMIMG[m.name] || (ITEMRE.find(([re]) => re.test(m.name)) || [])[1];
         if (ii) { const im = document.createElement('img'); im.className = 'thumb'; im.src = ii + '.webp?v=1'; im.alt = ''; im.loading = 'lazy'; el.prepend(im); }
         const pe = el.querySelector('.price'); pe.textContent = m.price > 0 ? yen(m.price) : T('askPrice');
