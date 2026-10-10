@@ -334,8 +334,13 @@
     root.innerHTML = '';
     const mm = (TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)) : menu.filter(m => !/^テイクアウト/.test(m.cat))).filter(m => m.cat !== 'リクエスト');
     // 黒板メニューの品は、ふだんのカテゴリーにも「黒板メニュー」の印つきで出す
-    const BOARD_DUP = { '横浜名物 公珠サンマー麺': '麺類', '馬拉糕（中国風蒸しカステラ）2個': '小菜・点心', 'ジャスミン柚子の冷茶（茉莉柚茶）': 'ソフトドリンク', '烏蘇（ウースー）ビール 500ml': '瓶ビール・ビアカクテル', 'ハルピンビール': '瓶ビール・ビアカクテル' };
-    mm.filter(m => m.cat === '黒板メニュー' && BOARD_DUP[m.name]).forEach(m => {
+    const BOARD_DUP = { '横浜名物 公珠サンマー麺': '麺類', '馬拉糕（中国風蒸しカステラ）2個': '小菜・点心', 'ジャスミン柚子の冷茶（茉莉柚茶）': 'ソフトドリンク', '烏蘇（ウースー）ビール 500ml': '瓶ビール・ビアカクテル', 'ハルピンビール': '瓶ビール・ビアカクテル', 'ギネスビール': '瓶ビール・ビアカクテル', '青島スタウト': '瓶ビール・ビアカクテル', '横浜IPAブラック（はま黒）': '瓶ビール・ビアカクテル' };
+    // ふだんのカテゴリーの品を、黒板メニューにも出す（ふだんの方に「黒板メニュー」の印）
+    const BOARD_ALSO = ['季節の餃子（プチトマト） 5個', '季節の餃子 追加1粒'];
+    for (let i = 0; i < mm.length; i++) if (BOARD_ALSO.includes(mm[i].name) && !mm[i].board) mm[i] = Object.assign({}, mm[i], { board: true });
+    { let last = -1; mm.forEach((x, i) => { if (x.cat === '黒板メニュー') last = i; });
+      if (last >= 0) mm.filter(x => x.board && BOARD_ALSO.includes(x.name)).forEach(x => { mm.splice(++last, 0, Object.assign({}, x, { cat: '黒板メニュー', board: false })); }); }
+    mm.filter(m => (m.cat === '黒板メニュー' || m.cat === '黒ビール（3種の黒ビールシリーズ）') && BOARD_DUP[m.name]).forEach(m => {
       const at = mm.findIndex(x => x.cat === BOARD_DUP[m.name]);
       if (at >= 0) mm.splice(at, 0, Object.assign({}, m, { cat: BOARD_DUP[m.name], board: true }));
     });
