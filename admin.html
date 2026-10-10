@@ -47,6 +47,8 @@
   .printAll { display:block; width:100%; margin:0 0 14px; padding:16px; font-size:20px; font-weight:700; border:0; border-radius:12px; background:#1a1a1a; color:#fff; }
   .printAll[hidden] { display:none; }
   .printAll:active { transform:scale(.98); opacity:.85; }
+  .card.call { background:#fff3c4; border-top-color:#e0a100 !important; }
+  .card.call .items { font-size:1.2em; font-weight:700; }
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
@@ -84,7 +86,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261010-1510'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261010-1515'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -210,6 +212,8 @@
   }
   // 同じテーブルのまだ印刷していない注文は、1枚の伝票にまとめる（持帰・8番の予約は別のお客様なのでまとめない）
   let curPend = [];
+  // お客様からの呼び出し（店員・取り皿・お水）は印刷しない
+  const isCall = o => { const l = String(o.items || '').split('\n').filter(Boolean); return l.length > 0 && l.every(x => /^【呼出】/.test(x)); };
   const NOMERGE = t => t === '持帰' || t === '8';
   function sumLines(arr) {
     const s = arr.filter(Boolean).join('\n');
@@ -308,9 +312,9 @@
     const pend = d.pending.filter(o => !hiding.has(o.no));
     if (!pend.length) p.innerHTML = '<div class="empty">未対応の注文はありません</div>';
     const pa = $('printAll'); const sorted = pend.slice().sort((a, b) => a.at - b.at);
-    curPend = sorted;
-    pa.hidden = sorted.length < 2; pa.textContent = '🖨 まとめて印刷（' + sorted.length + '件）';
-    pa.onclick = () => printSlips(sorted);
+    curPend = sorted.filter(o => !isCall(o));
+    pa.hidden = curPend.length < 2; pa.textContent = '🖨 まとめて印刷（' + curPend.length + '件）';
+    pa.onclick = () => printSlips(curPend);
     sorted.forEach(o => {
       const mins = Math.floor((now - o.at) / 60000);
       const c = document.createElement('div');
@@ -342,6 +346,7 @@
       c.querySelector('.sum').textContent = yen(o.total);
       c.querySelector('.doneBtn').onclick = e => doneNow(o.no, c, e.currentTarget);
       c.querySelector('.print').onclick = () => printSlip(o);
+      if (isCall(o)) { c.classList.add('call'); c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = '🙋 呼び出し'; }
       p.appendChild(c);
     });
 
