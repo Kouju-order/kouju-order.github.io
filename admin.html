@@ -84,7 +84,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261009-2345'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261010-1510'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -160,7 +160,7 @@
     if (part === 'food') wrap('■ 料理', 34, true);
     lines.push(['—', 14, false]);
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
-    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆))/;
+    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ)/;
     (part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
       const px = 42; g.font = font(px, true);
@@ -324,7 +324,7 @@
         if (!raw.trim()) return;
         const m = raw.match(/^(.*?)\s×\s(\d+)$/);
         const row = document.createElement('div'); row.className = 'it';
-        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆))/;
+        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ)/;
         row.appendChild(document.createTextNode('・'));
         (m ? m[1] : raw).trim().split(HL).forEach((t, i) => {
           if (!t) return;
