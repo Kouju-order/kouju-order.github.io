@@ -510,7 +510,7 @@
     $('glPlus').onclick = () => { n = Math.min(20, n + 1); show(); };
     $('glOk').onclick = () => { glassQty = n; $('askGlass').hidden = true; $('send').click(); };
     $('glNone').onclick = () => { glassQty = 0; $('askGlass').hidden = true; $('send').click(); };
-    $('askGlass').hidden = false;
+    $('confirm').hidden = true; $('askGlass').hidden = false;
   }
   // グラスは最後のボトルのすぐ後ろに入れる（伝票でボトルにくっつけて出す）
   function withGlass(items) {
