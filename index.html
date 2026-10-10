@@ -333,6 +333,13 @@
     const root = $('menu');
     root.innerHTML = '';
     const mm = (TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)) : menu.filter(m => !/^テイクアウト/.test(m.cat))).filter(m => m.cat !== 'リクエスト');
+    // 黒板メニューの品は、ふだんのカテゴリーにも「黒板メニュー」の印つきで出す
+    const BOARD_DUP = { '横浜名物 公珠サンマー麺': '麺類', '馬拉糕（中国風蒸しカステラ）2個': '小菜・点心', 'ジャスミン柚子の冷茶（茉莉柚茶）': 'ソフトドリンク', '烏蘇（ウースー）ビール 500ml': '瓶ビール・ビアカクテル', 'ハルピンビール': '瓶ビール・ビアカクテル' };
+    mm.filter(m => m.cat === '黒板メニュー' && BOARD_DUP[m.name]).forEach(m => {
+      const at = mm.findIndex(x => x.cat === BOARD_DUP[m.name]);
+      if (at >= 0) mm.splice(at, 0, Object.assign({}, m, { cat: BOARD_DUP[m.name], board: true }));
+    });
+    window._SY = {};
     if (!mm.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
     mm.forEach(m => { if (!cats.includes(m.cat)) cats.push(m.cat); });
@@ -367,6 +374,7 @@
         el.querySelector('.plus').setAttribute('aria-label', T('more'));
         const shown = N(m.name);
         el.querySelector('.name').textContent = shown;
+        if (m.board) { const bt = document.createElement('span'); bt.textContent = ({ en: 'Chalkboard', zhs: '黑板菜单', zht: '黑板菜單' })[lang] || '黒板メニュー'; bt.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#2f3b33;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(bt); }
         el.querySelector('.ja').textContent = shown !== m.name.replace(/^【持帰】/, '') ? m.name.replace(/^【持帰】/, '') : '';
         const ii = ITEMIMG[m.name] || (ITEMRE.find(([re]) => re.test(m.name)) || [])[1];
         if (ii) { const im = document.createElement('img'); im.className = 'thumb'; im.src = ii + '.webp?v=1'; im.alt = ''; im.loading = 'lazy'; el.prepend(im); }
@@ -374,8 +382,10 @@
         if (REGP[m.name] && m.price > 0 && REGP[m.name] > m.price) { pe.textContent = ''; const s = document.createElement('s'); s.textContent = yen(REGP[m.name]); const b = document.createElement('b'); b.className = 'dealp'; b.textContent = yen(m.price); pe.append(s, ' → ', b); }
         const q = el.querySelector('.q'), minus = el.querySelector('.minus');
         const sync = () => { const n = cart[m.name] || 0; q.textContent = n; q.hidden = minus.hidden = n === 0; updateBar(); };
-        el.querySelector('.plus').onclick = () => { cart[m.name] = Math.min(50, (cart[m.name] || 0) + 1); sync(); };
-        minus.onclick = () => { cart[m.name] = Math.max(0, (cart[m.name] || 0) - 1); if (!cart[m.name]) delete cart[m.name]; sync(); };
+        (window._SY[m.name] = window._SY[m.name] || []).push(sync);
+        const all = () => window._SY[m.name].forEach(fn => fn());
+        el.querySelector('.plus').onclick = () => { cart[m.name] = Math.min(50, (cart[m.name] || 0) + 1); all(); };
+        minus.onclick = () => { cart[m.name] = Math.max(0, (cart[m.name] || 0) - 1); if (!cart[m.name]) delete cart[m.name]; all(); };
         sync();
         wrap.appendChild(el);
       });
