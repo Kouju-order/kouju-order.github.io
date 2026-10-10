@@ -357,6 +357,13 @@
       const at = mm.findIndex(x => x.cat === BOARD_DUP[m.name]);
       if (at >= 0) mm.splice(at, 0, Object.assign({}, m, { cat: BOARD_DUP[m.name], board: true }));
     });
+    // 人気No.1：印を付けて、そのカテゴリーの一番上に出す
+    const POP = new Set(['金ギョーザ（にんにく有り） 5個', '金ギョーザ（にんにく有り） 6個', '公珠鶏肉雲呑 9個', '公珠鶏肉雲呑 小5個', 'スペシャル麺（雲呑＆チャーシュー麺）', 'きんとうん炒飯', '香港焼きソバ', '赤麻婆豆腐（赤唐辛子・山椒・花椒）', '正宗小籠包 3個', '正宗小籠包 4個', '口水鶏（ヨダレ鶏）', '杏仁豆腐', '生ビール 中ジョッキ 360ml', '生レモンサワー', '紹興酒3年 グラス 燗', '紹興酒3年 グラス 常温', '紹興酒3年 グラス ロック', '珍珠奶茶（タピオカミルクティー）']);
+    if (!TAKEOUT) mm.filter(x => POP.has(x.name) && !x.board).reverse().forEach(p => {
+      const idx = mm.indexOf(p); mm.splice(idx, 1);
+      const first = mm.findIndex(x => x.cat === p.cat);
+      mm.splice(first < 0 ? idx : first, 0, Object.assign({}, p, { pop: true }));
+    });
     window._SY = {};
     if (!mm.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
@@ -392,6 +399,7 @@
         el.querySelector('.plus').setAttribute('aria-label', T('more'));
         const shown = N(m.name);
         el.querySelector('.name').textContent = shown;
+        if (m.pop) { const pb = document.createElement('span'); pb.textContent = '👑' + (({ en: 'No.1 Popular', zhs: '人气第一', zht: '人氣第一' })[lang] || '人気No.1'); pb.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#c0281c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(pb); }
         if (m.board) { const bt = document.createElement('span'); bt.textContent = ({ en: 'Chalkboard', zhs: '黑板菜单', zht: '黑板菜單' })[lang] || '黒板メニュー'; bt.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#2f3b33;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(bt); }
         { const jn = (JDISP[m.name] || m.name).replace(/^【持帰】/, ''); el.querySelector('.ja').textContent = shown !== jn ? jn : ''; }
         const ii = ITEMIMG[m.name] || (ITEMRE.find(([re]) => re.test(m.name)) || [])[1];
