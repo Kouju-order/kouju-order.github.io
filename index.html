@@ -501,12 +501,12 @@
   // ===== ボトル（中瓶・紹興酒ボトル・十年紹興酒）はグラスの数を聞く =====
   const BOTTLE = /中瓶|紹興酒3年 ボトル|十年紹興酒/;
   let glassQty = null;
-  const GT = { ja: ['グラスはいくつお持ちしますか？', '個', 'この数で注文する', 'グラスはいりません'], en: ['How many glasses do you need?', '', 'Order with these glasses', 'No glasses needed'], zhs: ['需要几个杯子？', '个', '确定', '不需要杯子'], zht: ['需要幾個杯子？', '個', '確定', '不需要杯子'] };
+  const GT = { ja: ['グラスはいくつお持ちしますか？', '個', 'この数で注文する', 'いらない', 'グラスなしで注文する'], en: ['How many glasses do you need?', '', 'Order with these glasses', 'None', 'Order without glasses'], zhs: ['需要几个杯子？', '个', '确定', '不需要', '不要杯子，下单'], zht: ['需要幾個杯子？', '個', '確定', '不需要', '不要杯子，下單'] };
   const gt = i => (GT[lang] || GT.ja)[i];
   function askGlass() {
-    let n = 2; const show = () => { $('glNum').textContent = n + gt(1); };
-    $('glTitle').textContent = gt(0); $('glOk').textContent = gt(2); $('glNone').textContent = gt(3); show();
-    $('glMinus').onclick = () => { n = Math.max(1, n - 1); show(); };
+    let n = 0; const show = () => { $('glNum').textContent = n ? n + gt(1) : gt(3); $('glOk').textContent = n ? gt(2) : gt(4); };
+    $('glTitle').textContent = gt(0); $('glNone').hidden = true; show();
+    $('glMinus').onclick = () => { n = Math.max(0, n - 1); show(); };
     $('glPlus').onclick = () => { n = Math.min(20, n + 1); show(); };
     $('glOk').onclick = () => { glassQty = n; $('askGlass').hidden = true; $('send').click(); };
     $('glNone').onclick = () => { glassQty = 0; $('askGlass').hidden = true; $('send').click(); };
