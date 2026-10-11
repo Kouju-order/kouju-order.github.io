@@ -18,7 +18,7 @@
   .langs button.on { background:#fff; color:var(--red); border-color:#fff; }
   header .tbl { margin-top:4px; font-size:14px; opacity:.92; }
   main { padding:4px 16px; }
-  .tabs { position:sticky; top:0; z-index:5; display:grid; grid-template-rows:repeat(2, auto); grid-auto-flow:column; grid-auto-columns:max-content; gap:6px 8px; overflow-x:auto; padding:10px 16px; background:var(--bg); border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .tabs { position:sticky; top:0; z-index:5; display:grid; grid-auto-flow:row; gap:6px 8px; overflow-x:auto; padding:10px 16px; background:var(--bg); border-bottom:1px solid var(--line); -webkit-overflow-scrolling:touch; scrollbar-width:none; }
   .tabs::-webkit-scrollbar { display:none; }
   .tabs[hidden] { display:none; }
   .tabs button { flex:0 0 auto; border:1.5px solid var(--red); background:#fff; color:var(--red); border-radius:999px; padding:6px 12px; font-size:14px; font-weight:700; white-space:nowrap; }
@@ -452,6 +452,8 @@
       b.onclick = () => { $('g' + i).scrollIntoView({ behavior: 'smooth', block: 'start' }); setActive(i); };
       bar.appendChild(b);
     });
+    // 2段：上の段に前半、下の段に後半（左から順に読める）
+    bar.style.gridTemplateColumns = 'repeat(' + Math.ceil(groups.length / 2) + ', max-content)';
     bar.hidden = groups.length < 2;
     setActive(0);
   }
