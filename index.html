@@ -611,7 +611,7 @@
     if (kind === 'crab') {
       { const ci = document.createElement('p'); ci.className = 'deal'; ci.style.margin = '8px 0'; ci.textContent = RS('cInfo'); f.insertBefore(ci, f.firstChild); }
       F.time = row(RS('time'), sel(['11:30', '12:00', '12:30', '13:00', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00']));
-      F.ppl = row(RS('ppl'), sel(nums(1, 12))); F.ppl.value = '2';
+      F.ppl = row(RS('ppl'), sel(['', ...nums(1, 12)])); F.ppl.options[0].textContent = '選んでください'; F.ppl.value = '';
       F.male = row(RS('male'), sel(nums(0, 20))); F.female = row(RS('female'), sel(nums(0, 20)));
     } else {
       // おせち：12/31（木）12:30〜16:00 店頭受取のみ（時間指定なし）。価格は店頭受取の1,000円引き
@@ -630,6 +630,7 @@
       const n = F.name.value.trim(), tel = F.tel.value.replace(/[^0-9０-９+\-－]/g, ''), d = kind === 'crab' ? F.date.value : '2026-12-31';
       if (!n || tel.replace(/[^0-9０-９]/g, '').length < 10 || !d) { $('rsvMsg').textContent = RS('need'); return; }
       const dt = new Date(d + 'T12:00:00'); if (dt.getDay() === 3) { $('rsvMsg').textContent = RS('wed'); return; }
+      if (kind === 'crab' && !F.ppl.value) { $('rsvMsg').textContent = 'ご来店の人数を選んでください。'; return; }
       if (kind === 'crab') {
         // 上海蟹：10/24〜11/15、水曜と10/29はお休み。10/24〜27は残りわずか（メニューシートの「【受付】上海蟹10/24〜27」のチェックを外すと締め切り）
         if (d < CRAB_FROM || d > CRAB_TO) { $('rsvMsg').textContent = '上海蟹のご予約は10/24〜11/15の間でお選びください。'; return; }
@@ -661,8 +662,6 @@
     const sels = $('rsvForm').querySelectorAll('select');
     const setv = (el, v) => { if (el && v && [...el.options].some(o => o.value === v)) el.value = v; };
     setv(sels[2], q.get('m')); setv(sels[3], q.get('f'));
-    const tot = Number(q.get('m') || 0) + Number(q.get('f') || 0);
-    if (tot >= 2) setv(sels[1], String(Math.min(12, Math.max(2, Math.round(tot / 2)))));
   })();
 
   // ===== 注文履歴（この端末で今日注文した分） =====
