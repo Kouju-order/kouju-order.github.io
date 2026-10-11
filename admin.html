@@ -84,11 +84,12 @@
       try { r = await fetch(url, opt); break; } catch (e) { err = e; await new Promise(s => setTimeout(s, 1500)); }
     }
     if (!r) throw err;
-    const j = await r.json();
+    let j;
+    try { j = await r.json(); } catch (e) { if (body && body.action === 'status') return null; throw e; }
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261011-1905'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261011-1945'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -290,6 +291,9 @@
       const b64 = pdf.output('datauristring').split(',')[1];
       // 印刷に回した注文は、その場で提供済みにして画面から消す（戻ってきたときに残っていて二重に印刷しないように）
       const nos = list.map(o => o.no);
+      markPrinted(nos);
+      // 印刷アプリに切り替わっても届くように、ビーコンでも「提供済み」を送る
+      nos.forEach(n => { try { navigator.sendBeacon(API, JSON.stringify({ action: 'status', key: KEY, no: n, status: '完了' })); } catch (e) {} });
       nos.forEach(n => hiding.add(n)); load();
       Promise.all(nos.map(n => call(null, { action: 'status', key: KEY, no: n, status: '完了' }).catch(() => {}))).then(() => { nos.forEach(n => hiding.delete(n)); load(); });
       // ホーム画面のアイコンから開いているときは、印刷後にSafariが開かないよう戻り先を付けない
@@ -330,10 +334,21 @@
       });
   }
 
+  // 印刷した注文の記録（この端末だけ・今日の分）。サーバーが提供済みになるまで隠しておく
+  const PKEY = 'kouju_printed_' + new Date().toDateString();
+  function getPrinted() { try { return JSON.parse(localStorage.getItem(PKEY) || '{}'); } catch (e) { return {}; } }
+  function savePrinted(p) { try { localStorage.setItem(PKEY, JSON.stringify(p)); } catch (e) {} }
+  function markPrinted(nos) { const p = getPrinted(); nos.forEach(n => { p[n] = { at: Date.now(), sent: Date.now() }; }); savePrinted(p); }
+  function unmarkPrinted(no) { const p = getPrinted(); delete p[no]; savePrinted(p); }
   let lastD = null; const forced = new Map();
   function show(d) {
     // 「未対応に戻す」を押した注文は、サーバーの返事を待たずにすぐ上の一覧に戻して見せる
     lastD = d;
+    { const pr = getPrinted(); const now = Date.now();
+      Object.keys(pr).forEach(k => { const n = Number(k); if (!d.pending.some(p => p.no === n)) { delete pr[k]; return; }
+        if (now - (pr[k].sent || 0) > 20000) { pr[k].sent = now; call(null, { action: 'status', key: KEY, no: n, status: '完了' }).catch(() => {}); } });
+      savePrinted(pr);
+      if (Object.keys(pr).length) d = Object.assign({}, d, { pending: d.pending.filter(p => !pr[p.no]) }); }
     [...forced.keys()].forEach(no => { if (d.pending.some(p => p.no === no)) forced.delete(no); });
     if (forced.size) d = Object.assign({}, d, { pending: d.pending.concat([...forced.values()]), done: d.done.filter(o => !forced.has(o.no)) });
     const maxAt = d.pending.reduce((a, o) => Math.max(a, o.at), 0);
@@ -416,7 +431,7 @@
   // 「未対応に戻す」：押したらすぐ「戻しています…」と出し、戻ったら上の一覧に黄色で光らせる
   const restoring = new Set(); let flashNo = null;
   function setStatus(no, status, btn) {
-    btn.disabled = true; btn.textContent = '⏳ 戻しています…';
+    btn.disabled = true; btn.textContent = '⏳ 戻しています…'; unmarkPrinted(no);
     const o = lastD && lastD.done.find(x => x.no === no);
     if (o) { forced.set(no, Object.assign({}, o, { status: '未対応' })); flashNo = no; setTimeout(() => { flashNo = null; }, 8000); window.scrollTo(0, 0); show(lastD); }
     else restoring.add(no);
