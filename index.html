@@ -593,10 +593,10 @@
   // おせち（店頭受取の1,000円引き後の価格・税込）
   const OSE = [['二段重', 25000], ['三段重', 36000], ['五段重', 58000]];
   const OSN = k => (({ en: { '二段重': '2-tier box', '三段重': '3-tier box', '五段重': '5-tier box' }, zhs: { '二段重': '两层', '三段重': '三层', '五段重': '五层' }, zht: { '二段重': '兩層', '三段重': '三層', '五段重': '五層' } })[lang] || {})[k] || k;
-  Object.assign(RT.ja, { oInfo: '12/31（木）12:30〜16:00の間にお店へお越しください（時間のご指定は不要です）。お店でのお受け取りのみ承ります。価格は税込です。', oEarly: '🎁 10/31までのご予約で10年カメ紹興酒プレゼント（2・3段は小カメ／5段は大カメ）', otime: 'お受け取り時間（12/31）', oNeed: '段数と数量を選んでください', total: '合計' });
-  Object.assign(RT.en, { oInfo: 'Pickup at the restaurant only: please come any time between 12:30 and 16:00 on Dec 31 (Thu). No need to choose a time. Prices include tax.', oEarly: '🎁 Reserve by Oct 31 and get a jar of 10-year Shaoxing wine (small jar for 2/3-tier, large for 5-tier).', otime: 'Pickup time (Dec 31)', oNeed: 'Please choose a box and quantity', total: 'Total' });
-  Object.assign(RT.zhs, { oInfo: '仅限到店取货：请于12/31（周四）12:30〜16:00之间到店，无需指定时间。价格为含税价。', oEarly: '🎁 10/31前预约赠送10年坛装绍兴酒（两层・三层小坛／五层大坛）', otime: '取货时间（12/31）', oNeed: '请选择层数和数量', total: '合计' });
-  Object.assign(RT.zht, { oInfo: '僅限到店取貨：請於12/31（週四）12:30〜16:00之間到店，無需指定時間。價格為含稅價。', oEarly: '🎁 10/31前預約贈送10年罈裝紹興酒（兩層・三層小罈／五層大罈）', otime: '取貨時間（12/31）', oNeed: '請選擇層數和數量', total: '合計' });
+  Object.assign(RT.ja, { oInfo: '12/31（木）12:30〜16:00の間にお店へお越しください（時間のご指定は不要です）。お店でのお受け取りのみ承ります。価格は税込です。', oEarly: '🎁 10/31までのご予約で10年カメ紹興酒プレゼント', otime: 'お受け取り時間（12/31）', oNeed: '段数と数量を選んでください', total: '合計' });
+  Object.assign(RT.en, { oInfo: 'Pickup at the restaurant only: please come any time between 12:30 and 16:00 on Dec 31 (Thu). No need to choose a time. Prices include tax.', oEarly: '🎁 Reserve by Oct 31 and get a jar of 10-year Shaoxing wine.', otime: 'Pickup time (Dec 31)', oNeed: 'Please choose a box and quantity', total: 'Total' });
+  Object.assign(RT.zhs, { oInfo: '仅限到店取货：请于12/31（周四）12:30〜16:00之间到店，无需指定时间。价格为含税价。', oEarly: '🎁 10/31前预约赠送10年坛装绍兴酒', otime: '取货时间（12/31）', oNeed: '请选择层数和数量', total: '合计' });
+  Object.assign(RT.zht, { oInfo: '僅限到店取貨：請於12/31（週四）12:30〜16:00之間到店，無需指定時間。價格為含稅價。', oEarly: '🎁 10/31前預約贈送10年罈裝紹興酒', otime: '取貨時間（12/31）', oNeed: '請選擇層數和數量', total: '合計' });
   function openRsv(kind) {
     const f = $('rsvForm'); f.innerHTML = ''; $('rsvMsg').textContent = '';
     const row = (label, el) => { const l = document.createElement('label'); l.style.cssText = 'display:block;margin:8px 0 2px;font-size:14px;font-weight:700'; l.textContent = label; f.append(l, el); return el; };
@@ -632,7 +632,7 @@
       const ds = (dt.getMonth() + 1) + '/' + dt.getDate() + '(' + '日月火水木金土'[dt.getDay()] + ')';
       const note = (kind === 'crab'
         ? '【上海蟹予約】' + n + '様 TEL ' + tel + ' ' + ds + ' ' + F.time.value + ' ' + F.ppl.value + '名 オス' + F.male.value + ' メス' + F.female.value
-        : '【おせち予約】' + n + '様 TEL ' + tel + ' 12/31店頭受取(12:30〜16:00) ' + OSE.filter((o, i) => Number(F.oq[i].value) > 0).map(([k], j) => k + '×' + F.oq[OSE.findIndex(x => x[0] === k)].value).join(' ') + ' 計¥' + OSE.reduce((a, [, pr], i) => a + pr * Number(F.oq[i].value), 0).toLocaleString()) + (F.memo.value.trim() ? ' / ' + F.memo.value.trim() : '');
+        : '【おせち予約】' + n + '様 TEL ' + tel + ' 12/31店頭受取(12:30〜16:00) ' + OSE.filter((o, i) => Number(F.oq[i].value) > 0).map(([k], j) => k + '×' + F.oq[OSE.findIndex(x => x[0] === k)].value).join(' ') + ' 計¥' + OSE.reduce((a, [, pr], i) => a + pr * Number(F.oq[i].value), 0).toLocaleString() + (new Date() < new Date('2026-11-01T00:00:00+09:00') ? (() => { const sm = Number(F.oq[0].value) + Number(F.oq[1].value), lg = Number(F.oq[2].value); return ' 🎁早割 ' + [sm ? '小カメ×' + sm : '', lg ? '大カメ×' + lg : ''].filter(Boolean).join(' '); })() : '')) + (F.memo.value.trim() ? ' / ' + F.memo.value.trim() : '');
       $('rsvSend').disabled = true;
       call(null, { action: 'order', rid: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), table: '予約', items: [{ name: kind === 'crab' ? '【予約】上海蟹' : '【予約】おせち', qty: 1 }], note: note.slice(0, 200) })
         .then(() => { $('rsvMsg').style.color = '#1a7a3a'; $('rsvMsg').textContent = RS('ok'); })
