@@ -389,6 +389,16 @@
       if (ai < 0 || bi < 0) return;
       const b = mm.splice(bi, 1)[0]; mm.splice(mm.findIndex(x => x.name === a && x.pop) + 1, 0, b);
     });
+    // 麺類は紙のメニューと同じく「醤油」「塩」「その他」に分けて並べる
+    const NSUB = [['醤油', ['ラーメン', '叉焼麺（チャーシュー麺）', '公珠雲呑麺（鶏肉のワンタン麺）', 'スペシャル麺（雲呑＆チャーシュー麺）', '浅蜊醤油麺（アサリのガーリック麺）', '秘製牛腩湯麺（牛バラあんかけ麺）', '叉焼葱油麺（チャーシューネギそば）']],
+      ['塩', ['素塩麺（ネギだけのシンプル麺）', '塩ラーメン', '鶏とザーサイのピリ辛塩麺', '黄金蒜油麺（ガーリック＆レモン）', '海老ワンタン麺', 'トマトとチキンのあっさり塩スープ麺', '超スペシャル麺（海老ワンタンとチャーシュー）', '牛肚葱油麺（牛モツ麺）']],
+      ['その他', ['酸辣湯麺（サンラータン麺）', '貴州牛肉麺', '濃厚担担麺（タンタン麺）', '番茄浅蜊麺（トマトスープあさり麺）', '鮮奶番茄浅蜊麺（トマトクリームスープ麺）']]];
+    const nsubOf = m => m.board ? 'board' : /^【/.test(m.name) ? 'add' : ((NSUB.find(([, l]) => l.includes(m.name)) || [])[0] || 'etc');
+    { const idx = []; mm.forEach((x, i) => { if (x.cat === '麺類') idx.push(i); });
+      const items = idx.map(i => mm[i]);
+      const ord = ['醤油', '塩', 'その他', 'etc', 'board', 'add'].map(k => items.filter(x => nsubOf(x) === k)).flat();
+      if (ord.length === items.length) idx.forEach((i, j) => { mm[i] = ord[j]; }); }
+    const NSUBL = { '醤油': ['醤油', 'Soy sauce', '酱油', '醬油', '#8a4b1c'], '塩': ['塩', 'Salt', '盐味', '鹽味', '#1a6fc0'], 'その他': ['その他', 'Others', '其他', '其他', '#c0281c'], 'board': ['黒板メニュー', 'Chalkboard', '黑板菜单', '黑板菜單', '#2f3b33'], 'add': ['麺に追加', 'Add-ons', '加料', '加料', '#777'] };
     window._SY = {};
     if (!mm.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
@@ -414,8 +424,9 @@
       }
       if (cat !== gname) { const h = document.createElement('h2'); h.textContent = C(cat); wrap.appendChild(h); }
       if (CATNOTE[cat] && cat !== '健康ドリンク') { const p = document.createElement('p'); p.className = 'deal'; p.textContent = T(CATNOTE[cat]); wrap.appendChild(p); }
-      let toNote = false;
+      let toNote = false, curSub = null;
       mm.filter(m => m.cat === cat).forEach(m => {
+        if (cat === '麺類') { const sb = nsubOf(m); if (sb !== curSub) { curSub = sb; const L = NSUBL[sb]; if (L) { const h = document.createElement('div'); h.textContent = L[({ en: 1, zhs: 2, zht: 3 })[lang] || 0]; h.style.cssText = 'display:inline-block;margin:16px 0 4px;padding:3px 12px;border-radius:5px;color:#fff;font-weight:700;font-size:15px;background:' + L[4]; wrap.appendChild(h); } } }
         if (cat === '健康ドリンク' && !toNote && /【お持ち帰り】/.test(m.name)) { toNote = true; const p = document.createElement('p'); p.className = 'deal'; p.style.marginTop = '16px'; p.textContent = T('healthHome'); wrap.appendChild(p); }
         const el = document.createElement('div'); el.className = 'item';
         el.innerHTML = '<div class="info"><div class="name"></div><div class="ja" lang="ja"></div><div class="price"></div></div>' +
