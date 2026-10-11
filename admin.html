@@ -86,7 +86,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261011-0905'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261011-1538'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -191,7 +191,7 @@
     });
     if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
-    if (part !== 'drink') wrap('合計 ' + yen(o.total), 26, false);
+    if (part !== 'drink' && String(o.table) !== '予約') wrap('合計 ' + yen(o.total), 26, false);
     const TOPM = 120; // 伝票ホルダーに挟むための上の余白（約15mm）
     const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * (l[6] || 1.35), 0);
     c.width = W; c.height = Math.ceil(H);
@@ -352,7 +352,7 @@
       c.querySelector('.sum').textContent = yen(o.total);
       c.querySelector('.doneBtn').onclick = e => doneNow(o.no, c, e.currentTarget);
       c.querySelector('.print').onclick = () => printSlip(o);
-      if (isCall(o)) { c.classList.add('call'); c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
+      if (isCall(o)) { c.classList.add('call'); if (!/【予約】/.test(o.items)) c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
       p.appendChild(c);
     });
 
