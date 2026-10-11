@@ -229,7 +229,7 @@
     Object.entries(v || {}).forEach(([a, b]) => { s = s.split('{' + a + '}').join(b); });
     return s;
   };
-  const JDISP = { 'ライス 小碗': 'ライス小', 'ライス 御碗': 'ライス中', 'ライス 大盛': 'ライス大' };
+  const JDISP = { 'ライス 小碗': 'ライス小', 'ライス 御碗': 'ライス中', 'ライス 大盛': 'ライス大', 'スペシャル麺（雲呑＆チャーシュー麺）': 'スペシャル麺（鶏肉ワンタン＆チャーシュー）', '超スペシャル麺（海老ワンタンとチャーシュー）': '超スペシャル麺（エビワンタン＆チャーシュー）' };
   const N = name => ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || (lang === 'ja' && JDISP[name]) || name).replace(/^【持帰】/, '');
   const XC = { 'テイクアウト 冷凍': { ja: '冷凍（ご家庭用）', en: 'Frozen (to cook at home)', zhs: '冷冻（家庭用）', zht: '冷凍（家庭用）' }, '季節料理のご予約': { en: 'Seasonal Specialties (Reservation)', zhs: '季节料理预约', zht: '季節料理預約' }, 'テイクアウト': { en: 'Takeout', zhs: '外带', zht: '外帶' } };
   const C = cat => (XC[cat] && XC[cat][lang]) || (I.cats[cat] && I.cats[cat][lang]) || cat;
