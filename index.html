@@ -195,6 +195,8 @@
   const STAFF = new URLSearchParams(location.search).get('staff') === '1';
   const TAKEOUT = new URLSearchParams(location.search).get('takeout') === '1';
   let toInfo = '', toTel = '';
+  // 店内のお客様が店内メニューからテイクアウトを開いた場合（seat=卓番号）：名前・電話・時間は聞かない
+  const SEAT = TAKEOUT ? (new URLSearchParams(location.search).get('seat') || '').slice(0, 6) : '';
   // 予約のお客様の事前注文（table=8）：お名前だけ入れてもらう
   const RESV = !TAKEOUT && !STAFF && (new URLSearchParams(location.search).get('table') || '') === '8';
   let rvName = '';
@@ -294,6 +296,10 @@
       $('tblLabel').textContent = T('toLabel', { t: toInfo });
       $('askTo').hidden = true;
     };
+    if (SEAT) {
+      toInfo = SEAT + '番テーブル'; $('askTo').hidden = true;
+      $('tblLabel').textContent = T('toLabel', { t: toInfo }); $('tblLabel').onclick = null;
+    }
   }
   if (RESV) {
     $('tblLabel').textContent = 'ご予約：—';
@@ -445,7 +451,7 @@
         const note = s => { const p = document.createElement('p'); p.className = 'deal'; p.textContent = s; sec.appendChild(p); };
         const mk = (label, fn) => { const b = document.createElement('button'); b.className = 'btn'; b.style.margin = '8px 0'; b.textContent = label; b.onclick = fn; sec.appendChild(b); };
         if (kind === 'rsv') { note(RS('intro')); mk('🦀 ' + RS('crab'), () => openRsv('crab')); mk('🎍 ' + RS('osechi'), () => openRsv('osechi')); }
-        else { note(RS('toIntro')); mk('🥡 ' + RS('toBtn'), () => { window.open(location.pathname + '?takeout=1', '_blank'); }); }
+        else { note(RS('toIntro')); mk('🥡 ' + RS('toBtn'), () => { window.open(location.pathname + '?takeout=1' + (table && !RESV ? '&seat=' + encodeURIComponent(table) : ''), '_blank'); }); }
         root.appendChild(sec); usedGroups.push(gname);
       });
     }
@@ -527,7 +533,7 @@
     rid = rid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
     // お店側（iPad・メール）には日本語の商品名で届く。外国語のお客様は備考の先頭に言語を付ける
     const tag = T('noteTag');
-    const note = (TAKEOUT ? '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel : '') + (RESV ? '【ご予約】' + rvName + '様' : '') + (tag ? '【' + tag + '】' : '');
+    const note = (TAKEOUT ? (SEAT ? '【お持ち帰り】店内' + SEAT + '番テーブル お帰りの際にお渡し' : '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel) : '') + (RESV ? '【ご予約】' + rvName + '様' : '') + (tag ? '【' + tag + '】' : '');
     const sent = cartItems();
     call(null, { action: 'order', rid, table, items: withGlass(cartItems().map(i => ({ name: i.name, qty: i.qty }))), note })
       .then(r => {
