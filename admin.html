@@ -86,7 +86,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261011-1603'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261011-1835'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -108,6 +108,8 @@
     chk(); setInterval(chk, 60000);
   }
   $('go').onclick = () => { startAudio(); begin(); };
+  // 印刷アプリなどから戻ってきたら、すぐ最新の一覧にする
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && $('start').hidden) load(); });
   if (new URLSearchParams(location.search).get('resume')) {
     // 印刷できたら、その注文を提供済みにしてから一覧を表示する
     const pn = new URLSearchParams(location.search).get('printed');
@@ -284,9 +286,15 @@
       });
       });
       const b64 = pdf.output('datauristring').split(',')[1];
+      // 印刷に回した注文は、その場で提供済みにして画面から消す（戻ってきたときに残っていて二重に印刷しないように）
+      const nos = list.map(o => o.no);
+      nos.forEach(n => hiding.add(n)); load();
+      Promise.all(nos.map(n => call(null, { action: 'status', key: KEY, no: n, status: '完了' }).catch(() => {}))).then(() => { nos.forEach(n => hiding.delete(n)); load(); });
+      // ホーム画面のアイコンから開いているときは、印刷後にSafariが開かないよう戻り先を付けない
+      const STANDALONE = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
       const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now();
       location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
-        + '&CallbackSuccess=' + encodeURIComponent(back + '&printed=' + encodeURIComponent(list.map(o => o.no).join(','))) + '&CallbackFail=' + encodeURIComponent(back)
+        + (STANDALONE ? '' : '&CallbackSuccess=' + encodeURIComponent(back + '&printed=' + encodeURIComponent(nos.join(','))) + '&CallbackFail=' + encodeURIComponent(back))
         + '&Data=' + encodeURIComponent(b64);
     } catch (e) {
       alert('伝票を作れませんでした：' + e.message);
