@@ -375,6 +375,13 @@
       const first = mm.findIndex(x => x.cat === p.cat);
       mm.splice(first < 0 ? idx : first, 0, Object.assign({}, p, { pop: true }));
     });
+    // 人気No.1のすぐ次に並べたい品
+    const POP_NEXT = { '生レモンスカッシュ': '生グレープフルーツスカッシュ' };
+    Object.keys(POP_NEXT).forEach(a => {
+      const ai = mm.findIndex(x => x.name === a && x.pop); const bi = mm.findIndex(x => x.name === POP_NEXT[a] && !x.board);
+      if (ai < 0 || bi < 0) return;
+      const b = mm.splice(bi, 1)[0]; mm.splice(mm.findIndex(x => x.name === a && x.pop) + 1, 0, b);
+    });
     window._SY = {};
     if (!mm.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
