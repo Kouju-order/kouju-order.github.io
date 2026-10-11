@@ -86,7 +86,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261011-1538'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261011-1603'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -189,7 +189,18 @@
       rows.forEach((r, i) => lines.push(['@', px, true, i ? ind : 0, i === rows.length - 1 ? q : 0, r, i < rows.length - 1 ? 1.08 : 1.35]));
       lines.push(['', 34, false]);
     });
-    if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
+    // 上海蟹の予約は、名前・日時・数を見やすく並べ、匹数は白抜きにする（グラム数と見間違えないように）
+    const cm = String(o.table) === '予約' && String(o.note || '').match(/^【上海蟹予約】(.+?)様 TEL (\S+) (\S+) (\S+) (\d+)名 (.*?) 計(¥[\d,]+)(?: \/ ([\s\S]*))?$/);
+    if (cm) {
+      lines.push(['', 8, false]);
+      wrap(cm[1] + ' 様', 34, true); wrap('TEL ' + cm[2], 26, false);
+      wrap(cm[3] + ' ' + cm[4] + '　' + cm[5] + '名', 34, true);
+      lines.push(['', 10, false]);
+      cm[6].split(' ').filter(Boolean).forEach(t => { const k = t.match(/^(.*?)×(\d+)$/); if (k) lines.push(['@', 36, true, 0, 0, [{ t: '・' + k[1] + ' ', hl: false }, { t: k[2] + '匹', hl: true }], 1.6]); else wrap(t, 30, true); });
+      lines.push(['', 6, false]);
+      wrap('合計 ' + cm[7] + '（税込）', 26, false);
+      if (cm[8]) wrap('ご要望：' + cm[8], 26, true);
+    } else if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
     if (part !== 'drink' && String(o.table) !== '予約') wrap('合計 ' + yen(o.total), 26, false);
     const TOPM = 120; // 伝票ホルダーに挟むための上の余白（約15mm）
