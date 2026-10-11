@@ -241,7 +241,7 @@
   // 名前を変えた品の英語・中国語も合わせる
   { const TRX = { '酸辣雲呑 9個': { en: 'Hot & Sour Chicken Wonton Soup (9 pcs)', zhs: '酸辣鸡肉云吞 9个', zht: '酸辣雞肉雲吞 9個' }, '酸辣雲呑 小5個': { en: 'Hot & Sour Chicken Wonton Soup, small (5 pcs)', zhs: '酸辣鸡肉云吞 小份5个', zht: '酸辣雞肉雲吞 小份5個' },
       '鶏山椒雲呑 9個': { en: 'Chicken & Sichuan Pepper Wonton Soup (9 pcs)', zhs: '鸡肉花椒云吞 9个', zht: '雞肉花椒雲吞 9個' }, '鶏山椒雲呑 小5個': { en: 'Chicken & Sichuan Pepper Wonton Soup, small (5 pcs)', zhs: '鸡肉花椒云吞 小份5个', zht: '雞肉花椒雲吞 小份5個' } };
-    if (window.I && I.items) Object.keys(TRX).forEach(k => { I.items[k] = Object.assign({}, I.items[k], TRX[k]); }); }
+    if (typeof I !== 'undefined' && I.items) Object.keys(TRX).forEach(k => { I.items[k] = Object.assign({}, I.items[k], TRX[k]); }); }
   const N = name => ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || (lang === 'ja' && JDISP[name]) || name).replace(/^【持帰】/, '');
   const XC = { '雲呑': { ja: 'ワンタン' }, '揚げ雲呑': { ja: '揚げワンタン' }, 'テイクアウト 冷凍': { ja: '冷凍（ご家庭用）', en: 'Frozen (to cook at home)', zhs: '冷冻（家庭用）', zht: '冷凍（家庭用）' }, '季節料理のご予約': { en: 'Seasonal Specialties (Reservation)', zhs: '季节料理预约', zht: '季節料理預約' }, 'テイクアウト': { en: 'Takeout', zhs: '外带', zht: '外帶' } };
   const C = cat => (XC[cat] && XC[cat][lang]) || (I.cats[cat] && I.cats[cat][lang]) || cat;
