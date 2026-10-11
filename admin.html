@@ -86,7 +86,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261010-2215'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261011-0905'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -162,7 +162,7 @@
     if (part === 'food') wrap('■ 料理', 34, true);
     lines.push(['—', 14, false]);
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
-    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ)/;
+    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
     (part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
       // 「＋雲呑3」など麺への追加は、前の料理にくっつけて1皿に見せる
@@ -173,7 +173,7 @@
       }
       const px = 42; g.font = font(px, true);
       const m = raw.match(/^(.*?)\s×\s(\d+)$/);
-      const name = (isAdd ? '　' : '・') + (m ? m[1] : raw).trim(), q = m ? Number(m[2]) : 0;
+      const name = (isAdd ? '　' : '・') + (m ? m[1] : raw).trim().replace(/^持\)/, '持 '), q = m ? Number(m[2]) : 0;
       const ind = g.measureText('・').width;
       const segs = name.split(HL).map((t, i) => ({ t, hl: i % 2 === 1 })).filter(s => s.t);
       const rows = [[]]; let wsum = 0;
@@ -219,7 +219,7 @@
   // 同じテーブルのまだ印刷していない注文は、1枚の伝票にまとめる（持帰・8番の予約は別のお客様なのでまとめない）
   let curPend = [];
   // お客様からの呼び出し（店員・取り皿・お水）は印刷しない
-  const isCall = o => { const l = String(o.items || '').split('\n').filter(Boolean); return l.length > 0 && l.every(x => /^【呼出】/.test(x)); };
+  const isCall = o => { const l = String(o.items || '').split('\n').filter(Boolean); return l.length > 0 && l.every(x => /^【(呼出|予約)】/.test(x)); };
   const NOMERGE = t => t === '持帰' || t === '8';
   function sumLines(arr) {
     const s = arr.filter(Boolean).join('\n');
@@ -334,9 +334,9 @@
         if (!raw.trim()) return;
         const m = raw.match(/^(.*?)\s×\s(\d+)$/);
         const row = document.createElement('div'); row.className = 'it';
-        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ)/;
+        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
         row.appendChild(document.createTextNode('・'));
-        (m ? m[1] : raw).trim().split(HL).forEach((t, i) => {
+        (m ? m[1] : raw).trim().replace(/^持\)/, '持 ').split(HL).forEach((t, i) => {
           if (!t) return;
           if (i % 2 === 1) { const sp = document.createElement('span'); sp.className = 'st'; sp.textContent = t; row.appendChild(sp); }
           else row.appendChild(document.createTextNode(t));
@@ -352,7 +352,7 @@
       c.querySelector('.sum').textContent = yen(o.total);
       c.querySelector('.doneBtn').onclick = e => doneNow(o.no, c, e.currentTarget);
       c.querySelector('.print').onclick = () => printSlip(o);
-      if (isCall(o)) { c.classList.add('call'); c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = '🙋 呼び出し'; }
+      if (isCall(o)) { c.classList.add('call'); c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
       p.appendChild(c);
     });
 
