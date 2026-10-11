@@ -478,7 +478,7 @@
       bar.appendChild(b);
     });
     // 2段：上の段に前半、下の段に後半（左から順に読める）
-    bar.style.gridTemplateColumns = 'repeat(' + Math.ceil(groups.length / 2) + ', max-content)';
+    bar.style.gridTemplateColumns = 'repeat(' + Math.ceil(groups.length / 3) + ', max-content)';
     bar.hidden = groups.length < 2;
     setActive(0);
   }
