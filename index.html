@@ -646,6 +646,7 @@
   (function () {
     const q = new URLSearchParams(location.search);
     if (q.get('rsv') !== 'crab') return;
+    $('askTable').hidden = true;
     openRsv('crab');
     const sels = $('rsvForm').querySelectorAll('select');
     const setv = (el, v) => { if (el && v && [...el.options].some(o => o.value === v)) el.value = v; };
