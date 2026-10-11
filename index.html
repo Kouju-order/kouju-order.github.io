@@ -593,8 +593,8 @@
   function markGlass(t) { try { const today = glassKey('').slice(0, glassKey('').indexOf('|')); const a = (localStorage.getItem('kouju_glass') || '').split(',').filter(x => x && x.indexOf(today + '|') === 0); a.push(glassKey(t)); localStorage.setItem('kouju_glass', a.join(',')); } catch (e) {} }
   function pendingTypes() { const its = cartItems(); return GTYPES.filter(([t, re]) => its.some(i => re.test(i.name)) && !(glassQty && t in glassQty)); }
   function askGlass(type) {
-    // 紹興酒（甕10年・3年ボトル）は最初から1個にしておく。ビールは「いらない」から
-    let n = type === 'sho' ? 1 : 0; const show = () => { $('glNum').textContent = n ? n + gt('u') : gt('none'); $('glOk').textContent = n ? gt('ok') : gt('okNone'); };
+    // グラスは最初から1個にしておく（瓶ビールも紹興酒も）
+    let n = 1; const show = () => { $('glNum').textContent = n ? n + gt('u') : gt('none'); $('glOk').textContent = n ? gt('ok') : gt('okNone'); };
     $('glTitle').textContent = gt(type); $('glNone').hidden = true; show();
     $('glMinus').onclick = () => { n = Math.max(0, n - 1); show(); };
     $('glPlus').onclick = () => { n = Math.min(20, n + 1); show(); };
