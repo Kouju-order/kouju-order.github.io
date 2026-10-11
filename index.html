@@ -642,6 +642,17 @@
     $('rsvSheet').hidden = false;
   }
   $('rsvClose').onclick = () => { $('rsvSheet').hidden = true; };
+  // 上海蟹のご案内リンク（?rsv=crab&m=オス数&f=メス数）：予約フォームを開いて数を入れておく
+  (function () {
+    const q = new URLSearchParams(location.search);
+    if (q.get('rsv') !== 'crab') return;
+    openRsv('crab');
+    const sels = $('rsvForm').querySelectorAll('select');
+    const setv = (el, v) => { if (el && v && [...el.options].some(o => o.value === v)) el.value = v; };
+    setv(sels[2], q.get('m')); setv(sels[3], q.get('f'));
+    const tot = Number(q.get('m') || 0) + Number(q.get('f') || 0);
+    if (tot >= 2) setv(sels[1], String(Math.min(12, Math.max(2, Math.round(tot / 2)))));
+  })();
 
   // ===== 注文履歴（この端末で今日注文した分） =====
   const HT = { ja: ['🧾 注文履歴', '注文履歴', '合計', 'この端末から本日ご注文いただいた内容です', '閉じる'], en: ['🧾 My orders', 'Your orders today', 'Total', 'Orders placed from this phone today', 'Close'], zhs: ['🧾 点单记录', '今日点单记录', '合计', '本手机今天的点单', '关闭'], zht: ['🧾 點單紀錄', '今日點單紀錄', '合計', '本手機今天的點單', '關閉'] };
