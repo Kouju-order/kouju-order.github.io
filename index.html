@@ -615,6 +615,9 @@
     if (kind === 'crab') {
       { const ci = document.createElement('p'); ci.className = 'deal'; ci.style.margin = '8px 0'; ci.textContent = RS('cInfo'); f.insertBefore(ci, f.firstChild); }
       F.time = row(RS('time'), sel(['11:30', '12:00', '12:30', '13:00', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00']));
+      // 満席の日時：メニューシートに「【満席】2026-10-24 18:00」「【満席】2026-10-24 夜」「【満席】2026-10-24」の行を入れると選べなくなる
+      F.isFull = (d, t) => { const full = menu.filter(m => /^【満席】/.test(m.name)).map(m => m.name.replace(/^【満席】/, '').trim()); return full.includes(d) || full.includes(d + ' ' + t) || full.includes(d + ' ' + (t < '17:00' ? '昼' : '夜')); };
+      F.date.onchange = () => { const d = F.date.value; [...F.time.options].forEach(o => { const x = !!d && F.isFull(d, o.value); o.disabled = x; o.textContent = o.value + (x ? '（満席）' : ''); }); const cur = F.time.selectedOptions[0]; if (cur && cur.disabled) { const ok = [...F.time.options].find(o => !o.disabled); if (ok) F.time.value = ok.value; } };
       F.ppl = row(RS('ppl'), sel(['', ...nums(1, 12)])); F.ppl.options[0].textContent = '選んでください'; F.ppl.value = '';
       const hd = (t, sub) => { const h = document.createElement('p'); h.style.cssText = 'margin:14px 0 0;font-weight:700;font-size:15px;border-top:1px solid #ddd;padding-top:10px'; h.textContent = t; if (sub) { const sp = document.createElement('span'); sp.style.cssText = 'display:block;font-weight:400;font-size:13px;color:#7a5a2a'; sp.textContent = sub; h.appendChild(sp); } f.appendChild(h); };
       hd('🦀 大きいサイズ（約220g）', '10/24〜11/15のみ（水曜・10/29はお休み）');
@@ -646,13 +649,17 @@
       if (kind === 'crab') {
         // 上海蟹：10/24〜11/15、水曜と10/29はお休み。10/24〜27は残りわずか（メニューシートの「【受付】上海蟹10/24〜27」のチェックを外すと締め切り）
         const big = Number(F.male.value) + Number(F.female.value);
+        if (F.isFull(d, F.time.value)) { $('rsvMsg').textContent = 'その日時はお席がいっぱいです。別の日にち・お時間をお選びください。'; return; }
         if (!F.crabList().length) { $('rsvMsg').textContent = '上海蟹の数を選んでください。'; return; }
         if (d < CRAB_ALL_FROM || d > CRAB_ALL_TO) { $('rsvMsg').textContent = '上海蟹のご予約は10/15〜12/25の間でお選びください。'; return; }
         if (big && (d < CRAB_FROM || d > CRAB_TO)) { $('rsvMsg').textContent = '大きいサイズ（220g）は10/24〜11/15のみです。日にちを変えるか、通常サイズでお選びください。'; return; }
         if (big && CRAB_OFF.includes(d)) { $('rsvMsg').textContent = '10/29（木）は大きいサイズのご予約を承れません。別の日をお選びください。'; return; }
         if (big && d <= CRAB_EARLY_TO) {
-          if (!menu.some(m => m.name === '【受付】上海蟹10/24〜27')) { $('rsvMsg').textContent = '10/24〜27のご予約は終了しました。10/30以降の日にちでお選びください。'; return; }
-          if (Number(F.male.value) + Number(F.female.value) > 2) { $('rsvMsg').textContent = '10/24〜27は残りわずかのため、オス・メス合わせて2匹までとなります。数を減らすか、10/30以降の日にちでお選びください。'; return; }
+          // 残数はメニューシートの「【残数】大オス10/24〜27」「【残数】大メス10/24〜27」の値段欄
+          const stk = k => { const x = menu.find(m => m.name === '【残数】大' + k + '10/24〜27'); return x ? Number(x.price) || 0 : 0; };
+          const rm = stk('オス'), rf = stk('メス');
+          if (!rm && !rf) { $('rsvMsg').textContent = '10/24〜27の大きいサイズは売り切れました。10/30以降の日にちでお選びください。'; return; }
+          if (Number(F.male.value) > rm || Number(F.female.value) > rf) { $('rsvMsg').textContent = '10/24〜27の大きいサイズは残り オス' + rm + '匹・メス' + rf + '匹です。数を減らすか、10/30以降の日にちでお選びください。'; return; }
         }
       }
       if (kind !== 'crab' && !F.oq.some(s => Number(s.value) > 0)) { $('rsvMsg').textContent = RS('oNeed'); return; }
