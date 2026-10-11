@@ -88,7 +88,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261011-1846'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261011-1850'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -328,7 +328,12 @@
       });
   }
 
+  let lastD = null; const forced = new Map();
   function show(d) {
+    // 「未対応に戻す」を押した注文は、サーバーの返事を待たずにすぐ上の一覧に戻して見せる
+    lastD = d;
+    [...forced.keys()].forEach(no => { if (d.pending.some(p => p.no === no)) forced.delete(no); });
+    if (forced.size) d = Object.assign({}, d, { pending: d.pending.concat([...forced.values()]), done: d.done.filter(o => !forced.has(o.no)) });
     const maxAt = d.pending.reduce((a, o) => Math.max(a, o.at), 0);
     if (loaded && maxAt > lastMax) beep();
     lastMax = Math.max(lastMax, maxAt);
@@ -409,10 +414,13 @@
   // 「未対応に戻す」：押したらすぐ「戻しています…」と出し、戻ったら上の一覧に黄色で光らせる
   const restoring = new Set(); let flashNo = null;
   function setStatus(no, status, btn) {
-    btn.disabled = true; btn.textContent = '⏳ 戻しています…'; restoring.add(no);
+    btn.disabled = true; btn.textContent = '⏳ 戻しています…';
+    const o = lastD && lastD.done.find(x => x.no === no);
+    if (o) { forced.set(no, Object.assign({}, o, { status: '未対応' })); flashNo = no; setTimeout(() => { flashNo = null; }, 8000); window.scrollTo(0, 0); show(lastD); }
+    else restoring.add(no);
     call(null, { action: 'status', key: KEY, no, status })
-      .then(() => { restoring.delete(no); flashNo = no; setTimeout(() => { flashNo = null; }, 6000); window.scrollTo(0, 0); load(); })
-      .catch(e => { restoring.delete(no); btn.disabled = false; btn.textContent = '未対応に戻す'; alert((e && e.message) || '更新できませんでした'); });
+      .then(() => { restoring.delete(no); load(); })
+      .catch(e => { restoring.delete(no); forced.delete(no); if (lastD) show(lastD); alert((e && e.message) || 'No.' + no + ' を戻せませんでした。もう一度押してください'); });
   }
 </script>
 </body>
