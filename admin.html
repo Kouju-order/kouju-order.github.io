@@ -38,6 +38,8 @@
   button.ok { background:#2e7d32; }
   button.print { background:#fff; color:var(--red); border:1.5px solid var(--red); font-size:15px; padding:10px 12px; }
   h2 { font-size:16px; color:var(--muted); margin:28px 0 10px; }
+  button.back { font-size:16px; padding:12px 18px; border:1.5px solid var(--muted); border-radius:10px; min-width:150px; }
+  button.back:disabled { opacity:.8; }
   .done { background:#fff; border-radius:10px; padding:10px 14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--muted); }
   .empty { text-align:center; color:var(--muted); padding:60px 0; font-size:18px; }
   .start { position:fixed; inset:0; background:rgba(35,31,28,.75); display:flex; align-items:center; justify-content:center; z-index:20; }
@@ -86,7 +88,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261011-1835'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261011-1846'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -371,6 +373,7 @@
       c.querySelector('.sum').textContent = yen(o.total);
       c.querySelector('.doneBtn').onclick = e => doneNow(o.no, c, e.currentTarget);
       c.querySelector('.print').onclick = () => printSlip(o);
+      if (o.no === flashNo) { c.style.boxShadow = '0 0 0 5px #f5b400'; c.style.background = '#fff8dc'; }
       if (isCall(o)) { c.classList.add('call'); if (!/【予約】/.test(o.items)) c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
       p.appendChild(c);
     });
@@ -380,7 +383,8 @@
       const r = document.createElement('div'); r.className = 'done';
       const s = document.createElement('span');
       s.textContent = `No.${o.no}　テーブル ${o.table}　${o.time}　${yen(o.total)}`;
-      const b = document.createElement('button'); b.className = 'ghost'; b.textContent = '未対応に戻す';
+      const b = document.createElement('button'); b.className = 'ghost back'; b.textContent = '未対応に戻す';
+      if (restoring.has(o.no)) { b.disabled = true; b.textContent = '⏳ 戻しています…'; }
       b.onclick = () => setStatus(o.no, '未対応', b);
       r.append(s, b); dn.appendChild(r);
     });
@@ -402,11 +406,13 @@
       .then(() => { hiding.delete(no); load(); })
       .catch(e => { hiding.delete(no); alert('No.' + no + ' を提供済みにできませんでした。もう一度押してください'); load(); });
   }
+  // 「未対応に戻す」：押したらすぐ「戻しています…」と出し、戻ったら上の一覧に黄色で光らせる
+  const restoring = new Set(); let flashNo = null;
   function setStatus(no, status, btn) {
-    btn.disabled = true;
+    btn.disabled = true; btn.textContent = '⏳ 戻しています…'; restoring.add(no);
     call(null, { action: 'status', key: KEY, no, status })
-      .then(load)
-      .catch(e => { btn.disabled = false; alert((e && e.message) || '更新できませんでした'); });
+      .then(() => { restoring.delete(no); flashNo = no; setTimeout(() => { flashNo = null; }, 6000); window.scrollTo(0, 0); load(); })
+      .catch(e => { restoring.delete(no); btn.disabled = false; btn.textContent = '未対応に戻す'; alert((e && e.message) || '更新できませんでした'); });
   }
 </script>
 </body>
