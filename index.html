@@ -593,7 +593,7 @@
   // おせち（店頭受取の1,000円引き後の価格・税込）
   const OSE = [['二段重', 25000], ['三段重', 36000], ['五段重', 58000]];
   const OSN = k => (({ en: { '二段重': '2-tier box', '三段重': '3-tier box', '五段重': '5-tier box' }, zhs: { '二段重': '两层', '三段重': '三层', '五段重': '五层' }, zht: { '二段重': '兩層', '三段重': '三層', '五段重': '五層' } })[lang] || {})[k] || k;
-  Object.assign(RT.ja, { cInfo: '上海蟹は店内でのお召し上がりのみです（お持ち帰りはできません）。水曜定休。ご予約がいっぱいの場合は、お店からお電話でご相談させていただきます。', oInfo: '12/31（木）12:30〜16:00の間にお店へお越しください（時間のご指定は不要です）。お店でのお受け取りのみ承ります。価格は税込です。', oEarly: '🎁 10/31までのご予約で10年カメ紹興酒プレゼント', otime: 'お受け取り時間（12/31）', oNeed: '段数と数量を選んでください', total: '合計' });
+  Object.assign(RT.ja, { cInfo: '上海蟹は店内でのお召し上がりのみです（お持ち帰りはできません）。価格は1匹あたり・税込です。水曜定休。ご予約がいっぱいの場合は、お店からお電話でご相談させていただきます。', oInfo: '12/31（木）12:30〜16:00の間にお店へお越しください（時間のご指定は不要です）。お店でのお受け取りのみ承ります。価格は税込です。', oEarly: '🎁 10/31までのご予約で10年カメ紹興酒プレゼント', otime: 'お受け取り時間（12/31）', oNeed: '段数と数量を選んでください', total: '合計' });
   Object.assign(RT.en, { cInfo: 'Shanghai crab is served for dine-in only (no takeout). Closed Wednesdays.', oInfo: 'Pickup at the restaurant only: please come any time between 12:30 and 16:00 on Dec 31 (Thu). No need to choose a time. Prices include tax.', oEarly: '🎁 Reserve by Oct 31 and get a jar of 10-year Shaoxing wine.', otime: 'Pickup time (Dec 31)', oNeed: 'Please choose a box and quantity', total: 'Total' });
   Object.assign(RT.zhs, { cInfo: '大闸蟹仅限店内享用（不可外带）。周三休息。', oInfo: '仅限到店取货：请于12/31（周四）12:30〜16:00之间到店，无需指定时间。价格为含税价。', oEarly: '🎁 10/31前预约赠送10年坛装绍兴酒', otime: '取货时间（12/31）', oNeed: '请选择层数和数量', total: '合计' });
   Object.assign(RT.zht, { cInfo: '大閘蟹僅限店內享用（不可外帶）。週三公休。', oInfo: '僅限到店取貨：請於12/31（週四）12:30〜16:00之間到店，無需指定時間。價格為含稅價。', oEarly: '🎁 10/31前預約贈送10年罈裝紹興酒', otime: '取貨時間（12/31）', oNeed: '請選擇層數和數量', total: '合計' });
@@ -623,7 +623,7 @@
       F.nor = CRAB_NOR.map(([k, pr]) => row(k.replace(/(\d+g)/, ' $1') + '　¥' + pr.toLocaleString(), sel(nums(0, 20))));
       const ctot = document.createElement('p'); ctot.style.cssText = 'font-weight:700;font-size:17px;text-align:right;margin:8px 0 0'; f.appendChild(ctot);
       F.crabList = () => [[CRAB_BIG[0], F.male], [CRAB_BIG[1], F.female], ...CRAB_NOR.map((x, i) => [x, F.nor[i]])].filter(([, el]) => Number(el.value) > 0).map(([[k, pr], el]) => [k, Number(el.value), pr]);
-      F.crabUpd = () => { const t = F.crabList().reduce((a, [, q, pr]) => a + q * pr, 0); ctot.textContent = t ? '合計 ¥' + t.toLocaleString() : ''; };
+      F.crabUpd = () => { const t = F.crabList().reduce((a, [, q, pr]) => a + q * pr, 0); ctot.textContent = t ? '合計 ¥' + t.toLocaleString() + '（税込）' : ''; };
       [F.male, F.female, ...F.nor].forEach(e => { e.onchange = F.crabUpd; });
     } else {
       // おせち：12/31（木）12:30〜16:00 店頭受取のみ（時間指定なし）。価格は店頭受取の1,000円引き
