@@ -177,7 +177,7 @@
 </div>
 
 <script src="i18n.js?v=3"></script>
-<script src="i18n2.js?v=22"></script>
+<script src="i18n2.js?v=23"></script>
 <script>
   const API = document.body.dataset.api;
   async function call(params, body) {
@@ -229,7 +229,7 @@
   };
   const JDISP = { 'ライス 小碗': 'ライス小', 'ライス 御碗': 'ライス中', 'ライス 大盛': 'ライス大' };
   const N = name => ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || (lang === 'ja' && JDISP[name]) || name).replace(/^【持帰】/, '');
-  const XC = { 'ご予約': { en: 'Reservations', zhs: '预约', zht: '預約' }, 'テイクアウト': { en: 'Takeout', zhs: '外带', zht: '外帶' } };
+  const XC = { 'テイクアウト 冷凍': { ja: '冷凍（ご家庭用）', en: 'Frozen (to cook at home)', zhs: '冷冻（家庭用）', zht: '冷凍（家庭用）' }, 'ご予約': { en: 'Reservations', zhs: '预约', zht: '預約' }, 'テイクアウト': { en: 'Takeout', zhs: '外带', zht: '外帶' } };
   const C = cat => (XC[cat] && XC[cat][lang]) || (I.cats[cat] && I.cats[cat][lang]) || cat;
   function applyLang() {
     document.documentElement.lang = LANGS.find(l => l[0] === lang)[2];
@@ -326,6 +326,7 @@
     ['テイクアウト 飯類', ['テイクアウト 飯類']],
     ['テイクアウト 餃子', ['テイクアウト 餃子']],
     ['テイクアウト その他', ['テイクアウト その他']],
+    ['テイクアウト 冷凍', ['テイクアウト 冷凍']],
     ['ランチ', ['ランチ', 'ランチ サイド', 'ランチ限定 お得ドリンク']],
     ['黒板メニュー', ['黒板メニュー', '黒ビール（3種の黒ビールシリーズ）', '白酒（ミニボトル）']],
     ['餃子', ['餃子', '焼餃子', '水餃子']],
@@ -349,7 +350,7 @@
   const TO_DRINK = /ビール|サワー|ハイボール|ウイスキー|焼酎|リキュール|紹興酒|白酒|その他|ドリンク|中国茶/;
   const ITEMIMG = { '香港焼きソバ': 'i_hkyakisoba' };
   const ITEMRE = [[/スペシャルダブル/, 'i_dbl'], [/酸素ドリンク/, 'i_act'], [/ミネラルドリンク/, 'i_min']];
-  const GIMG = { 'テイクアウト 飯類':'gohan', 'テイクアウト 餃子':'gyoza', 'テイクアウト その他':'ippin', 'ランチ':'lunch2', '黒板メニュー':'board', '餃子':'gyoza', 'ワンタン':'wantan', '麺類':'men', 'ご飯類':'gohan', '焼きそば':'yakisoba', '一品料理':'ippin', '点心':'tenshin', '前菜':'zensai', 'デザート':'dessert', '中国茶':'tea', 'サワー':'sour', 'ビール':'beer2', '紹興酒・白酒':'shaoxing', 'ハイボールその他':'highball', 'ソフトドリンク':'soft' };
+  const GIMG = { 'テイクアウト 飯類':'gohan', 'テイクアウト 餃子':'gyoza', 'テイクアウト その他':'ippin', 'テイクアウト 冷凍':'tenshin', 'ランチ':'lunch2', '黒板メニュー':'board', '餃子':'gyoza', 'ワンタン':'wantan', '麺類':'men', 'ご飯類':'gohan', '焼きそば':'yakisoba', '一品料理':'ippin', '点心':'tenshin', '前菜':'zensai', 'デザート':'dessert', '中国茶':'tea', 'サワー':'sour', 'ビール':'beer2', '紹興酒・白酒':'shaoxing', 'ハイボールその他':'highball', 'ソフトドリンク':'soft' };
   const groupOf = cat => { const g = GROUPS.find(([, cs]) => cs.includes(cat)); return g ? g[0] : 'ハイボールその他'; };
 
   function renderMenu() {
