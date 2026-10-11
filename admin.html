@@ -88,7 +88,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261011-1850'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261011-1905'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -317,12 +317,14 @@
   }
 
   function load() {
-    if (busy) return;
+    // 画面が裏に回っているあいだは問い合わせない（サーバーを混ませない）
+    if (busy || document.hidden) return;
     busy = true;
+    const st = $('status'); st.textContent = '🔄 確認中… ' + st.textContent.replace(/^🔄 確認中… /, '');
     call({ api: 'orders', key: KEY })
       .then(d => { busy = false; $('err').hidden = true; show(d); })
       .catch(e => {
-        busy = false;
+        busy = false; st.textContent = st.textContent.replace(/^🔄 確認中… /, '');
         $('err').textContent = (e && e.message) || '読み込みに失敗しました';
         $('err').hidden = false;
       });
