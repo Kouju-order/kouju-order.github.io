@@ -648,6 +648,7 @@
       if (kind === 'crab' && !F.ppl.value) { $('rsvMsg').textContent = 'ご来店の人数を選んでください。'; return; }
       if (kind === 'crab') {
         // 上海蟹：10/24〜11/15、水曜と10/29はお休み。10/24〜27は残りわずか（メニューシートの「【受付】上海蟹10/24〜27」のチェックを外すと締め切り）
+        if (!menu.length) { $('rsvMsg').textContent = '読み込み中です。少し待ってから、もう一度お送りください。'; return; }
         const big = Number(F.male.value) + Number(F.female.value);
         if (F.isFull(d, F.time.value)) { $('rsvMsg').textContent = 'その日時はお席がいっぱいです。別の日にち・お時間をお選びください。'; return; }
         if (!F.crabList().length) { $('rsvMsg').textContent = '上海蟹の数を選んでください。'; return; }
