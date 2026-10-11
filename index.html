@@ -593,11 +593,15 @@
   // おせち（店頭受取の1,000円引き後の価格・税込）
   const OSE = [['二段重', 25000], ['三段重', 36000], ['五段重', 58000]];
   const OSN = k => (({ en: { '二段重': '2-tier box', '三段重': '3-tier box', '五段重': '5-tier box' }, zhs: { '二段重': '两层', '三段重': '三层', '五段重': '五层' }, zht: { '二段重': '兩層', '三段重': '三層', '五段重': '五層' } })[lang] || {})[k] || k;
-  Object.assign(RT.ja, { cInfo: '上海蟹は店内でのお召し上がりのみです（お持ち帰りはできません）。水曜定休。', oInfo: '12/31（木）12:30〜16:00の間にお店へお越しください（時間のご指定は不要です）。お店でのお受け取りのみ承ります。価格は税込です。', oEarly: '🎁 10/31までのご予約で10年カメ紹興酒プレゼント', otime: 'お受け取り時間（12/31）', oNeed: '段数と数量を選んでください', total: '合計' });
+  Object.assign(RT.ja, { cInfo: '上海蟹は店内でのお召し上がりのみです（お持ち帰りはできません）。水曜定休。ご予約がいっぱいの場合は、お店からお電話でご相談させていただきます。', oInfo: '12/31（木）12:30〜16:00の間にお店へお越しください（時間のご指定は不要です）。お店でのお受け取りのみ承ります。価格は税込です。', oEarly: '🎁 10/31までのご予約で10年カメ紹興酒プレゼント', otime: 'お受け取り時間（12/31）', oNeed: '段数と数量を選んでください', total: '合計' });
   Object.assign(RT.en, { cInfo: 'Shanghai crab is served for dine-in only (no takeout). Closed Wednesdays.', oInfo: 'Pickup at the restaurant only: please come any time between 12:30 and 16:00 on Dec 31 (Thu). No need to choose a time. Prices include tax.', oEarly: '🎁 Reserve by Oct 31 and get a jar of 10-year Shaoxing wine.', otime: 'Pickup time (Dec 31)', oNeed: 'Please choose a box and quantity', total: 'Total' });
   Object.assign(RT.zhs, { cInfo: '大闸蟹仅限店内享用（不可外带）。周三休息。', oInfo: '仅限到店取货：请于12/31（周四）12:30〜16:00之间到店，无需指定时间。价格为含税价。', oEarly: '🎁 10/31前预约赠送10年坛装绍兴酒', otime: '取货时间（12/31）', oNeed: '请选择层数和数量', total: '合计' });
   Object.assign(RT.zht, { cInfo: '大閘蟹僅限店內享用（不可外帶）。週三公休。', oInfo: '僅限到店取貨：請於12/31（週四）12:30〜16:00之間到店，無需指定時間。價格為含稅價。', oEarly: '🎁 10/31前預約贈送10年罈裝紹興酒', otime: '取貨時間（12/31）', oNeed: '請選擇層數和數量', total: '合計' });
   const CRAB_FROM = '2026-10-24', CRAB_TO = '2026-11-15', CRAB_EARLY_TO = '2026-10-27', CRAB_OFF = ['2026-10-29'];
+  // 上海蟹：大きいサイズ(220g)は10/24〜11/15のみ。通常サイズは10/15〜12/25（水曜休み）
+  const CRAB_ALL_FROM = '2026-10-15', CRAB_ALL_TO = '2026-12-25';
+  const CRAB_BIG = [['大オス220g', 4800], ['大メス220g', 5400]];
+  const CRAB_NOR = [['オス170g', 4000], ['オス200g', 4400], ['メス150g', 3650]];
   function openRsv(kind) {
     const f = $('rsvForm'); f.innerHTML = ''; $('rsvMsg').textContent = '';
     const row = (label, el) => { const l = document.createElement('label'); l.style.cssText = 'display:block;margin:8px 0 2px;font-size:14px;font-weight:700'; l.textContent = label; f.append(l, el); return el; };
@@ -607,12 +611,20 @@
     const F = {};
     F.name = row(RS('name'), inp('text')); F.name.maxLength = 20;
     F.tel = row(RS('tel'), inp('tel')); F.tel.inputMode = 'tel'; F.tel.maxLength = 15;
-    if (kind === 'crab') { F.date = row(RS('date'), inp('date')); F.date.min = CRAB_FROM; F.date.max = CRAB_TO; }
+    if (kind === 'crab') { F.date = row(RS('date'), inp('date')); F.date.min = CRAB_ALL_FROM; F.date.max = CRAB_ALL_TO; }
     if (kind === 'crab') {
       { const ci = document.createElement('p'); ci.className = 'deal'; ci.style.margin = '8px 0'; ci.textContent = RS('cInfo'); f.insertBefore(ci, f.firstChild); }
       F.time = row(RS('time'), sel(['11:30', '12:00', '12:30', '13:00', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00']));
       F.ppl = row(RS('ppl'), sel(['', ...nums(1, 12)])); F.ppl.options[0].textContent = '選んでください'; F.ppl.value = '';
-      F.male = row(RS('male'), sel(nums(0, 20))); F.female = row(RS('female'), sel(nums(0, 20)));
+      const hd = (t, sub) => { const h = document.createElement('p'); h.style.cssText = 'margin:14px 0 0;font-weight:700;font-size:15px;border-top:1px solid #ddd;padding-top:10px'; h.textContent = t; if (sub) { const sp = document.createElement('span'); sp.style.cssText = 'display:block;font-weight:400;font-size:13px;color:#7a5a2a'; sp.textContent = sub; h.appendChild(sp); } f.appendChild(h); };
+      hd('🦀 大きいサイズ（約220g）', '10/24〜11/15のみ（水曜・10/29はお休み）');
+      F.male = row('オス 220g　¥4,800', sel(nums(0, 20))); F.female = row('メス 220g　¥5,400', sel(nums(0, 20)));
+      hd('🦀 通常サイズ', '10/15〜12/25（水曜定休）');
+      F.nor = CRAB_NOR.map(([k, pr]) => row(k.replace(/(\d+g)/, ' $1') + '　¥' + pr.toLocaleString(), sel(nums(0, 20))));
+      const ctot = document.createElement('p'); ctot.style.cssText = 'font-weight:700;font-size:17px;text-align:right;margin:8px 0 0'; f.appendChild(ctot);
+      F.crabList = () => [[CRAB_BIG[0], F.male], [CRAB_BIG[1], F.female], ...CRAB_NOR.map((x, i) => [x, F.nor[i]])].filter(([, el]) => Number(el.value) > 0).map(([[k, pr], el]) => [k, Number(el.value), pr]);
+      F.crabUpd = () => { const t = F.crabList().reduce((a, [, q, pr]) => a + q * pr, 0); ctot.textContent = t ? '合計 ¥' + t.toLocaleString() : ''; };
+      [F.male, F.female, ...F.nor].forEach(e => { e.onchange = F.crabUpd; });
     } else {
       // おせち：12/31（木）12:30〜16:00 店頭受取のみ（時間指定なし）。価格は店頭受取の1,000円引き
       const info = document.createElement('p'); info.className = 'deal'; info.style.margin = '8px 0';
@@ -633,9 +645,12 @@
       if (kind === 'crab' && !F.ppl.value) { $('rsvMsg').textContent = 'ご来店の人数を選んでください。'; return; }
       if (kind === 'crab') {
         // 上海蟹：10/24〜11/15、水曜と10/29はお休み。10/24〜27は残りわずか（メニューシートの「【受付】上海蟹10/24〜27」のチェックを外すと締め切り）
-        if (d < CRAB_FROM || d > CRAB_TO) { $('rsvMsg').textContent = '上海蟹のご予約は10/24〜11/15の間でお選びください。'; return; }
-        if (CRAB_OFF.includes(d)) { $('rsvMsg').textContent = '10/29（木）は上海蟹のご予約を承れません。別の日をお選びください。'; return; }
-        if (d <= CRAB_EARLY_TO) {
+        const big = Number(F.male.value) + Number(F.female.value);
+        if (!F.crabList().length) { $('rsvMsg').textContent = '上海蟹の数を選んでください。'; return; }
+        if (d < CRAB_ALL_FROM || d > CRAB_ALL_TO) { $('rsvMsg').textContent = '上海蟹のご予約は10/15〜12/25の間でお選びください。'; return; }
+        if (big && (d < CRAB_FROM || d > CRAB_TO)) { $('rsvMsg').textContent = '大きいサイズ（220g）は10/24〜11/15のみです。日にちを変えるか、通常サイズでお選びください。'; return; }
+        if (big && CRAB_OFF.includes(d)) { $('rsvMsg').textContent = '10/29（木）は大きいサイズのご予約を承れません。別の日をお選びください。'; return; }
+        if (big && d <= CRAB_EARLY_TO) {
           if (!menu.some(m => m.name === '【受付】上海蟹10/24〜27')) { $('rsvMsg').textContent = '10/24〜27のご予約は終了しました。10/30以降の日にちでお選びください。'; return; }
           if (Number(F.male.value) + Number(F.female.value) > 2) { $('rsvMsg').textContent = '10/24〜27は残りわずかのため、オス・メス合わせて2匹までとなります。数を減らすか、10/30以降の日にちでお選びください。'; return; }
         }
@@ -643,7 +658,7 @@
       if (kind !== 'crab' && !F.oq.some(s => Number(s.value) > 0)) { $('rsvMsg').textContent = RS('oNeed'); return; }
       const ds = (dt.getMonth() + 1) + '/' + dt.getDate() + '(' + '日月火水木金土'[dt.getDay()] + ')';
       const note = (kind === 'crab'
-        ? '【上海蟹予約】' + n + '様 TEL ' + tel + ' ' + ds + ' ' + F.time.value + ' ' + F.ppl.value + '名 オス' + F.male.value + ' メス' + F.female.value
+        ? '【上海蟹予約】' + n + '様 TEL ' + tel + ' ' + ds + ' ' + F.time.value + ' ' + F.ppl.value + '名 ' + F.crabList().map(([k, q]) => k + '×' + q).join(' ') + ' 計¥' + F.crabList().reduce((a, [, q, pr]) => a + q * pr, 0).toLocaleString()
         : '【おせち予約】' + n + '様 TEL ' + tel + ' 12/31店頭受取(12:30〜16:00) ' + OSE.filter((o, i) => Number(F.oq[i].value) > 0).map(([k], j) => k + '×' + F.oq[OSE.findIndex(x => x[0] === k)].value).join(' ') + ' 計¥' + OSE.reduce((a, [, pr], i) => a + pr * Number(F.oq[i].value), 0).toLocaleString() + (new Date() < new Date('2026-11-01T00:00:00+09:00') ? (() => { const sm = Number(F.oq[0].value) + Number(F.oq[1].value), lg = Number(F.oq[2].value); return ' 🎁早割 ' + [sm ? '小カメ×' + sm : '', lg ? '大カメ×' + lg : ''].filter(Boolean).join(' '); })() : '')) + (F.memo.value.trim() ? ' / ' + F.memo.value.trim() : '');
       $('rsvSend').disabled = true;
       call(null, { action: 'order', rid: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), table: '予約', items: [{ name: kind === 'crab' ? '【予約】上海蟹' : '【予約】おせち', qty: 1 }], note: note.slice(0, 200) })
@@ -662,6 +677,7 @@
     const sels = $('rsvForm').querySelectorAll('select');
     const setv = (el, v) => { if (el && v && [...el.options].some(o => o.value === v)) el.value = v; };
     setv(sels[2], q.get('m')); setv(sels[3], q.get('f'));
+    sels[2].dispatchEvent(new Event('change'));
   })();
 
   // ===== 注文履歴（この端末で今日注文した分） =====
