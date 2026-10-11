@@ -229,7 +229,7 @@
   };
   const JDISP = { 'ライス 小碗': 'ライス小', 'ライス 御碗': 'ライス中', 'ライス 大盛': 'ライス大' };
   const N = name => ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || (lang === 'ja' && JDISP[name]) || name).replace(/^【持帰】/, '');
-  const XC = { 'テイクアウト 冷凍': { ja: '冷凍（ご家庭用）', en: 'Frozen (to cook at home)', zhs: '冷冻（家庭用）', zht: '冷凍（家庭用）' }, 'ご予約': { en: 'Reservations', zhs: '预约', zht: '預約' }, 'テイクアウト': { en: 'Takeout', zhs: '外带', zht: '外帶' } };
+  const XC = { 'テイクアウト 冷凍': { ja: '冷凍（ご家庭用）', en: 'Frozen (to cook at home)', zhs: '冷冻（家庭用）', zht: '冷凍（家庭用）' }, '季節料理のご予約': { en: 'Seasonal Specialties (Reservation)', zhs: '季节料理预约', zht: '季節料理預約' }, 'テイクアウト': { en: 'Takeout', zhs: '外带', zht: '外帶' } };
   const C = cat => (XC[cat] && XC[cat][lang]) || (I.cats[cat] && I.cats[cat][lang]) || cat;
   function applyLang() {
     document.documentElement.lang = LANGS.find(l => l[0] === lang)[2];
@@ -437,7 +437,7 @@
     });
     // ===== 最後に「ご予約（上海蟹・おせち）」と、店内用だけ「テイクアウト」 =====
     if (!STAFF) {
-      const extra = [['ご予約', 'rsv']]; if (!TAKEOUT) extra.push(['テイクアウト', 'to']);
+      const extra = [['季節料理のご予約', 'rsv']]; if (!TAKEOUT) extra.push(['テイクアウト', 'to']);
       extra.forEach(([gname, kind]) => {
         const sec = document.createElement('section'); sec.className = 'group'; sec.id = 'g' + usedGroups.length; sec.dataset.group = gname;
         const hd = document.createElement('div'); hd.className = 'ghd'; const tx = document.createElement('div'); tx.className = 'tx';
