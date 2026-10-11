@@ -411,6 +411,7 @@
       const ord = ['醤油', '塩', 'その他', 'etc', 'board', 'add'].map(k => items.filter(x => nsubOf(x) === k)).flat();
       if (ord.length === items.length) idx.forEach((i, j) => { mm[i] = ord[j]; }); }
     const NSUBL = { '醤油': ['醤油', 'Soy sauce', '酱油', '醬油', '#8a4b1c'], '塩': ['塩', 'Salt', '盐味', '鹽味', '#1a6fc0'], 'その他': ['その他', 'Others', '其他', '其他', '#c0281c'], 'board': ['黒板メニュー', 'Chalkboard', '黑板菜单', '黑板菜單', '#2f3b33'], 'add': ['麺に追加', 'Add-ons', '加料', '加料', '#777'] };
+    const SPICY = new Set(['貴州牛肉麺']);
     window._SY = {};
     if (!mm.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
@@ -448,6 +449,8 @@
         const shown = N(m.name);
         el.querySelector('.name').textContent = shown;
         if (m.pop) { const pb = document.createElement('span'); pb.textContent = '👑' + (({ en: 'No.1 Popular', zhs: '人气第一', zht: '人氣第一' })[lang] || '人気No.1'); pb.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#c0281c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(pb); }
+        // 辛い料理には🌶マーク
+        if (SPICY.has(m.name)) { const sp = document.createElement('span'); sp.textContent = '🌶' + (({ en: 'Spicy', zhs: '辣', zht: '辣' })[lang] || '辛い'); sp.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#e8590c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(sp); }
         if (m.board) { const bt = document.createElement('span'); bt.textContent = ({ en: 'Chalkboard', zhs: '黑板菜单', zht: '黑板菜單' })[lang] || '黒板メニュー'; bt.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#2f3b33;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(bt); }
         { const jn = (JDISP[m.name] || m.name).replace(/^【持帰】/, ''); el.querySelector('.ja').textContent = shown !== jn ? jn : ''; }
         const ii = ITEMIMG[m.name] || (ITEMRE.find(([re]) => re.test(m.name)) || [])[1];
