@@ -58,6 +58,7 @@
   .tchip .s { font-weight:800; }
   .tchip .n { color:var(--muted); font-size:14px; }
   .tchip button { font-size:15px; padding:9px 12px; background:#2e7d32; }
+  .tchip button.bill { background:#fff; color:var(--red); border:1.5px solid var(--red); }
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
@@ -97,7 +98,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261012-1340'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261012-1350'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -174,6 +175,7 @@
     if (part === 'drink') wrap('■ ドリンク', 34, true);
     if (part === 'food') wrap('■ 料理', 34, true);
     if (part === 'gyoza') wrap('■ 餃子', 34, true);
+    if (part === 'bill') wrap('■ お会計', 34, true);
     lines.push(['—', 14, false]);
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
     const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
@@ -214,10 +216,11 @@
       lines.push(['', 6, false]);
       wrap('合計 ' + cm[7] + '（税込）', 26, false);
       if (cm[8]) wrap('ご要望：' + cm[8], 26, true);
-    } else if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
+    } else if (o.note && part !== 'drink' && part !== 'bill') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
     // 伝票が何枚かに分かれるときは、どの伝票にも「何枚目か」と注文全体の合計を出す
-    if (String(o.table) !== '予約') {
+    if (part === 'bill') wrap('合計 ' + yen(o.total), 40, true);
+    else if (String(o.table) !== '予約') {
       if (pn > 1) { wrap('伝票 ' + pg + '/' + pn + '枚', 22, false); wrap('合計（' + pn + '枚分）' + yen(o.total), 30, true); }
       else wrap('合計 ' + yen(o.total), 26, false);
       const tr = tableRun(o);
@@ -316,7 +319,7 @@
     while (hi < all.length - 1 && ok(all[hi], all[hi + 1])) hi++;
     const run = all.slice(lo, hi + 1);
     if (run.length < (min || 2)) return null;
-    return { n: run.length, sum: run.reduce((a, x) => a + Number(x.total || 0), 0) };
+    return { n: run.length, sum: run.reduce((a, x) => a + Number(x.total || 0), 0), run };
   }
   // 餃子は焼き場に回すので、料理の伝票から抜き出して別の伝票にする（「＋」の追加はその前の品と一緒に動かす）
   // 餃子かどうかは、メニューの分類（焼餃子・水餃子・持帰の餃子）で決める。伝票名（金(5)など）は注文の品名と並び順で対応させて覚える
@@ -384,6 +387,23 @@
     }
   }
 
+  // 会計用の伝票：その席の今のお客様の注文（追加分も全部）を1枚にまとめて印刷する。注文の状態は変えない
+  function printBill(t, r) {
+    try {
+      const run = r.run.slice().sort((a, b) => atOf(a) - atOf(b));
+      const o = { table: t, no: run.map(x => x.no).join('・'), time: run[0].time + '〜' + run[run.length - 1].time, total: r.sum,
+        _txt: sumLines(run.map(x => x.slip || shortItems(x.items))) };
+      const c = slipCanvas(o, 'bill', 1, 1); const wmm = 48, hmm = wmm * c.height / c.width;
+      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm], orientation: hmm >= wmm ? 'portrait' : 'landscape' });
+      pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
+      const b64 = pdf.output('datauristring').split(',')[1];
+      const STANDALONE = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+      const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now();
+      location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
+        + (STANDALONE ? '' : '&CallbackSuccess=' + encodeURIComponent(back) + '&CallbackFail=' + encodeURIComponent(back))
+        + '&Data=' + encodeURIComponent(b64);
+    } catch (e) { alert('会計伝票を作れませんでした：' + e.message); }
+  }
   function beep() {
     if (!actx) return;
     [0, 0.25, 0.5].forEach((t, i) => {
@@ -485,9 +505,10 @@
       const nowM = minsOf({ at: Date.now() });
       Object.keys(latest).sort().forEach(t => { const lm = minsOf(latest[t]); if (nowM - lm > gapOf(lm) || (lm >= 960) !== (nowM >= 960)) return; const r = tableRun(latest[t], 1); if (!r) return;
         const ch = document.createElement('div'); ch.className = 'tchip';
-        ch.innerHTML = '<b class="t"></b><span class="s"></span><span class="n"></span><button>会計済み</button>';
+        ch.innerHTML = '<b class="t"></b><span class="s"></span><span class="n"></span><button class="bill">🖨 会計伝票</button><button class="paid">会計済み</button>';
         ch.querySelector('.t').textContent = t; ch.querySelector('.s').textContent = yen(r.sum); ch.querySelector('.n').textContent = '（' + r.n + '回分）';
-        ch.querySelector('button').onclick = () => setPaid(t);
+        ch.querySelector('.paid').onclick = () => setPaid(t);
+        ch.querySelector('.bill').onclick = () => printBill(t, r);
         tw.appendChild(ch); }); }
     const dn = $('done'); dn.innerHTML = '';
     d.done.forEach(o => {
