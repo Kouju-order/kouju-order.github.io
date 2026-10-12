@@ -245,6 +245,9 @@
   // 十年紹興酒は「甕10年紹興酒」と出す（甕で寝かせているのが売り）。伝票・注文の記録は元の名前のまま
   ['250ml', '500ml'].forEach(sz => ['燗', '常温', 'ロック'].forEach(tp => { const k = '十年紹興酒 ' + sz + ' ' + tp; JDISP[k] = '甕10年紹興酒 ' + sz + ' ' + tp;
     if (typeof I !== 'undefined' && I.items && I.items[k]) { const it = I.items[k]; I.items[k] = { en: String(it.en).replace('Shaoxing Wine 10-year', '10-Year Jar-Aged Shaoxing Wine'), zhs: String(it.zhs).replace('十年绍兴酒', '十年坛装绍兴酒'), zht: String(it.zht).replace('十年紹興酒', '十年罈裝紹興酒') }; } }));
+  // 黒板メニューの白酒ミニボトルは、ワンショット（1杯）の値段なので名前にそう書き足す。伝票・注文の記録は元の名前のまま
+  ['紅星二鍋頭', '牛欄山', '江小白', '孔府家酒', '黄鶴楼', '烟台古酿', '老龍口'].forEach(b => { const k = b + '（ミニボトル）'; JDISP[k] = k + ' ワンショット';
+    if (typeof I !== 'undefined' && I.items && I.items[k]) { const it = I.items[k]; I.items[k] = { en: it.en ? it.en + ' (1 shot)' : it.en, zhs: it.zhs ? it.zhs + ' 单杯' : it.zhs, zht: it.zht ? it.zht + ' 單杯' : it.zht }; } });
   const N = name => ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || (lang === 'ja' && JDISP[name]) || name).replace(/^【持帰】/, '');
   const XC = { '雲呑': { ja: 'ワンタン' }, '揚げ雲呑': { ja: '揚げワンタン' }, 'テイクアウト 冷凍': { ja: '冷凍（ご家庭用）', en: 'Frozen (to cook at home)', zhs: '冷冻（家庭用）', zht: '冷凍（家庭用）' }, '季節料理のご予約': { en: 'Seasonal Specialties (Reservation)', zhs: '季节料理预约', zht: '季節料理預約' }, 'テイクアウト': { en: 'Takeout', zhs: '外带', zht: '外帶' } };
   const C = cat => (XC[cat] && XC[cat][lang]) || (I.cats[cat] && I.cats[cat][lang]) || cat;
