@@ -98,7 +98,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261012-1540'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261012-1855'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -293,14 +293,14 @@
   }
   // 同じテーブルの追加注文をたどって、そのお客様の合計を出す
   // お会計が済んだら席の「会計済み」を押す → そこから先の注文は次のお客様として数え直す
-  // （押し忘れに備えて、注文と注文の間が昼は60分・夜は120分を超えたとき、昼(16時前)と夜をまたぐときも区切る。持帰・予約・8番は対象外）
+  // （押し忘れに備えて、注文と注文の間が3時間を超えたとき、昼(16時前)と夜をまたぐときも区切る。持帰・予約・8番は対象外）
   const PAIDKEY = 'kouju_paid_' + new Date().toDateString();
   const getPaid = () => { try { return JSON.parse(localStorage.getItem(PAIDKEY) || '{}'); } catch (e) { return {}; } };
   const paidMem = {};
   const paidAt = t => Math.max(getPaid()[t] || 0, paidMem[t] || 0);
   function setPaid(t) { paidMem[t] = Date.now(); try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p)); } catch (e) {} if (lastD) show(lastD); }
   const atOf = o => o.at || 0;
-  const gapOf = m => m >= 16 * 60 ? 120 : 60;
+  const gapOf = m => 180;
   const minsOf = o => { if (o.at) { const d = new Date(o.at); return d.getHours() * 60 + d.getMinutes(); } const m = String(o.time || '').match(/(\d+):(\d+)/); return m ? Number(m[1]) * 60 + Number(m[2]) : -1; };
   function tableRun(o, min) {
     const t = String(o.table);
@@ -499,7 +499,7 @@
       p.appendChild(c);
     });
 
-    // 席ごとの今のお客様の合計（会計のときに見る）。最後の注文から昼60分・夜120分以内で、会計済みを押していない席を出す
+    // 席ごとの今のお客様の合計（会計のときに見る）。最後の注文から3時間以内で、会計済みを押していない席を出す
     { const tw = $('tables'); tw.innerHTML = ''; const latest = {};
       (lastD.pending || []).concat(lastD.done || []).forEach(x => { const t = String(x.table); if (NOMERGE(t) || t === '予約' || isCall(x)) return; if (!latest[t] || atOf(x) > atOf(latest[t])) latest[t] = x; });
       const nowM = minsOf({ at: Date.now() });
