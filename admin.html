@@ -97,7 +97,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261012-1330'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261012-1340'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -290,13 +290,14 @@
   }
   // 同じテーブルの追加注文をたどって、そのお客様の合計を出す
   // お会計が済んだら席の「会計済み」を押す → そこから先の注文は次のお客様として数え直す
-  // （押し忘れに備えて、注文と注文の間が90分を超えたとき・昼(16時前)と夜をまたぐときも区切る。持帰・予約・8番は対象外）
+  // （押し忘れに備えて、注文と注文の間が昼は60分・夜は120分を超えたとき、昼(16時前)と夜をまたぐときも区切る。持帰・予約・8番は対象外）
   const PAIDKEY = 'kouju_paid_' + new Date().toDateString();
   const getPaid = () => { try { return JSON.parse(localStorage.getItem(PAIDKEY) || '{}'); } catch (e) { return {}; } };
   const paidMem = {};
   const paidAt = t => Math.max(getPaid()[t] || 0, paidMem[t] || 0);
   function setPaid(t) { paidMem[t] = Date.now(); try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p)); } catch (e) {} if (lastD) show(lastD); }
   const atOf = o => o.at || 0;
+  const gapOf = m => m >= 16 * 60 ? 120 : 60;
   const minsOf = o => { if (o.at) { const d = new Date(o.at); return d.getHours() * 60 + d.getMinutes(); } const m = String(o.time || '').match(/(\d+):(\d+)/); return m ? Number(m[1]) * 60 + Number(m[2]) : -1; };
   function tableRun(o, min) {
     const t = String(o.table);
@@ -310,7 +311,7 @@
     if (!idx.length) return null;
     const pm = m => m >= 16 * 60;
     let lo = Math.min(...idx), hi = Math.max(...idx);
-    const ok = (a, b) => minsOf(b) - minsOf(a) <= 90 && pm(minsOf(a)) === pm(minsOf(b));
+    const ok = (a, b) => minsOf(b) - minsOf(a) <= gapOf(minsOf(a)) && pm(minsOf(a)) === pm(minsOf(b));
     while (lo > 0 && ok(all[lo - 1], all[lo])) lo--;
     while (hi < all.length - 1 && ok(all[hi], all[hi + 1])) hi++;
     const run = all.slice(lo, hi + 1);
@@ -478,11 +479,11 @@
       p.appendChild(c);
     });
 
-    // 席ごとの今のお客様の合計（会計のときに見る）。最後の注文から90分以内で、会計済みを押していない席を出す
+    // 席ごとの今のお客様の合計（会計のときに見る）。最後の注文から昼60分・夜120分以内で、会計済みを押していない席を出す
     { const tw = $('tables'); tw.innerHTML = ''; const latest = {};
       (lastD.pending || []).concat(lastD.done || []).forEach(x => { const t = String(x.table); if (NOMERGE(t) || t === '予約' || isCall(x)) return; if (!latest[t] || atOf(x) > atOf(latest[t])) latest[t] = x; });
       const nowM = minsOf({ at: Date.now() });
-      Object.keys(latest).sort().forEach(t => { const lm = minsOf(latest[t]); if (nowM - lm > 90 || (lm >= 960) !== (nowM >= 960)) return; const r = tableRun(latest[t], 1); if (!r) return;
+      Object.keys(latest).sort().forEach(t => { const lm = minsOf(latest[t]); if (nowM - lm > gapOf(lm) || (lm >= 960) !== (nowM >= 960)) return; const r = tableRun(latest[t], 1); if (!r) return;
         const ch = document.createElement('div'); ch.className = 'tchip';
         ch.innerHTML = '<b class="t"></b><span class="s"></span><span class="n"></span><button>会計済み</button>';
         ch.querySelector('.t').textContent = t; ch.querySelector('.s').textContent = yen(r.sum); ch.querySelector('.n').textContent = '（' + r.n + '回分）';
