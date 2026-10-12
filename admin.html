@@ -98,7 +98,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261012-1400'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261012-1540'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -226,7 +226,7 @@
       const tr = tableRun(o);
       if (tr) { wrap('追加分も含めた合計（' + tr.n + '回分）', 22, false); wrap(yen(tr.sum), 34, true); }
     }
-    const TOPM = 120; // 伝票ホルダーに挟むための上の余白（約15mm）
+    const TOPM = part === 'bill' ? 40 : 120; // 伝票ホルダーに挟むための上の余白（約15mm。会計伝票は約5mm）
     const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * (l[6] || 1.35), 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
