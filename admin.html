@@ -89,7 +89,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261012-1310'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261012-1320'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -213,7 +213,7 @@
       if (pn > 1) { wrap('伝票 ' + pg + '/' + pn + '枚', 22, false); wrap('合計（' + pn + '枚分）' + yen(o.total), 30, true); }
       else wrap('合計 ' + yen(o.total), 26, false);
       const tr = tableRun(o);
-      if (tr) wrap('追加分も含めた合計（' + tr.n + '回）' + yen(tr.sum), 30, true);
+      if (tr) { wrap('追加分も含めた合計（' + tr.n + '回分）', 22, false); wrap(yen(tr.sum), 34, true); }
     }
     const TOPM = 120; // 伝票ホルダーに挟むための上の余白（約15mm）
     const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * (l[6] || 1.35), 0);
