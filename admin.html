@@ -98,7 +98,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261012-1915'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-0300'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -219,14 +219,10 @@
     } else if (o.note && part !== 'drink' && part !== 'bill') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
     // 伝票が何枚かに分かれるときは、どの伝票にも「何枚目か」と注文全体の合計を出す
+    // 台所の伝票には金額を出さない（金額は会計伝票で見る）。何枚かに分かれるときは何枚目かだけ出す
     if (part === 'bill') wrap('合計 ' + yen(o.total), 40, true);
-    else if (String(o.table) !== '予約') {
-      if (pn > 1) { wrap('伝票 ' + pg + '/' + pn + '枚', 22, false); wrap('合計（' + pn + '枚分）' + yen(o.total), 30, true); }
-      else wrap('合計 ' + yen(o.total), 26, false);
-      const tr = tableRun(o);
-      if (tr) { wrap('追加分も含めた合計（' + tr.n + '回分）', 22, false); wrap(yen(tr.sum), 34, true); }
-    }
-    const TOPM = part === 'bill' ? 40 : 120; // 伝票ホルダーに挟むための上の余白（約15mm。会計伝票は約5mm）
+    else if (pn > 1) wrap('伝票 ' + pg + '/' + pn + '枚', 22, false);
+    const TOPM = part === 'bill' ? 40 : part === 'gyoza' ? 24 : 120; // 伝票ホルダーに挟むための上の余白（約15mm。会計伝票は約5mm）
     const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * (l[6] || 1.35), 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
@@ -338,15 +334,15 @@
   function splitParts(o) {
     const both = o.slipFood && o.slipDrink;
     const food = both ? o.slipFood : (o.slip || shortItems(o.items));
+    // 餃子は1品ずつ別の伝票（焼き場で1皿ずつ使えるように）
     const gy = [], other = []; let lastG = false;
     String(food).split('\n').forEach(raw => {
       if (!raw.trim()) return;
-      if (/^\s*＋/.test(raw)) { (lastG ? gy : other).push(raw); return; }
-      lastG = GYOZA.test(raw); (lastG ? gy : other).push(raw);
+      if (/^\s*＋/.test(raw)) { if (lastG) gy[gy.length - 1].push(raw); else other.push(raw); return; }
+      lastG = GYOZA.test(raw); if (lastG) gy.push([raw]); else other.push(raw);
     });
     const out = [];
-    if (gy.length && other.length) { out.push(['food', other.join('\n')]); out.push(['gyoza', gy.join('\n')]); }
-    else if (gy.length && both) out.push(['gyoza', gy.join('\n')]);
+    if (gy.length) { if (other.length) out.push(['food', other.join('\n')]); gy.forEach(g => out.push(['gyoza', g.join('\n')])); }
     else out.push([both ? 'food' : null, food]);
     if (both) out.push(['drink', o.slipDrink]);
     return out;
