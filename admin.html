@@ -89,7 +89,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261011-1945'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261012-1310'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -140,7 +140,7 @@
       return s;
     }).join('\n');
   }
-  function slipCanvas(o, part) {
+  function slipCanvas(o, part, pg, pn) {
     const W = 384, pad = 8, MAXW = 368, c = document.createElement('canvas'), g = c.getContext('2d');
     const font = (px, bold) => (bold ? '700 ' : '') + px + 'px "Hiragino Sans","Noto Sans JP",sans-serif';
     const lines = [];
@@ -165,10 +165,11 @@
     wrap('No.' + o.no + '　' + o.time, 20, false);
     if (part === 'drink') wrap('■ ドリンク', 34, true);
     if (part === 'food') wrap('■ 料理', 34, true);
+    if (part === 'gyoza') wrap('■ 餃子', 34, true);
     lines.push(['—', 14, false]);
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
     const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
-    (part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
+    (o._txt != null ? o._txt : part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
       // 「＋雲呑3」など麺への追加は、前の料理にくっつけて1皿に見せる
       const isAdd = /^\s*＋/.test(raw);
@@ -207,7 +208,13 @@
       if (cm[8]) wrap('ご要望：' + cm[8], 26, true);
     } else if (o.note && part !== 'drink') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
-    if (part !== 'drink' && String(o.table) !== '予約') wrap('合計 ' + yen(o.total), 26, false);
+    // 伝票が何枚かに分かれるときは、どの伝票にも「何枚目か」と注文全体の合計を出す
+    if (String(o.table) !== '予約') {
+      if (pn > 1) { wrap('伝票 ' + pg + '/' + pn + '枚', 22, false); wrap('合計（' + pn + '枚分）' + yen(o.total), 30, true); }
+      else wrap('合計 ' + yen(o.total), 26, false);
+      const tr = tableRun(o);
+      if (tr) wrap('追加分も含めた合計（' + tr.n + '回）' + yen(tr.sum), 30, true);
+    }
     const TOPM = 120; // 伝票ホルダーに挟むための上の余白（約15mm）
     const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * (l[6] || 1.35), 0);
     c.width = W; c.height = Math.ceil(H);
@@ -273,15 +280,68 @@
     const same = NOMERGE(String(o.table)) ? [o] : curPend.filter(x => String(x.table) === String(o.table));
     printSlips(same.length ? same : [o]);
   }
+  // 同じテーブルの追加注文をたどって、そのお客様の合計を出す
+  // （注文と注文の間が60分以内、昼(16時前)と夜をまたがない分を同じお客様とみなす。持帰・予約・8番は対象外）
+  const minsOf = o => { if (o.at) { const d = new Date(o.at); return d.getHours() * 60 + d.getMinutes(); } const m = String(o.time || '').match(/(\d+):(\d+)/); return m ? Number(m[1]) * 60 + Number(m[2]) : -1; };
+  function tableRun(o) {
+    const t = String(o.table);
+    if (NOMERGE(t) || t === '予約' || !lastD) return null;
+    const mine = new Set((o._nos || [o.no]).map(String));
+    const seen = {}, all = [];
+    (lastD.pending || []).concat(lastD.done || []).forEach(x => { if (String(x.table) === t && !seen[x.no] && !isCall(x)) { seen[x.no] = 1; all.push(x); } });
+    all.sort((a, b) => minsOf(a) - minsOf(b));
+    const idx = all.map((x, i) => mine.has(String(x.no)) ? i : -1).filter(i => i >= 0);
+    if (!idx.length) return null;
+    const pm = m => m >= 16 * 60;
+    let lo = Math.min(...idx), hi = Math.max(...idx);
+    const ok = (a, b) => minsOf(b) - minsOf(a) <= 60 && pm(minsOf(a)) === pm(minsOf(b));
+    while (lo > 0 && ok(all[lo - 1], all[lo])) lo--;
+    while (hi < all.length - 1 && ok(all[hi], all[hi + 1])) hi++;
+    const run = all.slice(lo, hi + 1);
+    if (run.length < 2) return null;
+    return { n: run.length, sum: run.reduce((a, x) => a + Number(x.total || 0), 0) };
+  }
+  // 餃子は焼き場に回すので、料理の伝票から抜き出して別の伝票にする（「＋」の追加はその前の品と一緒に動かす）
+  // 餃子かどうかは、メニューの分類（焼餃子・水餃子・持帰の餃子）で決める。伝票名（金(5)など）は注文の品名と並び順で対応させて覚える
+  const GYOZA_CATS = ['焼餃子', '水餃子', 'テイクアウト 餃子'];
+  let gyozaNames = null; const gyozaSlips = new Set();
+  call({ api: 'menu' }).then(m => { gyozaNames = new Set((m || []).filter(x => GYOZA_CATS.includes(x.cat)).map(x => x.name)); if (lastD) learnSlips(lastD); }).catch(() => {});
+  const keyOf = l => l.replace(/\s×\s\d+$/, '').trim();
+  function learnSlips(d) {
+    if (!gyozaNames) return;
+    (d.pending || []).concat(d.done || []).forEach(o => {
+      const it = String(o.items || '').split('\n').filter(x => x.trim()), sl = String(o.slip || '').split('\n').filter(x => x.trim());
+      if (it.length !== sl.length) return;
+      it.forEach((x, i) => { if (gyozaNames.has(keyOf(x))) gyozaSlips.add(keyOf(sl[i])); });
+    });
+  }
+  const isGyoza = l => gyozaSlips.has(keyOf(l)) || /餃|ギョーザ/.test(l);
+  const GYOZA = { test: isGyoza };
+  function splitParts(o) {
+    const both = o.slipFood && o.slipDrink;
+    const food = both ? o.slipFood : (o.slip || shortItems(o.items));
+    const gy = [], other = []; let lastG = false;
+    String(food).split('\n').forEach(raw => {
+      if (!raw.trim()) return;
+      if (/^\s*＋/.test(raw)) { (lastG ? gy : other).push(raw); return; }
+      lastG = GYOZA.test(raw); (lastG ? gy : other).push(raw);
+    });
+    const out = [];
+    if (gy.length && other.length) { out.push(['food', other.join('\n')]); out.push(['gyoza', gy.join('\n')]); }
+    else if (gy.length && both) out.push(['gyoza', gy.join('\n')]);
+    else out.push([both ? 'food' : null, food]);
+    if (both) out.push(['drink', o.slipDrink]);
+    return out;
+  }
   // 何件かの伝票を1回でまとめて印刷する
   function printSlips(list) {
     try {
       const wmm = 48; let pdf = null;
       mergeByTable(list).forEach(o => {
-      // 料理とドリンクが両方あるときは2枚に分ける
-      const parts = (o.slipFood && o.slipDrink) ? ['food', 'drink'] : [null];
-      parts.forEach(p => {
-        const c = slipCanvas(o, p); const hmm = wmm * c.height / c.width;
+      // 料理・餃子・ドリンクは別々の伝票にする
+      const parts = splitParts(o);
+      parts.forEach(([p, txt], i) => {
+        const c = slipCanvas(Object.assign({}, o, { _txt: txt }), p, i + 1, parts.length); const hmm = wmm * c.height / c.width;
         const ori = hmm >= wmm ? 'portrait' : 'landscape';
         if (!pdf) pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm], orientation: ori });
         else pdf.addPage([wmm, hmm], ori);
@@ -294,7 +354,7 @@
       markPrinted(nos);
       // 印刷アプリに切り替わっても届くように、ビーコンでも「提供済み」を送る
       nos.forEach(n => { try { navigator.sendBeacon(API, JSON.stringify({ action: 'status', key: KEY, no: n, status: '完了' })); } catch (e) {} });
-      nos.forEach(n => hiding.add(n)); load();
+      nos.forEach(n => { hiding.add(n); forced.delete(n); }); load();
       Promise.all(nos.map(n => call(null, { action: 'status', key: KEY, no: n, status: '完了' }).catch(() => {}))).then(() => { nos.forEach(n => hiding.delete(n)); load(); });
       // ホーム画面のアイコンから開いているときは、印刷後にSafariが開かないよう戻り先を付けない
       const STANDALONE = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
@@ -343,13 +403,14 @@
   let lastD = null; const forced = new Map();
   function show(d) {
     // 「未対応に戻す」を押した注文は、サーバーの返事を待たずにすぐ上の一覧に戻して見せる
-    lastD = d;
+    lastD = d; learnSlips(d);
     { const pr = getPrinted(); const now = Date.now();
       Object.keys(pr).forEach(k => { const n = Number(k); if (!d.pending.some(p => p.no === n)) { delete pr[k]; return; }
         if (now - (pr[k].sent || 0) > 20000) { pr[k].sent = now; call(null, { action: 'status', key: KEY, no: n, status: '完了' }).catch(() => {}); } });
       savePrinted(pr);
       if (Object.keys(pr).length) d = Object.assign({}, d, { pending: d.pending.filter(p => !pr[p.no]) }); }
-    [...forced.keys()].forEach(no => { if (d.pending.some(p => p.no === no)) forced.delete(no); });
+    // 戻した注文がサーバーに反映されたら、または90秒たっても反映されなければ、仮の表示をやめる（ずっと残り続けないように）
+    [...forced.keys()].forEach(no => { const f = forced.get(no); if (d.pending.some(p => p.no === no) || Date.now() - (f._t || 0) > 90000) forced.delete(no); });
     if (forced.size) d = Object.assign({}, d, { pending: d.pending.concat([...forced.values()]), done: d.done.filter(o => !forced.has(o.no)) });
     const maxAt = d.pending.reduce((a, o) => Math.max(a, o.at), 0);
     if (loaded && maxAt > lastMax) beep();
@@ -393,6 +454,7 @@
         c.querySelector('.items').after(n);
       }
       c.querySelector('.sum').textContent = yen(o.total);
+      { const tr = tableRun(o); if (tr) c.querySelector('.sum').textContent = yen(o.total) + '（追加分込み ' + tr.n + '回 ' + yen(tr.sum) + '）'; }
       c.querySelector('.doneBtn').onclick = e => doneNow(o.no, c, e.currentTarget);
       c.querySelector('.print').onclick = () => printSlip(o);
       if (o.no === flashNo) { c.style.boxShadow = '0 0 0 5px #f5b400'; c.style.background = '#fff8dc'; }
@@ -417,7 +479,7 @@
 
   const hiding = new Set();
   function doneNow(no, card, btn) {
-    hiding.add(no);
+    hiding.add(no); forced.delete(no);
     btn.disabled = true; btn.textContent = '✓ 提供済み'; btn.classList.add('ok');
     setTimeout(() => card.classList.add('leaving'), 150);
     setTimeout(() => {
@@ -433,7 +495,7 @@
   function setStatus(no, status, btn) {
     btn.disabled = true; btn.textContent = '⏳ 戻しています…'; unmarkPrinted(no);
     const o = lastD && lastD.done.find(x => x.no === no);
-    if (o) { forced.set(no, Object.assign({}, o, { status: '未対応' })); flashNo = no; setTimeout(() => { flashNo = null; }, 8000); window.scrollTo(0, 0); show(lastD); }
+    if (o) { forced.set(no, Object.assign({}, o, { status: '未対応', _t: Date.now() })); flashNo = no; setTimeout(() => { flashNo = null; }, 8000); window.scrollTo(0, 0); show(lastD); }
     else restoring.add(no);
     call(null, { action: 'status', key: KEY, no, status })
       .then(() => { restoring.delete(no); load(); })
