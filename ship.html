@@ -6,158 +6,77 @@
 <title>冷凍品の発送受付｜公珠</title>
 <meta name="robots" content="noindex">
 <style>
-:root{--red:#b5262b;--ink:#2a1a14;--sub:#6b5548;--bg:#fffaf0;--line:#e7d6bf;--ok:#2e7d32}
+:root{--red:#b5262b;--ink:#2a1a14;--sub:#6b5548;--bg:#fffaf0;--line:#e7d6bf}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:16px;line-height:1.55}
-header{background:var(--red);color:#fff;padding:14px 16px}
-header h1{margin:0;font-size:19px}
-header p{margin:4px 0 0;font-size:13px;opacity:.9}
-main{max-width:560px;margin:0 auto;padding:14px 14px 120px}
-.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
-.card h2{margin:0 0 10px;font-size:17px;display:flex;align-items:center;gap:8px}
-.card h2 .n{color:var(--red);font-size:20px;margin-left:2px}
-label{display:block;font-size:13px;font-weight:700;color:var(--sub);margin:10px 0 4px}
-label .req{color:var(--red);font-size:11px;margin-left:4px}
-input,select,textarea{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1.5px solid #d9c6ad;border-radius:10px;background:#fff;color:var(--ink)}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
-.row{display:flex;gap:8px}
-.row>*{flex:1}
-.zip{display:flex;gap:8px;align-items:center}
-.zip input{flex:0 0 150px}
-.zip small{color:var(--sub);font-size:12px}
-.btn{display:block;width:100%;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:800;font-size:17px;cursor:pointer}
-.btn.main{background:var(--red);color:#fff}
-.btn.sub{background:#fff;color:var(--red);border:1.5px solid var(--red);font-size:15px;padding:11px}
-.btn.ghost{background:#f4ebdd;color:var(--ink);font-size:14px;padding:10px;font-weight:700}
-.tools{display:flex;gap:8px;margin:0 0 6px;flex-wrap:wrap}
-.items{border:1.5px solid #e7d6bf;border-radius:12px;overflow:hidden}
-.it{display:flex;align-items:center;gap:8px;padding:9px 10px;border-top:1px solid #f1e6d6;background:#fff}
+header{background:var(--red);color:#fff;padding:12px 16px}
+header h1{margin:0;font-size:18px}
+.prog{display:flex;gap:6px;margin-top:8px}
+.prog span{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.35)}
+.prog span.on{background:#fff}
+main{max-width:560px;margin:0 auto;padding:16px 16px 130px}
+.q{font-size:22px;font-weight:800;margin:4px 0 4px}
+.qs{color:var(--sub);font-size:14px;margin:0 0 14px}
+.who{display:inline-block;background:#fde3e3;color:var(--red);font-weight:800;border-radius:99px;padding:2px 12px;font-size:14px;margin-bottom:6px}
+label{display:block;font-size:14px;font-weight:700;color:var(--sub);margin:12px 0 4px}
+input,select{width:100%;font:inherit;font-size:17px;padding:12px;border:1.5px solid #d9c6ad;border-radius:10px;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:none;border-color:var(--red)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font:inherit;font-weight:800;font-size:17px;cursor:pointer;text-align:center}
+.main{background:var(--red);color:#fff}
+.sub{background:#fff;color:var(--red);border:2px solid var(--red)}
+.big{background:#fff;border:2px solid var(--line);border-radius:14px;padding:16px;text-align:left;width:100%;font:inherit;cursor:pointer;margin-bottom:10px;display:flex;gap:12px;align-items:center;color:var(--ink)}
+.big b{font-size:18px;display:block}
+.big small{color:var(--sub);font-size:13px}
+.big .ic{font-size:34px}
+.howto{background:#fff;border:1.5px dashed var(--red);border-radius:12px;padding:12px 14px;margin:0 0 12px;font-size:15px}
+.howto ol{margin:6px 0 0;padding-left:22px}.howto li{margin:4px 0}
+.link{background:none;border:0;color:var(--sub);text-decoration:underline;font:inherit;font-size:14px;padding:8px 0;cursor:pointer}
+.items{border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.it{display:flex;align-items:center;gap:8px;padding:10px;border-top:1px solid #f1e6d6}
 .it:first-child{border-top:0}
 .it.on{background:#fff4e8}
-.it .nm{flex:1;font-size:14.5px;line-height:1.35}
-.it .nm small{display:block;color:var(--sub);font-size:12.5px}
-.it .q{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--red);background:#fff;color:var(--red);font-size:20px;font-weight:800;line-height:1;padding:0;cursor:pointer}
-.it .q.p{background:var(--red);color:#fff}
-.it .qty{min-width:22px;text-align:center;font-weight:800;font-size:17px}
-.isum{padding:10px;background:#fbf3e6;font-weight:800;text-align:right;font-size:15px}
-.tools .btn{flex:1;min-width:140px}
-.hint{font-size:12.5px;color:var(--sub);margin:6px 0 0}
-.del{float:right;background:none;border:0;color:var(--sub);font-size:13px;text-decoration:underline;cursor:pointer}
-.paste{margin-top:8px;display:none}
-.paste.on{display:block}
-.err{color:var(--red);font-size:13px;margin-top:4px;display:none}
-.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,250,240,.96);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom))}
-.bar .btn{max-width:560px;margin:0 auto}
-.sum dl{margin:0;display:grid;grid-template-columns:7.5em 1fr;gap:4px 8px;font-size:14px}
-.sum dt{color:var(--sub)}
-.sum dd{margin:0;word-break:break-all}
-.done{text-align:center;padding:26px 14px}
-.done .no{font-size:30px;font-weight:900;color:var(--red);letter-spacing:1px;margin:8px 0}
-.note{background:#fff3e0;border:1px solid #f0d2a6;border-radius:12px;padding:10px 12px;font-size:13.5px;margin:0 0 14px}
+.it .nm{flex:1;font-size:15px;line-height:1.35}
+.it .nm small{display:block;color:var(--sub);font-size:13px}
+.it .qb{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--red);background:#fff;color:var(--red);font-size:21px;font-weight:800;line-height:1;padding:0;cursor:pointer}
+.it .qb.p{background:var(--red);color:#fff}
+.it .qty{min-width:24px;text-align:center;font-weight:800;font-size:18px}
+.isum{padding:12px;background:#fbf3e6;font-weight:800;text-align:right;font-size:16px}
+.msg{color:var(--red);font-weight:700;font-size:14px;margin:6px 0}
+details{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:14px}
+summary{font-weight:700;cursor:pointer;color:var(--sub)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,250,240,.97);border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px}
+.bar .btn{max-width:560px}
+.bar .back{flex:0 0 96px;background:#f4ebdd;color:var(--ink)}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:15px}
+.card h3{margin:0 0 6px;font-size:16px}
+.card .e{float:right;font-size:13px}
+.done{text-align:center}
+.done .no{font-size:30px;font-weight:900;color:var(--red);margin:8px 0}
+.tot{border-top:2px solid var(--red);padding:10px 0;font-weight:800;font-size:18px;text-align:right}
 [hidden]{display:none!important}
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
-<header>
-  <h1>🧊 冷凍品の発送受付</h1>
-  <p>中華料理 公珠｜ご入力後、レジでお会計（商品代＋送料）をお願いします</p>
-</header>
-<main>
-<div id="form">
-  <div class="note">ヤマト運輸のクール便（冷凍）でお送りします。住所は郵便番号を入れると自動で入ります。</div>
-
-  <section class="card" id="sender">
-    <h2>ご依頼主（あなた）</h2>
-    <button type="button" class="btn ghost" id="useLast" hidden>前回入力した内容を使う</button>
-    <label>お名前<span class="req">必須</span></label>
-    <input name="name" autocomplete="name" placeholder="公珠 太郎">
-    <label>フリガナ</label>
-    <input name="kana" placeholder="コウジュ タロウ">
-    <label>電話番号<span class="req">必須</span></label>
-    <input name="tel" type="tel" autocomplete="tel" inputmode="tel" placeholder="090-1234-5678">
-    <label>郵便番号<span class="req">必須</span></label>
-    <div class="zip"><input name="zip" autocomplete="postal-code" inputmode="numeric" placeholder="232-0053"><small class="zmsg"></small></div>
-    <label>住所<span class="req">必須</span></label>
-    <input name="addr" autocomplete="street-address" placeholder="神奈川県横浜市南区井土ケ谷下町37-6">
-    <label>建物名・部屋番号</label>
-    <input name="bldg" autocomplete="address-line2" placeholder="〇〇マンション 101">
-    <label>メールアドレス（送り状番号が必要な方）</label>
-    <input name="email" type="email" autocomplete="email" inputmode="email" placeholder="example@mail.com">
-    <p class="hint">ご記入いただくと、ヤマト運輸から配達予定メールと一緒に送り状番号が届きます。</p>
-    <label>備考</label>
-    <input name="memo" placeholder="">
-  </section>
-
-  <div id="dests"></div>
-  <button type="button" class="btn sub" id="addDest">＋ お届け先をもう1件追加</button>
-</div>
-
-<div id="confirm" hidden>
-  <section class="card sum" id="sumBox"></section>
-  <button type="button" class="btn sub" id="back">← 修正する</button>
-</div>
-
-<div id="done" class="card done" hidden>
-  <div>受付が完了しました</div>
-  <div class="no" id="doneNo"></div>
-  <div>この画面を<b>レジでスタッフに</b>お見せください。<br>お会計（商品代＋送料）をお願いします。</div>
-  <p class="hint" id="doneSum"></p>
-  <div id="doneList" style="text-align:left;margin-top:12px"></div>
-  <button type="button" class="btn sub" id="again" style="margin-top:16px">続けて別の受付をする</button>
-</div>
-</main>
-<div class="bar" id="bar"><button type="button" class="btn main" id="next">入力内容を確認する</button></div>
-
-<template id="destT">
-  <section class="card dest">
-    <h2>お届け先<span class="n"></span> <button type="button" class="del">削除</button></h2>
-    <div class="tools">
-      <button type="button" class="btn ghost pick" hidden>📒 電話帳から選ぶ</button>
-      <button type="button" class="btn ghost same">自分あてに送る</button>
-      <button type="button" class="btn ghost vcf">📇 連絡先をまるごと読み込む</button>
-      <button type="button" class="btn ghost pst">📋 コピーした文字を貼り付け</button>
-      <input type="file" class="vcfin" accept=".vcf,text/vcard,text/x-vcard,text/directory" hidden>
-    </div>
-    <p class="hint vhelp" hidden>iPhoneの場合：「連絡先」アプリで送り先の人を開く →「連絡先を共有」→「"ファイル"に保存」→ この画面に戻って、もう一度「📇 連絡先をまるごと読み込む」→「ファイルを選択」で、いま保存した連絡先を選んでください。名前・フリガナ・電話・〒・住所がまとめて入ります。</p>
-    <p class="hint vmsg" style="color:var(--red);font-weight:700"></p>
-    <div class="paste"><textarea rows="4" placeholder="ここを長押しして「ペースト」してください（名前・〒・住所・電話番号がまとめて入っていてもOK）"></textarea><p class="hint pmsg" style="color:var(--red);font-weight:700"></p><button type="button" class="btn ghost doPaste" style="margin-top:6px">もう一度読み取る</button></div>
-    <label>お名前<span class="req">必須</span></label>
-    <input name="name" placeholder="山田 花子">
-    <label>フリガナ</label>
-    <input name="kana" placeholder="ヤマダ ハナコ">
-    <label>電話番号<span class="req">必須</span></label>
-    <input name="tel" type="tel" inputmode="tel" placeholder="045-000-0000">
-    <label>郵便番号<span class="req">必須</span></label>
-    <div class="zip"><input name="zip" inputmode="numeric" placeholder="000-0000"><small class="zmsg"></small></div>
-    <label>住所<span class="req">必須</span></label>
-    <input name="addr" placeholder="都道府県から番地まで">
-    <label>建物名・部屋番号</label>
-    <input name="bldg" placeholder="〇〇マンション 101">
-    <label>お送りする商品（＋で数を選んでください）</label>
-    <div class="items"><p class="hint">商品を読み込み中…</p></div>
-    <input type="hidden" name="item"><input type="hidden" name="amt">
-    <div class="row">
-      <div><label>お届け希望日</label><input name="date" type="date"></div>
-      <div><label>時間帯</label><select name="time">
-        <option value="">指定なし</option><option value="0812">午前中</option><option value="1416">14〜16時</option>
-        <option value="1618">16〜18時</option><option value="1820">18〜20時</option><option value="1921">19〜21時</option>
-      </select></div>
-    </div>
-    <p class="hint">お届け日は発送日の翌日以降（地域により翌々日以降）になります。</p>
-    <label>メモ（ギフト・のし など）</label>
-    <input name="note" placeholder="">
-  </section>
-</template>
-
+<header><h1>🧊 冷凍品の発送受付　公珠</h1><div class="prog" id="prog"><span></span><span></span><span></span><span></span></div></header>
+<main id="main"></main>
+<div class="bar" id="bar"><button class="btn back" id="back">戻る</button><button class="btn main" id="next">次へ</button></div>
+<input type="file" id="vcf" accept=".vcf,text/vcard,text/x-vcard,text/directory" hidden>
 <script>
 (function(){
   const API = document.body.dataset.api;
   const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const yen = n => '¥' + Number(n || 0).toLocaleString();
+  const NUM = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
   const PREF = ['','北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
   const z2h = s => String(s || '').replace(/[０-９－ー‐−]/g, c => ({'－':'-','ー':'-','‐':'-','−':'-'}[c] || String.fromCharCode(c.charCodeAt(0) - 0xFEE0)));
   const zipNorm = s => { const d = z2h(s).replace(/\D/g, ''); return d.length === 7 ? d.slice(0,3) + '-' + d.slice(3) : z2h(s).trim(); };
+  const telNorm = s => { let v = z2h(s).replace(/^\+81[\s-]?\(?0?/, '0').replace(/[\s()]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').replace(/[^\d-]/g, ''); const d = v.replace(/\D/g, ''); if (!/-/.test(v) && d.length === 11) v = d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7); return v; };
+  const prefOf = a => PREF.find(p => p && String(a || '').startsWith(p)) || '';
+  const TL = { '':'指定なし','0812':'午前中','1416':'14〜16時','1618':'16〜18時','1820':'18〜20時','1921':'19〜21時' };
 
-  // 郵便番号 → 住所（yubinbango のデータを利用）
+  // 郵便番号 → 住所
   const zcache = {};
   function zipLookup(zip7){
     const k = zip7.slice(0,3);
@@ -170,257 +89,223 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
       document.head.appendChild(sc); setTimeout(() => sc.remove(), 5000);
     });
   }
-  function bindZip(box){
-    const zi = box.querySelector('[name=zip]'), ad = box.querySelector('[name=addr]'), msg = box.querySelector('.zmsg');
-    zi.addEventListener('input', async () => {
-      const d = z2h(zi.value).replace(/\D/g,'');
-      if (d.length !== 7) { msg.textContent = ''; return; }
-      msg.textContent = '検索中…';
-      const r = await zipLookup(d);
-      if (!r) { msg.textContent = '見つかりません。住所を入力してください'; return; }
-      const a = PREF[r[0]] + (r[1]||'') + (r[2]||'') + (r[3]||'');
-      if (!ad.value || ad.dataset.auto === '1') { ad.value = a; ad.dataset.auto = '1'; }
-      msg.textContent = '✓ 住所を入れました（番地を続けて入力）';
-      ad.focus(); ad.setSelectionRange(ad.value.length, ad.value.length);
-    });
-    ad.addEventListener('input', () => { ad.dataset.auto = ''; });
-  }
-  bindZip($('#sender'));
 
-  const val = (box, n) => (box.querySelector('[name=' + n + ']').value || '').trim();
-  const setv = (box, n, v) => { const el = box.querySelector('[name=' + n + ']'); el.value = v || ''; };
-  const F = ['name','kana','tel','zip','addr','bldg'];
-  const FS = F.concat(['email']);
-  const read = box => { const o = {}; box.querySelectorAll('[name]').forEach(el => o[el.name] = (el.value || '').trim()); if (o.zip) o.zip = zipNorm(o.zip); if (o.tel) o.tel = z2h(o.tel).replace(/[^\d-]/g,''); return o; };
-
-  // 前回の依頼主情報（この端末だけに保存）
-  let last = null; try { last = JSON.parse(localStorage.getItem('kouju_ship_sender') || 'null'); } catch(e) {}
-  if (last && last.name) { const b = $('#useLast'); b.hidden = false; b.textContent = '前回の内容を使う（' + last.name + '様）'; b.onclick = () => { FS.forEach(k => setv($('#sender'), k, last[k])); b.hidden = true; }; }
-
-  // 住所のテキストを貼り付けて分解
-  function parsePaste(t){
-    t = z2h(String(t || '')).replace(/\r/g, '').replace(/[‐‑–—―ｰ]/g, '-').replace(/ /g, ' ');
-    const o = {};
-    // 電話番号（どこにあってもOK）
-    const telRe = /(\+81[\s-]?\(?0?\d{1,4}\)?|\(?0\d{1,4}\)?)[\s-]?\d{1,4}[\s-]?\d{3,4}/g;
-    let m;
-    while ((m = telRe.exec(t))) {
-      let v = m[0].replace(/^\+81[\s-]?\(?0?/, '0').replace(/[()]/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-      const d = v.replace(/\D/g, '');
-      const before = t.slice(Math.max(0, m.index - 1), m.index);
-      if ((d.length === 10 || d.length === 11) && !/〒/.test(t.slice(Math.max(0, m.index - 2), m.index)) && !/[\d-]/.test(before)) {
-        if (!/-/.test(v)) v = d.length === 11 ? d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7) : d;
-        o.tel = v; t = t.slice(0, m.index) + '\n' + t.slice(m.index + m[0].length); break;
-      }
-    }
-    // 郵便番号
-    const zm = t.match(/〒\s*(\d{3})-?(\d{4})/) || t.match(/(?:^|[^\d-])(\d{3})-(\d{4})(?![\d-])/) || t.match(/(?:^|[^\d-])(\d{7})(?![\d-])/);
-    if (zm) {
-      o.zip = zm[2] ? zm[1] + '-' + zm[2] : zm[1].slice(0,3) + '-' + zm[1].slice(3);
-      t = t.replace(zm[0], zm[0].match(/^[^\d〒]/) ? zm[0][0] + '\n' : '\n');
-    }
-    const LABEL = /^(住所|電話番号?|TEL|自宅|携帯|勤務先|会社|ホーム|職場|その他|名前|氏名|メイン|iPhone|モバイル)\s*[:：]?\s*/i;
-    const lines = t.split(/[\n,，、]+/).map(l => l.replace(LABEL, '').replace(/^〒/, '').trim()).filter(l => l && !/^(日本|japan)$/i.test(l));
-    const isPref = l => PREF.some(p => p && l.startsWith(p));
-    const prefAt = l => { let k = -1; PREF.forEach(p => { if (!p) return; const x = l.indexOf(p); if (x >= 0 && (k < 0 || x < k)) k = x; }); return k; };
-    const isCity = l => /^[^\d]*[市区町村郡]$/.test(l) || (/[市区町村郡]/.test(l) && !/\d/.test(l));
-    const isAddr = l => prefAt(l) >= 0 || /[市区町村郡]/.test(l) || /\d+(丁目|番地?|号)/.test(l) || /\d+-\d+/.test(l);
-    const addr = [], rest = [];
-    lines.forEach(l => {
-      const k = prefAt(l);
-      if (k > 0) { const head = l.slice(0, k).trim(); if (head) rest.push(head); addr.push(l.slice(k).trim()); }
-      else if (isAddr(l)) addr.push(l);
-      else rest.push(l);
-    });
-    if (addr.length) {
-      const rank = l => isPref(l) ? 0 : isCity(l) ? 1 : 2;
-      o.addr = addr.map((l, k) => [rank(l), k, l]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]).join('').replace(/\s+/g, '');
-      if (o.addr.length > 0 && !isPref(o.addr) && o.zip) o.needPref = true;
-    }
-    const nm = rest.find(l => l.length <= 20 && !/\d/.test(l) && !/@/.test(l) && !/^(様|さん)$/.test(l));
-    if (nm) o.name = nm.replace(/\s*(様|さん)$/, '');
-    return o;
-  }
-
+  // 連絡先ファイル（vCard）
   function parseVcard(txt){
     txt = String(txt || '').replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '');
     if (!/BEGIN:VCARD/i.test(txt)) return null;
     const card = txt.split(/END:VCARD/i)[0];
     const un = v => v.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1').trim();
-    const qp = (v, p) => /QUOTED-PRINTABLE/i.test(p) ? (() => { try { return decodeURIComponent(v.replace(/=\n/g, '').replace(/=([0-9A-F]{2})/gi, '%$1')); } catch (e) { return v; } })() : v;
     const props = [];
-    card.split('\n').forEach(l => { const m = l.match(/^(?:[\w-]+\.)?([A-Z-]+)((?:;[^:]*)?):(.*)$/i); if (m) props.push({ k: m[1].toUpperCase(), p: m[2] || '', v: qp(m[3], m[2] || '') }); });
+    card.split('\n').forEach(l => { const m = l.match(/^(?:[\w-]+\.)?([A-Z-]+)((?:;[^:]*)?):(.*)$/i); if (m) props.push({ k: m[1].toUpperCase(), p: m[2] || '', v: m[3] }); });
     const get = k => props.filter(x => x.k === k);
     const o = {};
     const n = get('N')[0];
     if (n) { const a = n.v.split(';').map(un); o.name = [a[0], a[1]].filter(Boolean).join(' '); }
     if (!o.name && get('FN')[0]) o.name = un(get('FN')[0].v);
-    const kl = get('X-PHONETIC-LAST-NAME')[0], kf = get('X-PHONETIC-FIRST-NAME')[0], sn = get('SORT-STRING')[0];
-    const kana = [kl && un(kl.v), kf && un(kf.v)].filter(Boolean).join(' ') || (sn ? un(sn.v) : '');
+    const kl = get('X-PHONETIC-LAST-NAME')[0], kf = get('X-PHONETIC-FIRST-NAME')[0];
+    const kana = [kl && un(kl.v), kf && un(kf.v)].filter(Boolean).join(' ');
     if (kana) o.kana = kana.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
     const tels = get('TEL'); const tl = tels.find(x => /CELL|IPHONE|MOBILE/i.test(x.p)) || tels[0];
-    if (tl) { let v = z2h(un(tl.v)).replace(/^tel:/i, '').replace(/^\+81[\s-]?\(?0?/, '0').replace(/[\s()]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''); const d = v.replace(/\D/g, ''); if (!/-/.test(v) && d.length === 11) v = d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7); o.tel = v; }
+    if (tl) o.tel = telNorm(un(tl.v).replace(/^tel:/i, ''));
     const ads = get('ADR'); const ad = ads.find(x => /HOME/i.test(x.p)) || ads[0];
     if (ad) {
-      const a = ad.v.split(';').map(un); // 0:私書箱 1:拡張 2:番地 3:市区町村 4:都道府県 5:〒 6:国
+      const a = ad.v.split(';').map(un);
       const zip = z2h(a[5] || '').replace(/\D/g, '');
       if (zip.length === 7) o.zip = zip.slice(0,3) + '-' + zip.slice(3);
-      o.addr = z2h([a[4], a[3], a[2], a[1]].filter(Boolean).join('')).replace(/\s+/g, '').replace(/^日本/, '');
+      o.addr = z2h([a[4], a[3], a[2]].filter(Boolean).join('')).replace(/\s+/g, '').replace(/^日本/, '');
+      o.bldg = z2h(a[1] || '').trim();
     }
     return (o.name || o.tel || o.addr) ? o : null;
   }
-  // 冷凍物販の商品一覧（テイクアウト注文と同じメニューから）
-  let FROZEN = [];
+
+  // 冷凍の商品一覧
+  let FROZEN = null;
   const menuP = fetch(API + '?api=menu', { credentials: 'omit' }).then(r => r.json())
     .then(r => { FROZEN = ((r && r.data) || []).filter(m => m.cat === 'テイクアウト 冷凍' && !/保冷/.test(m.name)); })
     .catch(() => { FROZEN = []; });
   const shortName = n => String(n).replace(/^【冷凍】/, '').replace(/[（(][^）)]*[）)]/g, '').replace(/\s+/g, '');
-  const yen = n => '¥' + Number(n || 0).toLocaleString();
-  function renderItems(node){
-    menuP.then(() => {
-      const box = node.querySelector('.items'), hi = node.querySelector('[name=item]'), ha = node.querySelector('[name=amt]');
-      const h = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-      if (!FROZEN.length) {
-        box.outerHTML = '<input name="item" placeholder="例：金餃子20個入×2、焼売">'; hi.remove(); return;
-      }
-      const q = FROZEN.map(() => 0);
-      box.innerHTML = FROZEN.map((m, i) => '<div class="it" data-i="' + i + '"><div class="nm">' + h(String(m.name).replace(/^【冷凍】/, '')) + '<small>' + yen(m.price) + '</small></div><button type="button" class="q m" aria-label="減らす">−</button><span class="qty">0</span><button type="button" class="q p" aria-label="増やす">＋</button></div>').join('') + '<div class="isum">商品代 ¥0</div>';
-      const upd = () => {
-        const parts = [], sum = FROZEN.reduce((a, m, i) => a + q[i] * Number(m.price || 0), 0);
-        FROZEN.forEach((m, i) => { if (q[i]) parts.push(shortName(m.name) + '×' + q[i]); });
-        hi.value = parts.join('、'); ha.value = sum ? String(sum) : '';
-        box.querySelector('.isum').textContent = '商品代 ' + yen(sum) + (sum ? '（送料は別です）' : '');
-      };
-      box.querySelectorAll('.it').forEach(row => {
-        const i = Number(row.dataset.i), qs = row.querySelector('.qty');
-        const set = v => { q[i] = Math.max(0, Math.min(99, v)); qs.textContent = q[i]; row.classList.toggle('on', q[i] > 0); upd(); };
-        row.querySelector('.p').onclick = () => set(q[i] + 1);
-        row.querySelector('.m').onclick = () => set(q[i] - 1);
-      });
-    });
-  }
-  const canPick = 'contacts' in navigator && 'select' in (navigator.contacts || {});
-  let n = 0;
-  function addDest(){
-    const node = $('#destT').content.firstElementChild.cloneNode(true);
-    $('#dests').appendChild(node);
-    bindZip(node);
-    node.querySelector('.del').onclick = () => { node.remove(); renum(); };
-    node.querySelector('.same').onclick = () => { const s = read($('#sender')); F.forEach(k => setv(node, k, s[k])); };
-    const pst = node.querySelector('.paste');
-    const ta = pst.querySelector('textarea'), pmsg = pst.querySelector('.pmsg');
-    const apply = async txt => {
-      const o = parsePaste(txt);
-      const got = [];
-      if (o.name) { setv(node, 'name', o.name); got.push('お名前'); }
-      if (o.tel) { setv(node, 'tel', o.tel); got.push('電話'); }
-      if (o.zip) { setv(node, 'zip', o.zip); got.push('〒'); }
-      if (o.addr) {
-        let a = o.addr;
-        if (o.needPref && o.zip) { const r = await zipLookup(o.zip.replace('-', '')); if (r && !a.startsWith(PREF[r[0]])) { const town = r[2] || '', k = town ? a.indexOf(town) : -1; a = k >= 0 ? PREF[r[0]] + (r[1] || '') + a.slice(k) : PREF[r[0]] + a; } }
-        const ad = node.querySelector('[name=addr]'); ad.value = a; ad.dataset.auto = ''; got.push('住所');
-      }
-      pmsg.textContent = got.length ? '✓ ' + got.join('・') + 'を入れました。下で確認してください' : '読み取れませんでした。お手数ですが下の欄に直接入力してください';
-      return got.length;
-    };
-    node.querySelector('.pst').onclick = async () => {
-      let txt = '';
-      try { if (navigator.clipboard && navigator.clipboard.readText) txt = await navigator.clipboard.readText(); } catch (e) {}
-      pst.classList.add('on');
-      if (txt && txt.trim()) { ta.value = txt; await apply(txt); }
-      else { pmsg.textContent = ''; ta.focus(); }
-    };
-    ta.addEventListener('paste', () => setTimeout(() => apply(ta.value), 50));
-    node.querySelector('.doPaste').onclick = () => apply(ta.value);
-    const vin = node.querySelector('.vcfin'), vmsg = node.querySelector('.vmsg'), vhelp = node.querySelector('.vhelp');
-    node.querySelector('.vcf').onclick = () => { vhelp.hidden = false; vin.value = ''; vin.click(); };
-    vin.onchange = async () => {
-      const f = vin.files && vin.files[0]; if (!f) return;
-      const c = parseVcard(await f.text());
-      if (!c) { vmsg.textContent = '連絡先のファイルを読み取れませんでした'; return; }
-      const got = [];
-      if (c.name) { setv(node, 'name', c.name); got.push('お名前'); }
-      if (c.kana) { setv(node, 'kana', c.kana); got.push('フリガナ'); }
-      if (c.tel) { setv(node, 'tel', c.tel); got.push('電話'); }
-      if (c.zip) { setv(node, 'zip', c.zip); got.push('〒'); }
-      if (c.addr) { const ad = node.querySelector('[name=addr]'); ad.value = c.addr; ad.dataset.auto = ''; got.push('住所'); }
-      vhelp.hidden = true;
-      vmsg.textContent = got.length ? '✓ ' + got.join('・') + 'を入れました。下で確認してください' + (c.addr ? '' : '（住所は登録がないようです）') : '名前・電話・住所が見つかりませんでした';
-    };
-    if (canPick) {
-      const pk = node.querySelector('.pick'); pk.hidden = false;
-      pk.onclick = async () => {
-        try {
-          const props = await navigator.contacts.getProperties();
-          const want = ['name','tel','address'].filter(p => props.includes(p));
-          const [c] = await navigator.contacts.select(want, { multiple: false });
-          if (!c) return;
-          if (c.name && c.name[0]) setv(node, 'name', c.name[0]);
-          if (c.tel && c.tel[0]) setv(node, 'tel', z2h(c.tel[0]).replace(/^\+81/, '0').replace(/[^\d-]/g,''));
-          const a = c.address && c.address[0];
-          if (a) {
-            if (a.postalCode) setv(node, 'zip', zipNorm(a.postalCode));
-            const line = [a.region, a.city, ...(a.addressLine || [])].filter(Boolean).join('');
-            if (line) setv(node, 'addr', line.replace(/^日本/, ''));
-          }
-        } catch (e) {}
-      };
-    }
-    renderItems(node);
-    renum();
-    return node;
-  }
-  function renum(){ document.querySelectorAll('.dest').forEach((d, i, all) => { d.querySelector('.n').textContent = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'[i] || String(i + 1); d.querySelector('.del').hidden = all.length < 2; }); }
-  addDest();
-  $('#addDest').onclick = () => { const d = addDest(); d.scrollIntoView({ behavior: 'smooth' }); };
 
-  function check(box, title){
-    const o = read(box), miss = [];
+  // 状態
+  let last = null; try { last = JSON.parse(localStorage.getItem('kouju_ship_sender') || 'null'); } catch (e) {}
+  const S = { step: 'items', cur: 0, dests: [newDest()], sender: { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', email:'', memo:'' }, addrMode: '' };
+  function newDest(){ return { q: {}, name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', date:'', time:'', note:'' }; }
+  const itemsOf = d => (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
+  const amtOf = d => (FROZEN || []).reduce((a, m, i) => a + (d.q[i] || 0) * Number(m.price || 0), 0);
+  const STEPS = ['items', 'dest', 'sender', 'confirm'];
+
+  function setProg(){ const k = STEPS.indexOf(S.step); document.querySelectorAll('#prog span').forEach((s, i) => s.classList.toggle('on', i <= k)); }
+  const label = () => S.dests.length > 1 || S.cur > 0 ? 'お届け先' + (NUM[S.cur] || S.cur + 1) : '';
+
+  function render(){
+    setProg(); scrollTo(0, 0);
+    const m = $('#main'), d = S.dests[S.cur];
+    $('#bar').hidden = S.step === 'done';
+    $('#back').hidden = S.step === 'items' && S.cur === 0;
+    if (S.step === 'items') {
+      $('#next').textContent = '次へ（送り先を入力）';
+      m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">何を送りますか？</div><p class="qs">「＋」で数を選んでください。</p><div class="items" id="items"><p style="padding:12px">商品を読み込み中…</p></div>';
+      menuP.then(() => {
+        const box = $('#items'); if (!box) return;
+        if (!FROZEN.length) { box.innerHTML = '<p style="padding:12px">商品一覧を読み込めませんでした。商品はレジでお伝えください。</p>'; return; }
+        box.innerHTML = FROZEN.map((it, i) => '<div class="it' + (d.q[i] ? ' on' : '') + '" data-i="' + i + '"><div class="nm">' + esc(String(it.name).replace(/^【冷凍】/, '')) + '<small>' + yen(it.price) + '</small></div><button class="qb m" aria-label="減らす">−</button><span class="qty">' + (d.q[i] || 0) + '</span><button class="qb p" aria-label="増やす">＋</button></div>').join('') + '<div class="isum" id="isum"></div>';
+        const upd = () => { const a = amtOf(d); $('#isum').textContent = a ? '商品代 ' + yen(a) + '（送料は別）' : '商品を選んでください'; };
+        box.querySelectorAll('.it').forEach(row => {
+          const i = Number(row.dataset.i);
+          const set = v => { d.q[i] = Math.max(0, Math.min(99, v)); row.querySelector('.qty').textContent = d.q[i]; row.classList.toggle('on', d.q[i] > 0); upd(); };
+          row.querySelector('.p').onclick = () => set((d.q[i] || 0) + 1);
+          row.querySelector('.m').onclick = () => set((d.q[i] || 0) - 1);
+        });
+        upd();
+      });
+    }
+    else if (S.step === 'dest') {
+      $('#next').textContent = '次へ';
+      const filled = d.name || d.tel || d.addr;
+      if (!S.addrMode && !filled) {
+        $('#next').hidden = true;
+        m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">どなたに送りますか？</div><p class="qs">入れ方を選んでください。</p>' +
+          '<button class="big" id="mContact"><span class="ic">📇</span><span><b>iPhoneの連絡先から選ぶ</b><small>名前・電話・住所がまとめて入ります</small></span></button>' +
+          '<button class="big" id="mHand"><span class="ic">✍️</span><span><b>手で入力する</b><small>郵便番号を入れると住所が自動で入ります</small></span></button>' +
+          (last && last.name ? '<button class="link" id="mSelf">自分（' + esc(last.name) + '様）の家に送る</button>' : '');
+        $('#mContact').onclick = () => { S.addrMode = 'contact'; render(); };
+        $('#mHand').onclick = () => { S.addrMode = 'hand'; render(); };
+        if ($('#mSelf')) $('#mSelf').onclick = () => { Object.assign(d, { name: last.name || '', kana: last.kana || '', tel: last.tel || '', zip: last.zip || '', addr: last.addr || '', bldg: last.bldg || '' }); S.addrMode = 'hand'; render(); };
+        return;
+      }
+      $('#next').hidden = false;
+      if (S.addrMode === 'contact' && !filled) {
+        $('#next').hidden = true;
+        m.innerHTML = '<div class="q">iPhoneの連絡先から選ぶ</div>' +
+          '<div class="howto"><b>① いったん「連絡先」アプリを開く</b><ol><li>送り先の人をタップ</li><li>下の方の「<b>連絡先を共有</b>」をタップ</li><li>「<b>"ファイル"に保存</b>」→ 右上の「保存」</li></ol></div>' +
+          '<div class="howto"><b>② この画面に戻って、下のボタンを押す</b><ol><li>「<b>ファイルを選択</b>」をタップ</li><li>いま保存した連絡先をタップ</li></ol></div>' +
+          '<button class="btn main" id="pick">📇 保存した連絡先を選ぶ</button><p class="msg" id="vmsg"></p>' +
+          '<button class="link" id="toHand">うまくいかないときは、手で入力する</button>';
+        $('#pick').onclick = () => { const f = $('#vcf'); f.value = ''; f.click(); };
+        $('#toHand').onclick = () => { S.addrMode = 'hand'; render(); };
+        return;
+      }
+      m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + (filled ? '<div class="q">送り先を確認してください</div><p class="qs">間違いがあれば直してください。</p>' : '<div class="q">送り先を入力してください</div><p class="qs">郵便番号を入れると住所が自動で入ります。</p>') + addrForm('d', d) +
+        '<details><summary>お届け日時・フリガナ・メモ（任意）</summary>' +
+        '<label>お届け希望日</label><input type="date" id="d_date" value="' + esc(d.date) + '">' +
+        '<label>時間帯</label><select id="d_time">' + Object.keys(TL).map(k => '<option value="' + k + '"' + (d.time === k ? ' selected' : '') + '>' + TL[k] + '</option>').join('') + '</select>' +
+        '<label>フリガナ</label><input id="d_kana" value="' + esc(d.kana) + '">' +
+        '<label>メモ（のし・ギフトなど）</label><input id="d_note" value="' + esc(d.note) + '"></details>' +
+        '<button class="link" id="redo">入れ方を選び直す</button>';
+      bindZip('d');
+      $('#redo').onclick = () => { Object.assign(d, { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'' }); S.addrMode = ''; render(); };
+    }
+    else if (S.step === 'sender') {
+      $('#next').textContent = '次へ（確認）';
+      const s = S.sender;
+      m.innerHTML = '<div class="q">送り主（あなた）は？</div><p class="qs">送り状の「ご依頼主」になります。</p>' +
+        (last && last.name && !s.name ? '<button class="big" id="useLast"><span class="ic">↩️</span><span><b>前回と同じ（' + esc(last.name) + '様）</b><small>タップで入ります</small></span></button>' : '') +
+        addrForm('s', s) +
+        '<details><summary>メールアドレス・フリガナ・備考（任意）</summary>' +
+        '<label>メールアドレス</label><input type="email" id="s_email" inputmode="email" autocomplete="email" value="' + esc(s.email) + '"><p class="qs" style="margin:4px 0 0">書くと、ヤマトから配達予定メールと送り状番号が届きます。</p>' +
+        '<label>フリガナ</label><input id="s_kana" value="' + esc(s.kana) + '">' +
+        '<label>備考</label><input id="s_memo" value="' + esc(s.memo) + '"></details>';
+      bindZip('s', true);
+      if ($('#useLast')) $('#useLast').onclick = () => { Object.assign(s, last); render(); };
+    }
+    else if (S.step === 'confirm') {
+      $('#next').textContent = 'この内容で受付する';
+      const tot = S.dests.reduce((a, x) => a + amtOf(x), 0);
+      m.innerHTML = '<div class="q">内容の確認</div>' +
+        S.dests.map((x, i) => '<div class="card"><h3>お届け先' + (NUM[i] || i + 1) + '　' + esc(prefOf(x.addr)) + '<button class="link e" data-e="' + i + '">直す</button></h3>' +
+          esc(x.name) + ' 様　' + esc(x.tel) + '<br>〒' + esc(x.zip) + ' ' + esc(x.addr) + ' ' + esc(x.bldg) +
+          '<div style="margin-top:6px"><b>' + esc(itemsOf(x) || '（商品はレジで）') + '</b>' + (amtOf(x) ? '　' + yen(amtOf(x)) : '') + '</div>' +
+          (x.date || x.time ? '<div class="qs" style="margin:4px 0 0">お届け：' + esc(x.date ? x.date.replace(/-/g, '/') : '指定なし') + '　' + TL[x.time || ''] + '</div>' : '') + '</div>').join('') +
+        '<button class="btn sub" id="more" style="margin:4px 0 14px">＋ 別の人にも送る</button>' +
+        '<div class="card"><h3>送り主（あなた）<button class="link e" id="es">直す</button></h3>' + esc(S.sender.name) + ' 様　' + esc(S.sender.tel) + '<br>〒' + esc(S.sender.zip) + ' ' + esc(S.sender.addr) + ' ' + esc(S.sender.bldg) + '</div>' +
+        (tot ? '<div class="tot">商品代合計 ' + yen(tot) + '<br><span style="font-size:13px;font-weight:400">＋ 送料はレジでご案内します</span></div>' : '');
+      m.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { S.cur = Number(b.dataset.e); S.step = 'dest'; S.addrMode = 'hand'; render(); });
+      $('#es').onclick = () => { S.step = 'sender'; render(); };
+      $('#more').onclick = () => { S.dests.push(newDest()); S.cur = S.dests.length - 1; S.addrMode = ''; S.step = 'items'; render(); };
+    }
+  }
+
+  function addrForm(p, o){
+    return '<label>お名前</label><input id="' + p + '_name" autocomplete="' + (p === 's' ? 'name' : 'off') + '" value="' + esc(o.name) + '">' +
+      '<label>電話番号</label><input id="' + p + '_tel" type="tel" inputmode="tel" autocomplete="' + (p === 's' ? 'tel' : 'off') + '" value="' + esc(o.tel) + '">' +
+      '<label>郵便番号 <span id="' + p + '_zmsg" style="font-weight:400"></span></label><input id="' + p + '_zip" inputmode="numeric" autocomplete="' + (p === 's' ? 'postal-code' : 'off') + '" placeholder="例 232-0053" value="' + esc(o.zip) + '">' +
+      '<label>住所（番地まで）</label><input id="' + p + '_addr" autocomplete="' + (p === 's' ? 'street-address' : 'off') + '" value="' + esc(o.addr) + '">' +
+      '<label>建物名・部屋番号</label><input id="' + p + '_bldg" value="' + esc(o.bldg) + '">';
+  }
+  function bindZip(p){
+    const zi = $('#' + p + '_zip'), ad = $('#' + p + '_addr'), msg = $('#' + p + '_zmsg');
+    zi.addEventListener('input', async () => {
+      const dd = z2h(zi.value).replace(/\D/g, '');
+      if (dd.length !== 7) { msg.textContent = ''; return; }
+      const r = await zipLookup(dd);
+      if (!r) { msg.textContent = '（見つかりません）'; return; }
+      const a = PREF[r[0]] + (r[1] || '') + (r[2] || '') + (r[3] || '');
+      if (!ad.value || ad.dataset.auto === '1') { ad.value = a; ad.dataset.auto = '1'; }
+      msg.textContent = '✓ 住所を入れました。番地を続けて入力';
+      ad.focus(); ad.setSelectionRange(ad.value.length, ad.value.length);
+    });
+    ad.addEventListener('input', () => { ad.dataset.auto = ''; });
+  }
+  function collect(p, o){
+    ['name','tel','zip','addr','bldg','kana','email','memo','date','time','note'].forEach(k => { const el = $('#' + p + '_' + k); if (el) o[k] = (el.value || '').trim(); });
+    if (o.zip) o.zip = zipNorm(o.zip); if (o.tel) o.tel = telNorm(o.tel);
+  }
+  function check(o){
+    const miss = [];
     if (!o.name) miss.push('お名前'); if (!/^\d[\d-]{8,13}$/.test(o.tel || '')) miss.push('電話番号');
     if (!/^\d{3}-\d{4}$/.test(o.zip || '')) miss.push('郵便番号'); if (!o.addr) miss.push('住所');
     if (o.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.email)) miss.push('メールアドレス');
-    return miss.length ? title + '：' + miss.join('・') : '';
+    return miss;
   }
-  const TL = { '':'指定なし','0812':'午前中','1416':'14〜16時','1618':'16〜18時','1820':'18〜20時','1921':'19〜21時' };
-  const esc = s => String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  let payload = null, step = 'form';
+
+  $('#vcf').onchange = async () => {
+    const f = $('#vcf').files && $('#vcf').files[0]; if (!f) return;
+    const c = parseVcard(await f.text());
+    if (!c) { $('#vmsg').textContent = '連絡先を読み取れませんでした。「手で入力する」でお願いします。'; return; }
+    Object.assign(S.dests[S.cur], { name: c.name || '', kana: c.kana || '', tel: c.tel || '', zip: c.zip || '', addr: c.addr || '', bldg: c.bldg || '' });
+    S.addrMode = 'hand'; render();
+  };
+
+  $('#back').onclick = () => {
+    if (S.step === 'items') { if (S.cur > 0) { const x = S.dests[S.cur]; if (!x.name && !x.addr) S.dests.splice(S.cur, 1); S.cur = 0; S.step = 'confirm'; } }
+    else if (S.step === 'dest') { collect('d', S.dests[S.cur]); if (S.addrMode && !(S.dests[S.cur].name || S.dests[S.cur].addr)) S.addrMode = ''; else S.step = 'items'; }
+    else if (S.step === 'sender') { collect('s', S.sender); S.step = 'dest'; S.addrMode = 'hand'; }
+    else if (S.step === 'confirm') { S.step = 'sender'; }
+    render();
+  };
 
   $('#next').onclick = async () => {
-    if (step === 'form') {
-      const errs = [check($('#sender'), 'ご依頼主')];
-      document.querySelectorAll('.dest').forEach((d, i) => errs.push(check(d, 'お届け先' + ('①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'[i] || (i + 1)))));
-      const e = errs.filter(Boolean);
-      if (e.length) { alertBox('次の項目を確認してください\n' + e.join('\n')); return; }
-      const sender = read($('#sender'));
-      const dests = [...document.querySelectorAll('.dest')].map(read);
-      payload = { action: 'ship', sender, dests, rid: Date.now().toString(36) + Math.random().toString(36).slice(2,8) };
-      $('#sumBox').innerHTML = '<h2>ご依頼主</h2><dl>' + row('お名前', sender.name + ' 様') + row('電話', sender.tel) + row('住所', '〒' + sender.zip + ' ' + sender.addr + ' ' + sender.bldg) + (sender.email ? row('メール', sender.email) : '') + (sender.memo ? row('備考', sender.memo) : '') + '</dl>' +
-        dests.map((d, i) => '<h2 style="margin-top:14px">お届け先' + ('①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'[i] || (i + 1)) + '</h2><dl>' + row('お名前', d.name + ' 様') + row('電話', d.tel) + row('住所', '〒' + d.zip + ' ' + d.addr + ' ' + d.bldg) +
-          row('商品', d.item || '（レジでご相談）') + (d.amt ? row('商品代', yen(d.amt) + '（送料別）') : '') + row('お届け日時', (d.date ? d.date.replace(/-/g,'/') : '指定なし') + '　' + TL[d.time || '']) + (d.note ? row('メモ', d.note) : '') + '</dl>').join('');
-      $('#form').hidden = true; $('#confirm').hidden = false; $('#next').textContent = 'この内容で受付する'; step = 'confirm'; scrollTo(0, 0);
-    } else if (step === 'confirm') {
+    if (S.step === 'items') {
+      if (FROZEN && FROZEN.length && !amtOf(S.dests[S.cur])) { alertBox('送る商品を「＋」で選んでください。'); return; }
+      S.step = 'dest'; render();
+    } else if (S.step === 'dest') {
+      const d = S.dests[S.cur]; collect('d', d);
+      const miss = check(d); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; }
+      S.step = S.sender.name ? 'confirm' : 'sender'; render();
+    } else if (S.step === 'sender') {
+      collect('s', S.sender);
+      const miss = check(S.sender); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; }
+      S.step = 'confirm'; render();
+    } else if (S.step === 'confirm') {
       const b = $('#next'); b.disabled = true; b.textContent = '送信中…';
+      const s = S.sender;
+      const payload = { action: 'ship', rid: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), sender: { name: s.name, kana: s.kana, tel: s.tel, zip: s.zip, addr: s.addr, bldg: s.bldg, email: s.email, memo: s.memo },
+        dests: S.dests.map(x => ({ name: x.name, kana: x.kana, tel: x.tel, zip: x.zip, addr: x.addr, bldg: x.bldg, item: itemsOf(x), amt: String(amtOf(x) || ''), date: x.date, time: x.time, note: x.note })) };
       try {
         const r = await fetch(API, { method: 'POST', body: JSON.stringify(payload), credentials: 'omit' }).then(r => r.json());
         if (!r.ok) throw new Error(r.error || '送信できませんでした');
-        try { const s = payload.sender; localStorage.setItem('kouju_ship_sender', JSON.stringify({ name: s.name, kana: s.kana, tel: s.tel, zip: s.zip, addr: s.addr, bldg: s.bldg, email: s.email })); } catch(e) {}
-        $('#doneNo').textContent = '受付 No.' + r.data.no;
-        const tot = payload.dests.reduce((x, d) => x + Number(d.amt || 0), 0);
-        $('#doneSum').textContent = payload.sender.name + '様　お届け先 ' + payload.dests.length + '件';
-        const NUM = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
-        const pref = a => PREF.find(p => p && String(a || '').startsWith(p)) || '';
-        $('#doneList').innerHTML = payload.dests.map((d, i) => '<div style="border-top:1px solid #eadcc7;padding:8px 0"><b style="font-size:17px">' + (NUM[i] || (i + 1)) + ' ' + esc(pref(d.addr) || '（県不明）') + '</b>　' + (d.amt ? '<b>' + yen(d.amt) + '</b>' : '') + '<br><span style="font-size:14px">' + esc(d.item || '商品はレジでご相談') + '</span></div>').join('') +
-          (tot ? '<div style="border-top:2px solid var(--red);padding:8px 0;font-weight:800;font-size:17px;text-align:right">商品代合計 ' + yen(tot) + '<br><span style="font-size:13px;font-weight:400">＋ 送料（県ごと）</span></div>' : '');
-        $('#confirm').hidden = true; $('#done').hidden = false; $('#bar').hidden = true; step = 'done'; scrollTo(0, 0);
+        try { localStorage.setItem('kouju_ship_sender', JSON.stringify({ name: s.name, kana: s.kana, tel: s.tel, zip: s.zip, addr: s.addr, bldg: s.bldg, email: s.email })); } catch (e) {}
+        const tot = S.dests.reduce((a, x) => a + amtOf(x), 0);
+        S.step = 'done'; setProg(); $('#bar').hidden = true; scrollTo(0, 0);
+        $('#main').innerHTML = '<div class="done"><div class="q">受付できました</div><div class="no">No.' + esc(r.data.no) + '</div><p>この画面を<b>レジでスタッフに</b>お見せください。<br>商品代＋送料のお会計をお願いします。</p></div>' +
+          '<div class="card">' + esc(s.name) + ' 様<br>' + S.dests.map((x, i) => '<div style="border-top:1px solid #eadcc7;padding:8px 0;margin-top:6px"><b style="font-size:18px">' + (NUM[i] || i + 1) + ' ' + esc(prefOf(x.addr) || '（県不明）') + '</b>　' + (amtOf(x) ? '<b>' + yen(amtOf(x)) + '</b>' : '') + '<br>' + esc(itemsOf(x) || '商品はレジで') + '</div>').join('') +
+          (tot ? '<div class="tot">商品代合計 ' + yen(tot) + '<br><span style="font-size:13px;font-weight:400">＋ 送料（お届け先の県ごと）</span></div>' : '') + '</div>';
       } catch (e) {
-        alertBox('送信できませんでした。電波の良いところでもう一度お試しいただくか、スタッフにお声がけください。\n（' + e.message + '）');
+        alertBox('送信できませんでした。もう一度お試しいただくか、スタッフにお声がけください。\n（' + e.message + '）');
         b.textContent = 'この内容で受付する';
       } finally { b.disabled = false; }
     }
   };
-  function row(k, v){ return '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>'; }
-  $('#back').onclick = () => { $('#form').hidden = false; $('#confirm').hidden = true; $('#next').textContent = '入力内容を確認する'; step = 'form'; };
-  $('#again').onclick = () => location.reload();
 
   function alertBox(msg){
     let m = $('#msgbox');
@@ -429,6 +314,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
       m.querySelector('button').onclick = () => m.hidden = true; document.body.appendChild(m); }
     m.querySelector('p').textContent = msg; m.hidden = false;
   }
+  render();
 })();
 </script>
 </body>
