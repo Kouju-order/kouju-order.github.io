@@ -398,7 +398,7 @@
   const CATNOTE = { 'テイクアウト 冷凍': 'frozenBag', '麺類': 'noodleBig', 'ご飯類': 'riceBig', 'テイクアウト 飯類': 'toMenuNote', 'ランチ限定 お得ドリンク': 'lunchDeal', '健康ドリンク': 'healthHome' };
   const REGP = { 'ひとくちジョッキ 生ビール': 420, 'ランチ生中ビール': 620 };
   const TO_DRINK = /ビール|サワー|ハイボール|ウイスキー|焼酎|リキュール|紹興酒|白酒|その他|ドリンク|中国茶/;
-  const ITEMIMG = { '香港焼きソバ': 'i_hkyakisoba' };
+  const ITEMIMG = { '香港焼きソバ': 'i_hkyakisoba', '揚げ胡麻団子（3個）': 'i_gomadango' };
   const ITEMRE = [[/^十年紹興酒/, 'c_shaoxing'], [/スペシャルダブル/, 'i_dbl'], [/酸素ドリンク/, 'i_act'], [/ミネラルドリンク/, 'i_min']];
   const GIMG = { 'テイクアウト 飯類':'gohan', 'テイクアウト 餃子':'gyoza', 'テイクアウト その他':'ippin', 'テイクアウト 冷凍':'tenshin', 'ランチ':'lunch2', '黒板メニュー':'board', '餃子':'gyoza', 'ワンタン':'wantan', '麺類':'men', 'ご飯類':'gohan', '焼きそば':'yakisoba', '一品料理':'ippin', '点心':'tenshin', '前菜':'zensai', 'デザート':'dessert', '中国茶':'tea', 'サワー':'sour', 'ビール':'beer2', '紹興酒・白酒':'shaoxing', 'ハイボールその他':'highball', 'ソフトドリンク':'soft' };
   const groupOf = cat => { const g = GROUPS.find(([, cs]) => cs.includes(cat)); return g ? g[0] : 'ハイボールその他'; };
