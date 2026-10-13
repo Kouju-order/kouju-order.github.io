@@ -136,12 +136,12 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   let last = null; try { last = JSON.parse(localStorage.getItem('kouju_ship_sender') || 'null'); } catch (e) {}
   const S = { step: 'sender', cur: 0, dests: [newDest()], sender: { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', email:'', memo:'' }, addrMode: '' };
   function newDest(){ return { q: {}, name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', date:'', time:'', note:'' }; }
-  const itemsOf = d => (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
+  const itemsOf = d => S.itemMode === 'told' ? (S.toldMemo ? 'お店に伝え済み：' + S.toldMemo : 'お店に伝え済みの商品（いつもの商品）') : (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
   const amtOf = d => (FROZEN || []).reduce((a, m, i) => a + (d.q[i] || 0) * Number(m.price || 0), 0);
   const STEPS = ['sender', 'dest', 'items', 'confirm'];
-  const noItem = () => S.dests.findIndex(x => !amtOf(x));
+  const noItem = () => S.itemMode === 'told' ? -1 : S.dests.findIndex(x => !amtOf(x));
 
-  function setProg(){ const k = STEPS.indexOf(S.step); document.querySelectorAll('#prog span').forEach((s, i) => s.classList.toggle('on', i <= k)); }
+  function setProg(){ const k = STEPS.indexOf(S.step === 'mode' || S.step === 'told' ? 'items' : S.step); document.querySelectorAll('#prog span').forEach((s, i) => s.classList.toggle('on', i <= k)); }
   const label = () => S.dests.length > 1 ? 'お届け先' + (NUM[S.cur] || S.cur + 1) + '（全' + S.dests.length + '件）' : '';
 
   function render(){
@@ -159,11 +159,27 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       m.querySelectorAll('.cnt').forEach(b => b.onclick = () => go(Number(b.dataset.n)));
       $('#cntGo').onclick = () => { const n = Number($('#cntN').value); if (n >= 1) go(n); };
     }
+    else if (S.step === 'mode') {
+      $('#next').hidden = true;
+      const n = S.dests.length;
+      m.innerHTML = '<div class="q">お品物について</div><p class="qs">あてはまるものを選んでください。</p>' +
+        (n > 1 ? '<button class="big" data-mode="same"><span class="ic">🟰</span><span><b>全員（' + n + '件）同じ商品を送る</b><small>商品を1回選ぶだけでOK</small></span></button>' +
+                 '<button class="big" data-mode="each"><span class="ic">📝</span><span><b>お届け先ごとに商品を選ぶ</b><small>' + S.dests.map(x => esc(x.name) + '様').join('・') + '</small></span></button>'
+               : '<button class="big" data-mode="each"><span class="ic">📝</span><span><b>商品を選ぶ</b><small>一覧から＋で選びます</small></span></button>') +
+        '<button class="big" data-mode="told"><span class="ic">🗣️</span><span><b>商品はお店に伝えてある・いつもの商品</b><small>選ばずに進めます</small></span></button>';
+      m.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.itemMode = b.dataset.mode; S.cur = 0; S.editing = false; S.step = S.itemMode === 'told' ? 'told' : 'items'; render(); });
+    }
+    else if (S.step === 'told') {
+      $('#next').textContent = '次へ（確認）';
+      m.innerHTML = '<div class="q">お店に伝えてある商品</div><p class="qs">商品はスタッフが確認します。わかれば内容を書いてください（なくてもOK）。</p>' +
+        '<textarea id="toldMemo" rows="3" style="width:100%;font:inherit;font-size:16px;padding:12px;border:1.5px solid #d9c6ad;border-radius:10px" placeholder="例　いつもの金餃子20個入×2">' + esc(S.toldMemo || '') + '</textarea>';
+    }
     else if (S.step === 'items') {
-      const nx = S.dests.findIndex((x, k) => k > S.cur && !amtOf(x));
+      const same = S.itemMode === 'same';
+      const nx = same ? -1 : S.dests.findIndex((x, k) => k > S.cur && !amtOf(x));
       $('#next').textContent = !S.editing && nx >= 0 ? '次へ（' + esc(S.dests[nx].name) + '様の商品）' : '次へ（確認）';
-      m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">' + esc(d.name) + ' 様へのお品物</div><p class="qs">「＋」で数を選んでください。</p>' +
-        (S.cur > 0 && amtOf(S.dests[S.cur - 1]) ? '<button class="btn sub" id="same" style="margin-bottom:12px">' + esc(S.dests[S.cur - 1].name) + ' 様と同じ商品にする</button>' : '') +
+      m.innerHTML = (same ? '<div class="who">全員（' + S.dests.length + '件）に同じ商品</div><div class="q">1件あたりのお品物</div>' : (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">' + esc(d.name) + ' 様へのお品物</div>') + '<p class="qs">「＋」で数を選んでください。</p>' +
+        (!same && S.cur > 0 && amtOf(S.dests[S.cur - 1]) ? '<button class="btn sub" id="same" style="margin-bottom:12px">' + esc(S.dests[S.cur - 1].name) + ' 様と同じ商品にする</button>' : '') +
         '<div class="items" id="items"><p style="padding:12px">商品を読み込み中…</p></div>';
       if ($('#same')) $('#same').onclick = () => { d.q = Object.assign({}, S.dests[S.cur - 1].q); render(); };
       menuP.then(() => {
@@ -227,7 +243,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
         '<div class="card"><h3>送り主（あなた）<button class="link e" id="es">直す</button></h3>' + esc(S.sender.name) + ' 様　' + esc(S.sender.tel) + '<br>〒' + esc(S.sender.zip) + ' ' + esc(S.sender.addr) + ' ' + esc(S.sender.bldg) + '</div>' +
         (tot ? '<div class="tot">商品代合計 ' + yen(tot) + '<br><span style="font-size:13px;font-weight:400">＋ 送料はレジでご案内します</span></div>' : '');
       m.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { S.cur = Number(b.dataset.e); S.step = 'dest'; S.addrMode = 'hand'; S.editing = true; render(); });
-      m.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { S.cur = Number(b.dataset.i); S.step = 'items'; S.editing = true; render(); });
+      m.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { if (S.itemMode === 'each') { S.cur = Number(b.dataset.i); S.step = 'items'; S.editing = true; } else S.step = 'mode'; render(); });
       $('#es').onclick = () => { S.step = 'sender'; S.editing = true; render(); };
       $('#more').onclick = () => { S.dests.push(newDest()); S.cur = S.dests.length - 1; S.addrMode = ''; S.editing = false; S.step = 'dest'; render(); };
     }
@@ -288,8 +304,10 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
     else if (S.step === 'dest') { collect('d', S.dests[S.cur]); const em = !(S.dests[S.cur].name || S.dests[S.cur].addr);
       if (S.cur > 0) { if (em) S.dests.splice(S.cur, 1); S.cur--; S.addrMode = 'hand'; }
       else S.step = 'sender'; }
-    else if (S.step === 'items') { if (S.cur > 0) S.cur--; else { S.cur = S.dests.length - 1; S.step = 'dest'; S.addrMode = 'hand'; } }
-    else if (S.step === 'confirm') { S.cur = S.dests.length - 1; S.step = 'items'; }
+    else if (S.step === 'items') { if (S.itemMode === 'each' && S.cur > 0) S.cur--; else S.step = 'mode'; }
+    else if (S.step === 'told') { S.toldMemo = ($('#toldMemo').value || '').trim(); S.step = 'mode'; }
+    else if (S.step === 'mode') { S.cur = S.dests.length - 1; S.step = 'dest'; S.addrMode = 'hand'; }
+    else if (S.step === 'confirm') { S.step = 'mode'; }
     render();
   };
 
@@ -297,12 +315,16 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
     if (S.step === 'items') {
       if (FROZEN && FROZEN.length && !amtOf(S.dests[S.cur])) { alertBox('送る商品を「＋」で選んでください。'); return; }
       const nx = S.dests.findIndex((x, k) => k > S.cur && !amtOf(x));
-      if (!S.editing && nx >= 0) S.cur = nx; else { S.editing = false; const r = noItem(); if (r >= 0 && FROZEN && FROZEN.length) S.cur = r; else S.step = 'confirm'; } render();
+      if (S.itemMode === 'same') { const q = S.dests[S.cur].q; S.dests.forEach(x => x.q = Object.assign({}, q)); S.step = 'confirm'; }
+      else if (!S.editing && nx >= 0) S.cur = nx; else { S.editing = false; const r = noItem(); if (r >= 0 && FROZEN && FROZEN.length) S.cur = r; else S.step = 'confirm'; } render();
+    } else if (S.step === 'told') {
+      S.toldMemo = ($('#toldMemo').value || '').trim(); S.step = 'confirm'; render();
     } else if (S.step === 'dest') {
       const d = S.dests[S.cur]; collect('d', d);
       const miss = check(d); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; }
       if (S.editing) { S.editing = false; S.step = 'confirm'; }
       else if (S.cur < S.dests.length - 1 && !(S.dests[S.cur + 1].name)) { S.cur++; S.addrMode = ''; }
+      else if (!S.itemMode) S.step = 'mode';
       else { const r = noItem(); if (r >= 0 && FROZEN && FROZEN.length) { S.cur = r; S.step = 'items'; } else S.step = 'confirm'; }
       render();
     } else if (S.step === 'sender') {
