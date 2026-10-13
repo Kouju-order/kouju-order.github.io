@@ -102,6 +102,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
   <div class="no" id="doneNo"></div>
   <div>この画面を<b>レジでスタッフに</b>お見せください。<br>お会計（商品代＋送料）をお願いします。</div>
   <p class="hint" id="doneSum"></p>
+  <div id="doneList" style="text-align:left;margin-top:12px"></div>
   <button type="button" class="btn sub" id="again" style="margin-top:16px">続けて別の受付をする</button>
 </div>
 </main>
@@ -405,7 +406,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
         try { const s = payload.sender; localStorage.setItem('kouju_ship_sender', JSON.stringify({ name: s.name, kana: s.kana, tel: s.tel, zip: s.zip, addr: s.addr, bldg: s.bldg, email: s.email })); } catch(e) {}
         $('#doneNo').textContent = '受付 No.' + r.data.no;
         const tot = payload.dests.reduce((x, d) => x + Number(d.amt || 0), 0);
-        $('#doneSum').textContent = payload.sender.name + '様　お届け先 ' + payload.dests.length + '件' + (tot ? '　商品代合計 ' + yen(tot) + '（送料別）' : '');
+        $('#doneSum').textContent = payload.sender.name + '様　お届け先 ' + payload.dests.length + '件';
+        const NUM = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
+        const pref = a => PREF.find(p => p && String(a || '').startsWith(p)) || '';
+        $('#doneList').innerHTML = payload.dests.map((d, i) => '<div style="border-top:1px solid #eadcc7;padding:8px 0"><b style="font-size:17px">' + (NUM[i] || (i + 1)) + ' ' + esc(pref(d.addr) || '（県不明）') + '</b>　' + (d.amt ? '<b>' + yen(d.amt) + '</b>' : '') + '<br><span style="font-size:14px">' + esc(d.item || '商品はレジでご相談') + '</span></div>').join('') +
+          (tot ? '<div style="border-top:2px solid var(--red);padding:8px 0;font-weight:800;font-size:17px;text-align:right">商品代合計 ' + yen(tot) + '<br><span style="font-size:13px;font-weight:400">＋ 送料（県ごと）</span></div>' : '');
         $('#confirm').hidden = true; $('#done').hidden = false; $('#bar').hidden = true; step = 'done'; scrollTo(0, 0);
       } catch (e) {
         alertBox('送信できませんでした。電波の良いところでもう一度お試しいただくか、スタッフにお声がけください。\n（' + e.message + '）');

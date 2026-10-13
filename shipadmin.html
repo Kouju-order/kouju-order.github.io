@@ -40,7 +40,8 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
 <header><h1>🧊 発送受付一覧（B2クラウド用）</h1><a href="ship.html" target="_blank">お客様用ページ</a></header>
 <main>
   <div class="ctl">
-    <div><label>表示</label><select id="filter"><option value="未発行">未発行のみ</option><option value="">すべて</option><option value="発行済">発行済</option><option value="取消">取消</option></select></div>
+    <div><label>表示</label><label style="display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--ink)"><input type="checkbox" id="full"> 住所も表示</label></div>
+    <div><label>状態</label><select id="filter"><option value="未発行">未発行のみ</option><option value="">すべて</option><option value="発行済">発行済</option><option value="取消">取消</option></select></div>
     <div><label>出荷予定日</label><input type="date" id="shipDate"></div>
     <button class="main" id="dl">✓ 選んだ受付をB2用CSVでダウンロード</button>
     <button class="sub" id="mark">発行済にする</button>
@@ -90,6 +91,19 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
     const f = $('#filter').value;
     const rows = data.filter(r => !f || r['状態'] === f);
     if (!rows.length) { $('#list').innerHTML = '<div class="empty">該当する受付はありません</div>'; return; }
+    const NUM = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳';
+    const PREFS = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+    const pref = a => PREFS.find(p => String(a || '').startsWith(p)) || '（県不明）';
+    if (!$('#full').checked) {
+      $('#list').innerHTML = rows.map(r => {
+        const n = Number(String(r['受付番号']).split('-').pop()) - 1;
+        return '<div class="item' + (r['状態'] !== '未発行' ? ' done' : '') + '"><input type="checkbox" value="' + esc(r['受付番号']) + '"' + (r['状態'] === '未発行' ? ' checked' : '') + '><div>' +
+          '<div class="hd"><span class="st ' + esc(r['状態']) + '">' + esc(r['状態']) + '</span>' + esc(r['依頼主名']) + ' 様　<span class="small">No.' + esc(r['受付番号']) + '　' + esc(r['受付日時']) + '</span></div>' +
+          '<div style="font-size:17px;margin-top:4px"><b>' + (NUM[n] || '') + ' ' + esc(pref(r['お届け先住所'])) + '</b>　' + (r['商品代'] ? '<b>¥' + Number(r['商品代']).toLocaleString() + '</b>' : '') + '</div>' +
+          '<div style="font-size:14px">' + esc(r['品名'] || '（商品の指定なし）') + '</div></div></div>';
+      }).join('');
+      return;
+    }
     $('#list').innerHTML = rows.map(r => {
       const warn = [];
       if (W(r['お届け先住所']) > 32) warn.push('住所が長いので、32文字を超えた分は建物名の欄に入れます');
@@ -106,6 +120,8 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
     }).join('');
   }
   $('#filter').onchange = render;
+  try { $('#full').checked = localStorage.getItem('b2_full') === '1'; } catch (e) {}
+  $('#full').onchange = () => { try { localStorage.setItem('b2_full', $('#full').checked ? '1' : '0'); } catch (e) {} render(); };
   $('#reload').onclick = load;
   const picked = () => [...document.querySelectorAll('#list input:checked')].map(c => c.value);
 
