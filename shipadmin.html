@@ -49,7 +49,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
     <button class="sub" id="reload">↻ 更新</button>
     <button class="sub" id="setBtn">⚙ 請求先設定</button>
     <div id="setbox">
-      <div><label>請求先顧客コード（12桁）</label><input id="bill" inputmode="numeric" maxlength="12"></div>
+      <div><label>請求先顧客コード</label><input id="bill" inputmode="numeric" maxlength="12"></div>
       <div><label>分類コード（3桁・なければ空）</label><input id="billCls" inputmode="numeric" maxlength="3" style="width:90px"></div>
       <div><label>運賃管理番号</label><input id="fare" inputmode="numeric" maxlength="2" style="width:70px"></div>
       <div class="small" style="align-self:center">この端末に保存されます</div>
@@ -75,7 +75,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
       const r = await fetch(API + '?api=ships&key=' + encodeURIComponent(KEY), { credentials: 'omit' }).then(r => r.json());
       if (!r.ok) throw new Error(r.error);
       data = r.data.list; conf = r.data.conf || {};
-      $('#bill').value = ls('b2_bill') || conf.bill || ''; $('#billCls').value = ls('b2_billcls') || conf.billCls || ''; $('#fare').value = ls('b2_fare') || conf.fare || '01';
+      $('#bill').value = ls('b2_bill') || conf.bill || '0452989091'; $('#billCls').value = ls('b2_billcls') || conf.billCls || ''; $('#fare').value = ls('b2_fare') || conf.fare || '01';
       if (!$('#bill').value) $('#setbox').classList.add('on');
       render();
     } catch (e) { $('#list').innerHTML = '<div class="empty">読み込めませんでした：' + esc(e.message) + '</div>'; }
@@ -144,7 +144,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
     a[15] = r['お届け先名']; a[16] = hankana(r['お届け先カナ']);
     a[19] = r['依頼主電話']; a[21] = r['依頼主郵便']; a[22] = sa; a[23] = sb;
     a[24] = r['依頼主名']; a[25] = hankana(r['依頼主カナ']);
-    a[27] = '中華点心';
+    a[27] = '中華点心'; a[30] = 'ナマモノ'; a[31] = '下積厳禁'; a[37] = '1';
     a[32] = [...(r['備考'] || '')].slice(0, 22).join('');
     a[39] = bill; a[40] = billCls; a[41] = fare;
     const em = String(r['メール'] || '').trim();
@@ -155,7 +155,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
 
   $('#dl').onclick = () => {
     const ids = picked(); if (!ids.length) { alert('受付を選んでください'); return; }
-    const bill = $('#bill').value.trim(), billCls = $('#billCls').value.trim(), fare = $('#fare').value.trim() || '01';
+    const bill = $('#bill').value.trim() || '0452989091', billCls = $('#billCls').value.trim(), fare = $('#fare').value.trim() || '01';
     if (!/^\d{10,12}$/.test(bill)) { $('#setbox').classList.add('on'); alert('⚙ 請求先設定に「請求先顧客コード」を入れてください'); return; }
     const sd = $('#shipDate').value; if (!sd) { alert('出荷予定日を入れてください'); return; }
     const rows = data.filter(r => ids.includes(r['受付番号'])).map(r => toRow(r, sd.replace(/-/g, '/'), bill, billCls, fare));
