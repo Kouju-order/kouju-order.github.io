@@ -348,6 +348,15 @@
     })
     .catch(() => { if (!menu.length) $('menu').innerHTML = '<p class="center">' + T('loadFail') + '</p>'; });
 
+  // ページを開いたままでも、ランチの時間（11:30〜14:30）やメニュー変更が反映されるよう、3分ごと・画面に戻った時に最新のメニューを取り直す
+  const refreshMenu = () => call({ api: 'menu' }).then(m => {
+    const fresh = JSON.stringify(m);
+    if (fresh !== JSON.stringify(menu)) { const y = window.scrollY; menu = m; renderMenu(); window.scrollTo(0, y); }
+    try { localStorage.setItem('kouju_menu', fresh); } catch (e) {}
+  }).catch(() => {});
+  setInterval(refreshMenu, 180000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshMenu(); });
+
   // 大分類（お店のメニューの並び）
   const GROUPS = [
     ['テイクアウト 飯類', ['テイクアウト 飯類']],
