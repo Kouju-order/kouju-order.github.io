@@ -242,6 +242,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   }
   function addrForm(p, o){
     return '<label>お名前</label><input id="' + p + '_name" autocomplete="' + (p === 's' ? 'name' : 'off') + '" value="' + esc(o.name) + '">' +
+      '<label>フリガナ（お名前の読み方）</label><input id="' + p + '_kana" placeholder="例　ヤマダ ハナコ" value="' + esc(o.kana) + '">' +
       '<label>電話番号</label><input id="' + p + '_tel" type="tel" inputmode="tel" autocomplete="' + (p === 's' ? 'tel' : 'off') + '" value="' + esc(o.tel) + '">' +
       '<label>郵便番号 <span id="' + p + '_zmsg" style="font-weight:400"></span></label><input id="' + p + '_zip" inputmode="numeric" autocomplete="' + (p === 's' ? 'postal-code' : 'off') + '" placeholder="例 232-0053" value="' + esc(o.zip) + '">' +
       '<label>住所（番地まで）</label><input id="' + p + '_addr" autocomplete="' + (p === 's' ? 'street-address' : 'off') + '" value="' + esc(o.addr) + '">' +
@@ -264,6 +265,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   function collect(p, o){
     ['name','tel','zip','addr','bldg','kana','email','memo','date','time','note'].forEach(k => { const el = $('#' + p + '_' + k); if (el) o[k] = (el.value || '').trim(); });
     if (o.zip) o.zip = zipNorm(o.zip); if (o.tel) o.tel = telNorm(o.tel);
+    if (o.kana) o.kana = o.kana.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
   }
   function check(o){
     const miss = [];
