@@ -30,6 +30,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
 .btn.sub{background:#fff;color:var(--red);border:1.5px solid var(--red);font-size:15px;padding:11px}
 .btn.ghost{background:#f4ebdd;color:var(--ink);font-size:14px;padding:10px;font-weight:700}
 .tools{display:flex;gap:8px;margin:0 0 6px;flex-wrap:wrap}
+.items{border:1.5px solid #e7d6bf;border-radius:12px;overflow:hidden}
+.it{display:flex;align-items:center;gap:8px;padding:9px 10px;border-top:1px solid #f1e6d6;background:#fff}
+.it:first-child{border-top:0}
+.it.on{background:#fff4e8}
+.it .nm{flex:1;font-size:14.5px;line-height:1.35}
+.it .nm small{display:block;color:var(--sub);font-size:12.5px}
+.it .q{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--red);background:#fff;color:var(--red);font-size:20px;font-weight:800;line-height:1;padding:0;cursor:pointer}
+.it .q.p{background:var(--red);color:#fff}
+.it .qty{min-width:22px;text-align:center;font-weight:800;font-size:17px}
+.isum{padding:10px;background:#fbf3e6;font-weight:800;text-align:right;font-size:15px}
 .tools .btn{flex:1;min-width:140px}
 .hint{font-size:12.5px;color:var(--sub);margin:6px 0 0}
 .del{float:right;background:none;border:0;color:var(--sub);font-size:13px;text-decoration:underline;cursor:pointer}
@@ -122,8 +132,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     <input name="addr" placeholder="都道府県から番地まで">
     <label>建物名・部屋番号</label>
     <input name="bldg" placeholder="〇〇マンション 101">
-    <label>お送りする品物</label>
-    <input name="item" placeholder="例：金餃子20個入×2、焼売">
+    <label>お送りする商品（＋で数を選んでください）</label>
+    <div class="items"><p class="hint">商品を読み込み中…</p></div>
+    <input type="hidden" name="item"><input type="hidden" name="amt">
     <div class="row">
       <div><label>お届け希望日</label><input name="date" type="date"></div>
       <div><label>時間帯</label><select name="time">
@@ -257,6 +268,36 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     }
     return (o.name || o.tel || o.addr) ? o : null;
   }
+  // 冷凍物販の商品一覧（テイクアウト注文と同じメニューから）
+  let FROZEN = [];
+  const menuP = fetch(API + '?api=menu', { credentials: 'omit' }).then(r => r.json())
+    .then(r => { FROZEN = ((r && r.data) || []).filter(m => m.cat === 'テイクアウト 冷凍' && !/保冷/.test(m.name)); })
+    .catch(() => { FROZEN = []; });
+  const shortName = n => String(n).replace(/^【冷凍】/, '').replace(/[（(][^）)]*[）)]/g, '').replace(/\s+/g, '');
+  const yen = n => '¥' + Number(n || 0).toLocaleString();
+  function renderItems(node){
+    menuP.then(() => {
+      const box = node.querySelector('.items'), hi = node.querySelector('[name=item]'), ha = node.querySelector('[name=amt]');
+      const h = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      if (!FROZEN.length) {
+        box.outerHTML = '<input name="item" placeholder="例：金餃子20個入×2、焼売">'; hi.remove(); return;
+      }
+      const q = FROZEN.map(() => 0);
+      box.innerHTML = FROZEN.map((m, i) => '<div class="it" data-i="' + i + '"><div class="nm">' + h(String(m.name).replace(/^【冷凍】/, '')) + '<small>' + yen(m.price) + '</small></div><button type="button" class="q m" aria-label="減らす">−</button><span class="qty">0</span><button type="button" class="q p" aria-label="増やす">＋</button></div>').join('') + '<div class="isum">商品代 ¥0</div>';
+      const upd = () => {
+        const parts = [], sum = FROZEN.reduce((a, m, i) => a + q[i] * Number(m.price || 0), 0);
+        FROZEN.forEach((m, i) => { if (q[i]) parts.push(shortName(m.name) + '×' + q[i]); });
+        hi.value = parts.join('、'); ha.value = sum ? String(sum) : '';
+        box.querySelector('.isum').textContent = '商品代 ' + yen(sum) + (sum ? '（送料は別です）' : '');
+      };
+      box.querySelectorAll('.it').forEach(row => {
+        const i = Number(row.dataset.i), qs = row.querySelector('.qty');
+        const set = v => { q[i] = Math.max(0, Math.min(99, v)); qs.textContent = q[i]; row.classList.toggle('on', q[i] > 0); upd(); };
+        row.querySelector('.p').onclick = () => set(q[i] + 1);
+        row.querySelector('.m').onclick = () => set(q[i] - 1);
+      });
+    });
+  }
   const canPick = 'contacts' in navigator && 'select' in (navigator.contacts || {});
   let n = 0;
   function addDest(){
@@ -324,6 +365,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
         } catch (e) {}
       };
     }
+    renderItems(node);
     renum();
     return node;
   }
@@ -353,7 +395,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
       payload = { action: 'ship', sender, dests, rid: Date.now().toString(36) + Math.random().toString(36).slice(2,8) };
       $('#sumBox').innerHTML = '<h2>ご依頼主</h2><dl>' + row('お名前', sender.name + ' 様') + row('電話', sender.tel) + row('住所', '〒' + sender.zip + ' ' + sender.addr + ' ' + sender.bldg) + (sender.email ? row('メール', sender.email) : '') + (sender.memo ? row('備考', sender.memo) : '') + '</dl>' +
         dests.map((d, i) => '<h2 style="margin-top:14px">お届け先' + ('①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳'[i] || (i + 1)) + '</h2><dl>' + row('お名前', d.name + ' 様') + row('電話', d.tel) + row('住所', '〒' + d.zip + ' ' + d.addr + ' ' + d.bldg) +
-          row('品物', d.item || '（レジでご相談）') + row('お届け日時', (d.date ? d.date.replace(/-/g,'/') : '指定なし') + '　' + TL[d.time || '']) + (d.note ? row('メモ', d.note) : '') + '</dl>').join('');
+          row('商品', d.item || '（レジでご相談）') + (d.amt ? row('商品代', yen(d.amt) + '（送料別）') : '') + row('お届け日時', (d.date ? d.date.replace(/-/g,'/') : '指定なし') + '　' + TL[d.time || '']) + (d.note ? row('メモ', d.note) : '') + '</dl>').join('');
       $('#form').hidden = true; $('#confirm').hidden = false; $('#next').textContent = 'この内容で受付する'; step = 'confirm'; scrollTo(0, 0);
     } else if (step === 'confirm') {
       const b = $('#next'); b.disabled = true; b.textContent = '送信中…';
@@ -362,7 +404,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
         if (!r.ok) throw new Error(r.error || '送信できませんでした');
         try { const s = payload.sender; localStorage.setItem('kouju_ship_sender', JSON.stringify({ name: s.name, kana: s.kana, tel: s.tel, zip: s.zip, addr: s.addr, bldg: s.bldg, email: s.email })); } catch(e) {}
         $('#doneNo').textContent = '受付 No.' + r.data.no;
-        $('#doneSum').textContent = payload.sender.name + '様　お届け先 ' + payload.dests.length + '件';
+        const tot = payload.dests.reduce((x, d) => x + Number(d.amt || 0), 0);
+        $('#doneSum').textContent = payload.sender.name + '様　お届け先 ' + payload.dests.length + '件' + (tot ? '　商品代合計 ' + yen(tot) + '（送料別）' : '');
         $('#confirm').hidden = true; $('#done').hidden = false; $('#bar').hidden = true; step = 'done'; scrollTo(0, 0);
       } catch (e) {
         alertBox('送信できませんでした。電波の良いところでもう一度お試しいただくか、スタッフにお声がけください。\n（' + e.message + '）');

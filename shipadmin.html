@@ -96,6 +96,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
       if (W(r['お届け先建物']) > 16 || W(r['依頼主建物']) > 16) warn.push('建物名が16文字を超えています');
       if (W(r['お届け先名']) > 16 || W(r['依頼主名']) > 16) warn.push('名前が16文字を超えています');
       if (!r['品名']) warn.push('品物が空欄（「冷凍食品」で出力します）');
+      if (W(r['品名']) > 50) warn.push('品名が長いので、送り状には50文字までしか載りません');
       return '<div class="item' + (r['状態'] !== '未発行' ? ' done' : '') + '"><input type="checkbox" value="' + esc(r['受付番号']) + '"' + (r['状態'] === '未発行' ? ' checked' : '') + '><div>' +
         '<div class="hd"><span class="st ' + esc(r['状態']) + '">' + esc(r['状態']) + '</span>No.' + esc(r['受付番号']) + '　' + esc(r['受付日時']) + '</div>' +
         '<div class="cols"><div><span class="small">お届け先</span><br><b>' + esc(r['お届け先名']) + ' 様</b>　' + esc(r['お届け先電話']) + '<br>〒' + esc(r['お届け先郵便']) + ' ' + esc(r['お届け先住所']) + ' ' + esc(r['お届け先建物']) + '</div>' +
@@ -129,7 +130,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px
     a[15] = r['お届け先名']; a[16] = hankana(r['お届け先カナ']);
     a[19] = r['依頼主電話']; a[21] = r['依頼主郵便']; a[22] = sa; a[23] = sb;
     a[24] = r['依頼主名']; a[25] = hankana(r['依頼主カナ']);
-    a[27] = [...(r['品名'] || '冷凍食品')].slice(0, 25).join('');
+    const it = [...(r['品名'] || '冷凍食品')]; a[27] = it.slice(0, 25).join(''); if (it.length > 25) a[29] = it.slice(25, 50).join('');
     a[32] = [...(r['備考'] || '')].slice(0, 22).join('');
     a[39] = bill; a[40] = billCls; a[41] = fare;
     const em = String(r['メール'] || '').trim();
