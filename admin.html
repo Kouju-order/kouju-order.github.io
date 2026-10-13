@@ -7,6 +7,15 @@
 <title>注文一覧｜公珠</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+  #mvbox { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:50; display:flex; align-items:center; justify-content:center; padding:16px; }
+  #mvbox .mvin { background:#fff; border-radius:16px; padding:18px; width:100%; max-width:520px; }
+  #mvbox .mvt { font-size:20px; font-weight:700; margin-bottom:12px; }
+  #mvbox .mvc { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  #mvbox .mvc button { min-width:64px; padding:12px 16px; font-size:24px; font-weight:700; }
+  #mvbox .mvr { display:flex; gap:8px; margin-bottom:10px; }
+  #mvbox .mvi { flex:1; min-width:0; font-size:22px; padding:10px; border:1px solid #ccc; border-radius:10px; }
+  #mvbox .mvok { padding:10px 22px; font-size:20px; }
+  #mvbox .mvno { width:100%; padding:10px; }
   :root { --red:#a8231b; --ink:#231f1c; --muted:#7a716a; --bg:#f3eee6; --card:#fff; --line:#e3dacd; --warn:#d9822b; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--ink); }
@@ -98,7 +107,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-1155'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1230'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -461,7 +470,7 @@
       const c = document.createElement('div');
       c.className = 'card' + (mins >= 15 ? ' late' : '');
       c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
-        '<div class="foot"><span class="sum"></span><div class="btns"><button class="print">伝票印刷</button><button class="doneBtn">提供済み</button></div></div>';
+        '<div class="foot"><span class="sum"></span><div class="btns"><button class="ghost mv">席変更</button><button class="print">伝票印刷</button><button class="doneBtn">提供済み</button></div></div>';
       { const tb = c.querySelector('.tbl'); tb.textContent = 'テーブル '; const b = document.createElement('b'); b.className = 'tno'; b.textContent = o.table; tb.appendChild(b); }
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
       const box = c.querySelector('.items');
@@ -488,8 +497,9 @@
       { const tr = tableRun(o); if (tr) c.querySelector('.sum').textContent = yen(o.total) + '（追加分込み ' + tr.n + '回 ' + yen(tr.sum) + '）'; }
       c.querySelector('.doneBtn').onclick = e => doneNow(o.no, c, e.currentTarget);
       c.querySelector('.print').onclick = () => printSlip(o);
+      c.querySelector('.mv').onclick = () => moveTable(o);
       if (o.no === flashNo) { c.style.boxShadow = '0 0 0 5px #f5b400'; c.style.background = '#fff8dc'; }
-      if (isCall(o)) { c.classList.add('call'); if (!/【予約】/.test(o.items)) c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
+      if (isCall(o)) { c.classList.add('call'); c.querySelector('.mv').remove(); if (!/【予約】/.test(o.items)) c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
       p.appendChild(c);
     });
 
@@ -512,11 +522,37 @@
       const b = document.createElement('button'); b.className = 'ghost back'; b.textContent = '未対応に戻す';
       if (restoring.has(o.no)) { b.disabled = true; b.textContent = '⏳ 戻しています…'; }
       b.onclick = () => setStatus(o.no, '未対応', b);
-      r.append(s, b); dn.appendChild(r);
+      const mv = document.createElement('button'); mv.className = 'ghost back'; mv.textContent = '席変更'; mv.onclick = () => moveTable(o);
+      r.append(s, mv, b); dn.appendChild(r);
     });
 
     const t = new Date();
     $('status').textContent = '最終更新 ' + t.toTimeString().slice(0, 8);
+  }
+
+  // ===== 席変更：来店前に別の番号（8番など）で注文したお客様が、実際に座った席へ注文を移す =====
+  function moveTable(o) {
+    const old = document.getElementById('mvbox'); if (old) old.remove();
+    const bx = document.createElement('div'); bx.id = 'mvbox';
+    bx.innerHTML = '<div class="mvin"><div class="mvt"></div><div class="mvc"></div><div class="mvr"><input class="mvi" placeholder="席（例：A、3）" maxlength="10"><button class="mvok">移す</button></div><button class="ghost mvno">やめる</button></div>';
+    bx.querySelector('.mvt').textContent = 'No.' + o.no + '（今：テーブル ' + o.table + '）をどの席に移しますか？';
+    const inp = bx.querySelector('.mvi'), ok = bx.querySelector('.mvok');
+    const all = ((lastD && lastD.pending) || []).concat((lastD && lastD.done) || []);
+    const seen = [...new Set(all.filter(x => !isCall(x)).map(x => String(x.table)))].filter(x => x && x !== String(o.table) && !/持|予約/.test(x)).sort();
+    seen.forEach(x => { const b = document.createElement('button'); b.textContent = x; b.onclick = () => go(x); bx.querySelector('.mvc').appendChild(b); });
+    if (!seen.length) bx.querySelector('.mvc').remove();
+    const go = v => {
+      v = String(v || '').trim(); if (!v) { inp.focus(); return; }
+      ok.disabled = true; ok.textContent = '⏳';
+      call(null, { action: 'table', key: KEY, no: o.no, table: v })
+        .then(() => { bx.remove(); all.forEach(x => { if (x.no === o.no) x.table = v; }); if (lastD) show(lastD); load(); })
+        .catch(e => { ok.disabled = false; ok.textContent = '移す'; alert((e && e.message) || '席を変えられませんでした。もう一度押してください'); });
+    };
+    ok.onclick = () => go(inp.value);
+    inp.onkeydown = e => { if (e.key === 'Enter') go(inp.value); };
+    bx.querySelector('.mvno').onclick = () => bx.remove();
+    bx.onclick = e => { if (e.target === bx) bx.remove(); };
+    document.body.appendChild(bx);
   }
 
   const hiding = new Set();
