@@ -118,7 +118,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-1245'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1250'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -314,7 +314,22 @@
   const getPaid = () => { try { return JSON.parse(localStorage.getItem(PAIDKEY) || '{}'); } catch (e) { return {}; } };
   const paidMem = {};
   const paidAt = t => Math.max(getPaid()[t] || 0, paidMem[t] || 0);
-  function setPaid(t) { paidMem[t] = Date.now(); try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p)); } catch (e) {} if (lastD) show(lastD); }
+  // 「会計済み」を押す前の状態を覚えておき、間違えて押したときに取り消せるようにする
+  function paidHist_() { try { return JSON.parse(localStorage.getItem(PAIDKEY + '_hist') || '{}'); } catch (e) { return {}; } }
+  function setPaid(t) {
+    const prev = paidAt(t);
+    paidMem[t] = Date.now();
+    try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p));
+      const h = paidHist_(); (h[t] = h[t] || []).push(prev); localStorage.setItem(PAIDKEY + '_hist', JSON.stringify(h)); } catch (e) {}
+    if (lastD) show(lastD);
+  }
+  function undoPaid(t) {
+    let prev = 0;
+    try { const h = paidHist_(); prev = Number((h[t] || []).pop() || 0); localStorage.setItem(PAIDKEY + '_hist', JSON.stringify(h)); } catch (e) {}
+    paidMem[t] = prev;
+    try { const p = getPaid(); if (prev) p[t] = prev; else delete p[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p)); } catch (e) {}
+    if (lastD) show(lastD);
+  }
   // 席変更した注文は、移した時刻をその席に来た時刻として扱う（前のお客様の「会計済み」より前に注文していても、今のお客様の会計に入るように）
   function movedMap_() { try { return JSON.parse(localStorage.getItem('kouju_moved_' + new Date().toDateString()) || '{}'); } catch (e) { return {}; } }
   function movedAt_(no) { const v = movedMap_()[no]; return Number((v && v.at) || v || 0); }
@@ -542,12 +557,12 @@
       const s = document.createElement('span');
       s.textContent = `No.${o.no}　テーブル ${o.table}　${o.time}　${yen(o.total)}`;
       // 「会計済み」を押した席の、それより前の注文には印を付ける
-      { const pt = paidAt(String(o.table)); if (pt && atOf(o) <= pt) { r.classList.add('paidrow'); const pb = document.createElement('span'); pb.className = 'paidb'; pb.textContent = '💴 会計済'; s.appendChild(document.createTextNode('　')); s.appendChild(pb); } }
+      { const pt = paidAt(String(o.table)); if (pt && atOf(o) <= pt) { r.classList.add('paidrow'); const pb = document.createElement('span'); pb.className = 'paidb'; pb.textContent = '💴 会計済'; s.appendChild(document.createTextNode('　')); s.appendChild(pb); r._paidT = String(o.table); } }
       const b = document.createElement('button'); b.className = 'ghost back'; b.textContent = '未対応に戻す';
       if (restoring.has(o.no)) { b.disabled = true; b.textContent = '⏳ 戻しています…'; }
       b.onclick = () => setStatus(o.no, '未対応', b);
       const mv = document.createElement('button'); mv.className = 'ghost back'; mv.textContent = '席変更'; mv.onclick = () => moveTable(o);
-      r.append(s, mv, b); dn.appendChild(r);
+      if (r._paidT) { const ub = document.createElement('button'); ub.className = 'ghost back'; ub.textContent = '会計済を取消'; ub.onclick = () => undoPaid(r._paidT); r.append(s, ub, mv, b); } else r.append(s, mv, b); dn.appendChild(r);
     });
 
     const t = new Date();
