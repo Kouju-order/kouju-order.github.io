@@ -304,6 +304,8 @@
       window.TODAY = (jst.getMonth() + 1) + '/' + jst.getDate() + '(' + '日月火水木金土'[jst.getDay()] + ')';
       { const p = document.createElement('p'); p.style.cssText = 'margin:4px 0 6px;font-weight:700;font-size:16px'; p.textContent = '受け取り日：本日 ' + window.TODAY; sel.before(p); }
       if (jst.getDay() === 3) { sel.innerHTML = '<option value="">本日は定休日です</option>'; sel.disabled = true; $('toOk').disabled = true; msg.textContent = '水曜日は定休日のため、本日のご注文は承れません。'; return; }
+      { const ymd = jst.getFullYear() + '-' + String(jst.getMonth() + 1).padStart(2, '0') + '-' + String(jst.getDate()).padStart(2, '0');
+        if (KYUGYO.includes(ymd)) { sel.innerHTML = '<option value="">本日は臨時休業です</option>'; sel.disabled = true; $('toOk').disabled = true; msg.textContent = '本日は臨時休業のため、ご注文は承れません。'; return; } }
       const nowMin = jst.getHours() * 60 + jst.getMinutes() + 15;
       const ranges = [[11 * 60 + 45, 14 * 60 + 30], [17 * 60 + 30, 21 * 60 + 15]];
       const opts = [];
@@ -670,6 +672,8 @@
   Object.assign(RT.zhs, { oPay: '请于11/30（周一）前到店付款。可使用现金、信用卡、交通IC卡以及PayPay、支付宝、微信支付等各种支付方式。如11/30前未付款，我们会致电确认。' });
   Object.assign(RT.zht, { oPay: '請於11/30（週一）前到店付款。可使用現金、信用卡、交通IC卡以及PayPay、支付寶、微信支付等各種支付方式。如11/30前未付款，我們會致電確認。' });
   const CRAB_FROM = '2026-10-30', CRAB_TO = '2026-11-15', CRAB_EARLY_TO = '2026-10-27', CRAB_OFF = ['2026-10-29'];
+  // 臨時休業日（テイクアウト・上海蟹の予約を受けない日）。11/16・11/17は月餅づくりのため休業
+  var KYUGYO = ['2026-11-16', '2026-11-17'];
   // 上海蟹：大きいサイズ(220g)は10/24〜11/15のみ。通常サイズは10/15〜12/25（水曜休み）
   const CRAB_ALL_FROM = '2026-10-15', CRAB_ALL_TO = '2026-12-25';
   const CRAB_BIG = [['大オス220g', 4800], ['大メス220g', 5400]];
@@ -694,7 +698,7 @@
       const hd = (t, sub) => { const h = document.createElement('p'); h.style.cssText = 'margin:14px 0 0;font-weight:700;font-size:15px;border-top:1px solid #ddd;padding-top:10px'; h.textContent = t; if (sub) { const sp = document.createElement('span'); sp.style.cssText = 'display:block;font-weight:400;font-size:13px;color:#7a5a2a'; sp.textContent = sub; h.appendChild(sp); } f.appendChild(h); };
       hd('🦀 大きいサイズ（約220g）', '10/30〜11/15のみ（水曜はお休み）');
       F.male = row('オス 220g　¥4,800', sel(nums(0, 20))); F.female = row('メス 220g　¥5,400', sel(nums(0, 20)));
-      hd('🦀 通常サイズ', '10/15〜12/25（水曜定休）');
+      hd('🦀 通常サイズ', '10/15〜12/25（水曜定休・11/16〜17は臨時休業）');
       F.nor = CRAB_NOR.map(([k, pr]) => row(k.replace(/(\d+g)/, ' $1') + '　¥' + pr.toLocaleString(), sel(nums(0, 20))));
       const ctot = document.createElement('p'); ctot.style.cssText = 'font-weight:700;font-size:17px;text-align:right;margin:8px 0 0'; f.appendChild(ctot);
       F.crabList = () => [[CRAB_BIG[0], F.male], [CRAB_BIG[1], F.female], ...CRAB_NOR.map((x, i) => [x, F.nor[i]])].filter(([, el]) => Number(el.value) > 0).map(([[k, pr], el]) => [k, Number(el.value), pr]);
@@ -718,6 +722,7 @@
       const n = F.name.value.trim(), tel = F.tel.value.replace(/[^0-9０-９+\-－]/g, ''), d = kind === 'crab' ? F.date.value : '2026-12-31';
       if (!n || tel.replace(/[^0-9０-９]/g, '').length < 10 || !d) { $('rsvMsg').textContent = RS('need'); return; }
       const dt = new Date(d + 'T12:00:00'); if (dt.getDay() === 3) { $('rsvMsg').textContent = RS('wed'); return; }
+      if (KYUGYO.includes(d)) { $('rsvMsg').textContent = '11/16（月）・11/17（火）は臨時休業です。別の日をお選びください。'; return; }
       if (kind === 'crab' && !F.ppl.value) { $('rsvMsg').textContent = 'ご来店の人数を選んでください。'; return; }
       if (kind === 'crab') {
         // 上海蟹：10/24〜11/15、水曜と10/29はお休み。10/24〜27は残りわずか（メニューシートの「【受付】上海蟹10/24〜27」のチェックを外すと締め切り）
