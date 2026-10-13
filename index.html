@@ -244,6 +244,7 @@
     if (typeof I !== 'undefined' && I.items) Object.keys(TRX).forEach(k => { I.items[k] = Object.assign({}, I.items[k], TRX[k]); }); }
   // 麺のチャーシューは煮豚なので、英語は「Char Siu」ではなく「Braised Pork」にする
   if (typeof I !== 'undefined' && I.items) Object.keys(I.items).forEach(k => { const it = I.items[k]; if (/麺/.test(k) && it && /char siu/i.test(it.en || '')) I.items[k] = Object.assign({}, it, { en: it.en.replace(/Char Siu/g, 'Braised Pork').replace(/char siu/g, 'braised pork') }); });
+  if (typeof I !== 'undefined' && I.items) Object.keys(I.items).forEach(k => { const it = I.items[k]; if (it && /Calpis/.test(it.en || '')) I.items[k] = Object.assign({}, it, { en: it.en.replace(/Calpis/g, 'Calpico') }); });
   // 十年紹興酒は「甕10年紹興酒」と出す（甕で寝かせているのが売り）。伝票・注文の記録は元の名前のまま
   ['250ml', '500ml'].forEach(sz => ['燗', '常温', 'ロック'].forEach(tp => { const k = '十年紹興酒 ' + sz + ' ' + tp; JDISP[k] = '甕10年紹興酒 ' + sz + ' ' + tp;
     if (typeof I !== 'undefined' && I.items && I.items[k]) { const it = I.items[k]; I.items[k] = { en: String(it.en).replace('Shaoxing Wine 10-year', '10-Year Jar-Aged Shaoxing Wine'), zhs: String(it.zhs).replace('十年绍兴酒', '十年坛装绍兴酒'), zht: String(it.zht).replace('十年紹興酒', '十年罈裝紹興酒') }; } }));
