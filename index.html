@@ -251,7 +251,9 @@
   // 黒板メニューの白酒ミニボトルは、ワンショット（1杯）の値段なので名前にそう書き足す。伝票・注文の記録は元の名前のまま
   ['紅星二鍋頭', '牛欄山', '江小白', '孔府家酒', '黄鶴楼', '烟台古酿', '老龍口'].forEach(b => { const k = b + '（ミニボトル）'; JDISP[k] = k + ' ワンショット';
     if (typeof I !== 'undefined' && I.items && I.items[k]) { const it = I.items[k]; I.items[k] = { en: it.en ? it.en + ' (1 shot)' : it.en, zhs: it.zhs ? it.zhs + ' 单杯' : it.zhs, zht: it.zht ? it.zht + ' 單杯' : it.zht }; } });
-  const N = name => ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || (lang === 'ja' && JDISP[name]) || name).replace(/^【持帰】/, '');
+  // 觔斗雲・筋斗雲には読みがな（きんとうん）を付ける
+  const KANA = s => String(s).replace(/(觔斗雲|筋斗雲)(?!（きんとうん）)/g, '$1（きんとうん）');
+  const N = name => { const s = ((lang !== 'ja' && I.items[name] && I.items[name][lang]) || (lang === 'ja' && JDISP[name]) || name).replace(/^【持帰】/, ''); return lang === 'ja' ? KANA(s) : s; };
   const XC = { '雲呑': { ja: 'ワンタン' }, '揚げ雲呑': { ja: '揚げワンタン' }, 'テイクアウト 冷凍': { ja: '冷凍（ご家庭用）', en: 'Frozen (to cook at home)', zhs: '冷冻（家庭用）', zht: '冷凍（家庭用）' }, '季節料理のご予約': { en: 'Seasonal Specialties (Reservation)', zhs: '季节料理预约', zht: '季節料理預約' }, 'テイクアウト': { en: 'Takeout', zhs: '外带', zht: '外帶' } };
   const C = cat => (XC[cat] && XC[cat][lang]) || (I.cats[cat] && I.cats[cat][lang]) || cat;
   function applyLang() {
@@ -471,7 +473,7 @@
         // 辛い料理には🌶マーク
         if (SPICY[m.name]) { const sp = document.createElement('span'); sp.textContent = '🌶'.repeat(SPICY[m.name]) + (({ en: 'Spicy', zhs: '辣', zht: '辣' })[lang] || '辛い'); sp.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#e8590c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(sp); }
         if (m.board) { const bt = document.createElement('span'); bt.textContent = ({ en: 'Chalkboard', zhs: '黑板菜单', zht: '黑板菜單' })[lang] || '黒板メニュー'; bt.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#2f3b33;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(bt); }
-        { const jn = (JDISP[m.name] || m.name).replace(/^【持帰】/, ''); el.querySelector('.ja').textContent = shown !== jn ? jn : ''; }
+        { const jn = KANA((JDISP[m.name] || m.name).replace(/^【持帰】/, '')); el.querySelector('.ja').textContent = shown !== jn ? jn : ''; }
         const ii = ITEMIMG[m.name] || (ITEMRE.find(([re]) => re.test(m.name)) || [])[1];
         if (ii) { const im = document.createElement('img'); im.className = 'thumb'; im.src = ii + '.webp?v=1'; im.alt = ''; im.loading = 'lazy'; el.prepend(im); }
         const pe = el.querySelector('.price'); pe.textContent = m.price > 0 ? yen(m.price) : T('askPrice');
