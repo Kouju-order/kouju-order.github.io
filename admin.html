@@ -107,7 +107,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-1225'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1230'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -306,8 +306,9 @@
   function setPaid(t) { paidMem[t] = Date.now(); try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p)); } catch (e) {} if (lastD) show(lastD); }
   // 席変更した注文は、移した時刻をその席に来た時刻として扱う（前のお客様の「会計済み」より前に注文していても、今のお客様の会計に入るように）
   function movedMap_() { try { return JSON.parse(localStorage.getItem('kouju_moved_' + new Date().toDateString()) || '{}'); } catch (e) { return {}; } }
-  function movedAt_(no) { return Number(movedMap_()[no] || 0); }
-  function markMoved_(no) { try { const m = movedMap_(); m[no] = Date.now(); localStorage.setItem('kouju_moved_' + new Date().toDateString(), JSON.stringify(m)); } catch (e) {} }
+  function movedAt_(no) { const v = movedMap_()[no]; return Number((v && v.at) || v || 0); }
+  function movedFrom_(no) { const v = movedMap_()[no]; return (v && v.from) || ''; }
+  function markMoved_(no, from) { try { const m = movedMap_(); m[no] = { at: Date.now(), from: movedFrom_(no) || String(from || '') }; localStorage.setItem('kouju_moved_' + new Date().toDateString(), JSON.stringify(m)); } catch (e) {} }
   const atOf = o => Math.max(o.at || 0, movedAt_(o.no));
   const gapOf = m => 180;
   const minsOf = o => { if (o.at) { const d = new Date(atOf(o)); return d.getHours() * 60 + d.getMinutes(); } const m = String(o.time || '').match(/(\d+):(\d+)/); return m ? Number(m[1]) * 60 + Number(m[2]) : -1; };
@@ -545,12 +546,14 @@
     // A・B・C・D はいつもボタンで出す。ほかに今日使った席があれば後ろに足す
     const seen = [...new Set(['A', 'B', 'C', 'D'].concat(all.filter(x => !isCall(x)).map(x => String(x.table)).filter(x => !/持|予約/.test(x)).sort()))].filter(x => x && x !== String(o.table));
     seen.forEach(x => { const b = document.createElement('button'); b.textContent = x; b.onclick = () => go(x); bx.querySelector('.mvc').appendChild(b); });
-    if (!seen.length) bx.querySelector('.mvc').remove();
+    // 間違えて移したときは、最初の席に戻すボタンを一番前に出す
+    { const fr = movedFrom_(o.no); if (fr && fr !== String(o.table)) { const b = document.createElement('button'); b.textContent = '↩ 元の席 ' + fr + ' に戻す'; b.style.cssText = 'background:#fff8dc;border:2px solid #f5b400;color:#231f1c;width:100%'; b.onclick = () => go(fr); bx.querySelector('.mvc').prepend(b); } }
+    if (!bx.querySelector('.mvc').children.length) bx.querySelector('.mvc').remove();
     const go = v => {
       v = String(v || '').trim(); if (!v) { inp.focus(); return; }
       ok.disabled = true; ok.textContent = '⏳';
       call(null, { action: 'table', key: KEY, no: o.no, table: v })
-        .then(() => { markMoved_(o.no); bx.remove(); all.forEach(x => { if (x.no === o.no) x.table = v; }); if (lastD) show(lastD); load(); })
+        .then(() => { markMoved_(o.no, o.table); bx.remove(); all.forEach(x => { if (x.no === o.no) x.table = v; }); if (lastD) show(lastD); load(); })
         .catch(e => { ok.disabled = false; ok.textContent = '移す'; alert((e && e.message) || '席を変えられませんでした。もう一度押してください'); });
     };
     ok.onclick = () => go(inp.value);
