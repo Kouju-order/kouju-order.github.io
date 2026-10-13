@@ -98,7 +98,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-0300'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-0950'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -222,7 +222,7 @@
     // 台所の伝票には金額を出さない（金額は会計伝票で見る）。何枚かに分かれるときは何枚目かだけ出す
     if (part === 'bill') wrap('合計 ' + yen(o.total), 40, true);
     else if (pn > 1) wrap('伝票 ' + pg + '/' + pn + '枚', 22, false);
-    const TOPM = part === 'bill' ? 40 : part === 'gyoza' ? 24 : 120; // 伝票ホルダーに挟むための上の余白（約15mm。会計伝票は約5mm）
+    const TOPM = part === 'bill' ? 40 : (part === 'gyoza' || part === 'drink') ? 24 : 120; // 伝票ホルダーに挟むための上の余白（約15mm。会計伝票は約5mm）
     const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * (l[6] || 1.35), 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
