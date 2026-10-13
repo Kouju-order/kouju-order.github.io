@@ -630,7 +630,7 @@
   // 予約の写真・動画（上海蟹：動画＋写真、おせち：写真）
   window.RSVMEDIA = kind => {
     const d = document.createElement('div'); d.style.cssText = 'display:flex;gap:6px;margin:8px 0 4px';
-    const pic = (src, alt) => { const im = document.createElement('img'); im.src = src + '?v=1'; im.alt = alt; im.loading = 'lazy'; im.style.cssText = 'flex:1;min-width:0;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;display:block;background:#000'; return im; };
+    const pic = (src, alt) => { const im = document.createElement('img'); im.src = src + '?v=2'; im.alt = alt; im.loading = 'lazy'; im.style.cssText = 'flex:1;min-width:0;width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;display:block;background:#000'; return im; };
     if (kind === 'crab') {
       const v = document.createElement('video'); v.src = 'c_crab.mp4?v=1'; v.muted = true; v.autoplay = true; v.loop = true; v.playsInline = true;
       ['muted', 'autoplay', 'loop', 'playsinline'].forEach(a => v.setAttribute(a, '')); v.setAttribute('preload', 'auto');
