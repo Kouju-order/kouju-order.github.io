@@ -138,7 +138,8 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   function newDest(){ return { q: {}, name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', date:'', time:'', note:'' }; }
   const itemsOf = d => (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
   const amtOf = d => (FROZEN || []).reduce((a, m, i) => a + (d.q[i] || 0) * Number(m.price || 0), 0);
-  const STEPS = ['sender', 'count', 'items', 'dest', 'confirm'];
+  const STEPS = ['sender', 'count', 'dest', 'items', 'confirm'];
+  const noItem = () => S.dests.findIndex(x => !amtOf(x));
 
   function setProg(){ const k = STEPS.indexOf(S.step); document.querySelectorAll('#prog span').forEach((s, i) => s.classList.toggle('on', i <= k)); }
   const label = () => S.dests.length > 1 ? 'お届け先' + (NUM[S.cur] || S.cur + 1) + '（全' + S.dests.length + '件）' : '';
@@ -154,13 +155,17 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       m.innerHTML = '<div class="q">送り先は何件ですか？</div><p class="qs">お届けする先の数を選んでください。</p>' +
         [1,2,3,4].map(n => '<button class="big cnt" data-n="' + n + '"><span class="ic">' + (NUM[n-1]) + '</span><span><b>' + n + '件</b><small>' + (n === 1 ? '1か所に送る' : n + 'か所に送る') + '</small></span></button>').join('') +
         '<div class="row" style="align-items:center"><input id="cntN" type="number" min="5" max="20" inputmode="numeric" placeholder="5件以上はこちらに数字"><button class="btn sub" id="cntGo" style="flex:0 0 90px;padding:12px">決定</button></div>';
-      const go = n => { n = Math.max(1, Math.min(20, n | 0)); while (S.dests.length < n) S.dests.push(newDest()); S.dests.length = n; S.cur = 0; S.addrMode = ''; S.step = 'items'; render(); };
+      const go = n => { n = Math.max(1, Math.min(20, n | 0)); while (S.dests.length < n) S.dests.push(newDest()); S.dests.length = n; S.cur = 0; S.addrMode = ''; S.step = 'dest'; render(); };
       m.querySelectorAll('.cnt').forEach(b => b.onclick = () => go(Number(b.dataset.n)));
       $('#cntGo').onclick = () => { const n = Number($('#cntN').value); if (n >= 1) go(n); };
     }
     else if (S.step === 'items') {
-      $('#next').textContent = '次へ（送り先を入力）';
-      m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">何を送りますか？</div><p class="qs">「＋」で数を選んでください。</p><div class="items" id="items"><p style="padding:12px">商品を読み込み中…</p></div>';
+      const nx = S.dests.findIndex((x, k) => k > S.cur && !amtOf(x));
+      $('#next').textContent = !S.editing && nx >= 0 ? '次へ（' + esc(S.dests[nx].name) + '様の商品）' : '次へ（確認）';
+      m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">' + esc(d.name) + ' 様へのお品物</div><p class="qs">「＋」で数を選んでください。</p>' +
+        (S.cur > 0 && amtOf(S.dests[S.cur - 1]) ? '<button class="btn sub" id="same" style="margin-bottom:12px">' + esc(S.dests[S.cur - 1].name) + ' 様と同じ商品にする</button>' : '') +
+        '<div class="items" id="items"><p style="padding:12px">商品を読み込み中…</p></div>';
+      if ($('#same')) $('#same').onclick = () => { d.q = Object.assign({}, S.dests[S.cur - 1].q); render(); };
       menuP.then(() => {
         const box = $('#items'); if (!box) return;
         if (!FROZEN.length) { box.innerHTML = '<p style="padding:12px">商品一覧を読み込めませんでした。商品はレジでお伝えください。</p>'; return; }
@@ -183,7 +188,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       });
     }
     else if (S.step === 'dest') {
-      $('#next').textContent = S.cur < S.dests.length - 1 ? '次へ（お届け先' + (NUM[S.cur + 1] || S.cur + 2) + 'へ）' : '次へ';
+      $('#next').textContent = S.editing ? '次へ（確認）' : S.cur < S.dests.length - 1 ? '次へ（お届け先' + (NUM[S.cur + 1] || S.cur + 2) + 'へ）' : '次へ（商品を選ぶ）';
       const filled = d.name || d.tel || d.addr;
       if (!S.addrMode && !filled) {
         $('#next').hidden = true;
@@ -235,14 +240,15 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       m.innerHTML = '<div class="q">内容の確認</div>' +
         S.dests.map((x, i) => '<div class="card"><h3>お届け先' + (NUM[i] || i + 1) + '　' + esc(prefOf(x.addr)) + '<button class="link e" data-e="' + i + '">直す</button></h3>' +
           esc(x.name) + ' 様　' + esc(x.tel) + '<br>〒' + esc(x.zip) + ' ' + esc(x.addr) + ' ' + esc(x.bldg) +
-          '<div style="margin-top:6px"><b>' + esc(itemsOf(x) || '（商品はレジで）') + '</b>' + (amtOf(x) ? '　' + yen(amtOf(x)) : '') + '</div>' +
+          '<div style="margin-top:6px"><b>' + esc(itemsOf(x) || '（商品はレジで）') + '</b>' + (amtOf(x) ? '　' + yen(amtOf(x)) : '') + '　<button class="link" data-i="' + i + '" style="padding:0">商品を直す</button></div>' +
           (x.date || x.time ? '<div class="qs" style="margin:4px 0 0">お届け：' + esc(x.date ? x.date.replace(/-/g, '/') : '指定なし') + '　' + TL[x.time || ''] + '</div>' : '') + '</div>').join('') +
         '<button class="btn sub" id="more" style="margin:4px 0 14px">＋ 別の人にも送る</button>' +
         '<div class="card"><h3>送り主（あなた）<button class="link e" id="es">直す</button></h3>' + esc(S.sender.name) + ' 様　' + esc(S.sender.tel) + '<br>〒' + esc(S.sender.zip) + ' ' + esc(S.sender.addr) + ' ' + esc(S.sender.bldg) + '</div>' +
         (tot ? '<div class="tot">商品代合計 ' + yen(tot) + '<br><span style="font-size:13px;font-weight:400">＋ 送料はレジでご案内します</span></div>' : '');
-      m.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { S.cur = Number(b.dataset.e); S.step = 'dest'; S.addrMode = 'hand'; render(); });
-      $('#es').onclick = () => { S.step = 'sender'; render(); };
-      $('#more').onclick = () => { S.dests.push(newDest()); S.cur = S.dests.length - 1; S.addrMode = ''; S.step = 'items'; render(); };
+      m.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { S.cur = Number(b.dataset.e); S.step = 'dest'; S.addrMode = 'hand'; S.editing = true; render(); });
+      m.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { S.cur = Number(b.dataset.i); S.step = 'items'; S.editing = true; render(); });
+      $('#es').onclick = () => { S.step = 'sender'; S.editing = true; render(); };
+      $('#more').onclick = () => { S.dests.push(newDest()); S.cur = S.dests.length - 1; S.addrMode = ''; S.editing = false; S.step = 'dest'; render(); };
     }
   }
 
@@ -295,25 +301,30 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   };
 
   $('#back').onclick = () => {
-    if (S.step === 'count') { S.step = 'sender'; }
-    else if (S.step === 'items') { if (S.cur > 0) { S.cur--; S.step = 'dest'; S.addrMode = 'hand'; } else S.step = 'count'; }
-    else if (S.step === 'dest') { collect('d', S.dests[S.cur]); if (S.addrMode && !(S.dests[S.cur].name || S.dests[S.cur].addr)) S.addrMode = ''; else S.step = 'items'; }
-    else if (S.step === 'confirm') { S.cur = S.dests.length - 1; S.step = 'dest'; S.addrMode = 'hand'; }
+    if (S.editing && S.step !== 'confirm') { if (S.step === 'dest') collect('d', S.dests[S.cur]); if (S.step === 'sender') collect('s', S.sender); S.editing = false; S.step = 'confirm'; }
+    else if (S.step === 'count') { S.step = 'sender'; }
+    else if (S.step === 'dest') { collect('d', S.dests[S.cur]); if (S.addrMode && !(S.dests[S.cur].name || S.dests[S.cur].addr)) S.addrMode = ''; else if (S.cur > 0) { S.cur--; S.addrMode = 'hand'; } else S.step = 'count'; }
+    else if (S.step === 'items') { if (S.cur > 0) S.cur--; else { S.cur = S.dests.length - 1; S.step = 'dest'; S.addrMode = 'hand'; } }
+    else if (S.step === 'confirm') { S.cur = S.dests.length - 1; S.step = 'items'; }
     render();
   };
 
   $('#next').onclick = async () => {
     if (S.step === 'items') {
       if (FROZEN && FROZEN.length && !amtOf(S.dests[S.cur])) { alertBox('送る商品を「＋」で選んでください。'); return; }
-      S.step = 'dest'; render();
+      const nx = S.dests.findIndex((x, k) => k > S.cur && !amtOf(x));
+      if (!S.editing && nx >= 0) S.cur = nx; else { S.editing = false; const r = noItem(); if (r >= 0 && FROZEN && FROZEN.length) S.cur = r; else S.step = 'confirm'; } render();
     } else if (S.step === 'dest') {
       const d = S.dests[S.cur]; collect('d', d);
       const miss = check(d); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; }
-      if (S.cur < S.dests.length - 1 && !(S.dests[S.cur + 1].name)) { S.cur++; S.addrMode = ''; S.step = 'items'; } else S.step = 'confirm'; render();
+      if (S.editing) { S.editing = false; S.step = 'confirm'; }
+      else if (S.cur < S.dests.length - 1 && !(S.dests[S.cur + 1].name)) { S.cur++; S.addrMode = ''; }
+      else { const r = noItem(); if (r >= 0 && FROZEN && FROZEN.length) { S.cur = r; S.step = 'items'; } else S.step = 'confirm'; }
+      render();
     } else if (S.step === 'sender') {
       collect('s', S.sender);
       const miss = check(S.sender); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; }
-      S.step = S.dests[0].name ? 'confirm' : 'count'; render();
+      if (S.editing) { S.editing = false; S.step = 'confirm'; } else S.step = S.dests[0].name ? 'confirm' : 'count'; render();
     } else if (S.step === 'confirm') {
       const b = $('#next'); b.disabled = true; b.textContent = '送信中…';
       const s = S.sender;
