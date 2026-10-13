@@ -34,7 +34,8 @@ input:focus,select:focus{outline:none;border-color:var(--red)}
 .link{background:none;border:0;color:var(--sub);text-decoration:underline;font:inherit;font-size:14px;padding:8px 0;cursor:pointer}
 .items{border:1.5px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
 .it{display:flex;align-items:center;gap:8px;padding:10px;border-top:1px solid #f1e6d6}
-.it:first-child{border-top:0}
+.gh{background:var(--red);color:#fff;font-weight:800;font-size:15px;padding:7px 12px}
+.it:first-child,.gh+.it{border-top:0}
 .it.on{background:#fff4e8}
 .it .nm{flex:1;font-size:15px;line-height:1.35}
 .it .nm small{display:block;color:var(--sub);font-size:13px}
@@ -148,7 +149,14 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       menuP.then(() => {
         const box = $('#items'); if (!box) return;
         if (!FROZEN.length) { box.innerHTML = '<p style="padding:12px">商品一覧を読み込めませんでした。商品はレジでお伝えください。</p>'; return; }
-        box.innerHTML = FROZEN.map((it, i) => '<div class="it' + (d.q[i] ? ' on' : '') + '" data-i="' + i + '"><div class="nm">' + esc(String(it.name).replace(/^【冷凍】/, '')) + '<small>' + yen(it.price) + '</small></div><button class="qb m" aria-label="減らす">−</button><span class="qty">' + (d.q[i] || 0) + '</span><button class="qb p" aria-label="増やす">＋</button></div>').join('') + '<div class="isum" id="isum"></div>';
+        const G = [['迷ったらこれ！セット', /セット/], ['餃子', /餃子/], ['ワンタン', /ワンタン/], ['まんじゅう', /まん|花巻/], ['その他の点心', /./]];
+        const grp = n => G.findIndex(g => g[1].test(n));
+        const order = FROZEN.map((it, i) => i).sort((x, y) => grp(FROZEN[x].name) - grp(FROZEN[y].name) || x - y);
+        let html = '', cg = -1;
+        order.forEach(i => { const it = FROZEN[i], g = grp(it.name);
+          if (g !== cg) { cg = g; html += '<div class="gh">' + G[g][0] + '</div>'; }
+          html += '<div class="it' + (d.q[i] ? ' on' : '') + '" data-i="' + i + '"><div class="nm">' + esc(String(it.name).replace(/^【冷凍】/, '')) + '<small>' + yen(it.price) + '</small></div><button class="qb m" aria-label="減らす">−</button><span class="qty">' + (d.q[i] || 0) + '</span><button class="qb p" aria-label="増やす">＋</button></div>'; });
+        box.innerHTML = html + '<div class="isum" id="isum"></div>';
         const upd = () => { const a = amtOf(d); $('#isum').textContent = a ? '商品代 ' + yen(a) + '（送料は別）' : '商品を選んでください'; };
         box.querySelectorAll('.it').forEach(row => {
           const i = Number(row.dataset.i);
