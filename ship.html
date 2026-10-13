@@ -61,7 +61,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
-<header><h1>🧊 冷凍品の発送受付　公珠</h1><div class="prog" id="prog"><span></span><span></span><span></span><span></span><span></span></div></header>
+<header><h1>🧊 冷凍品の発送受付　公珠</h1><div class="prog" id="prog"><span></span><span></span><span></span><span></span></div></header>
 <main id="main"></main>
 <div class="bar" id="bar"><button class="btn back" id="back">戻る</button><button class="btn main" id="next">次へ</button></div>
 <input type="file" id="vcf" accept=".vcf,text/vcard,text/x-vcard,text/directory" hidden>
@@ -138,7 +138,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   function newDest(){ return { q: {}, name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', date:'', time:'', note:'' }; }
   const itemsOf = d => (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
   const amtOf = d => (FROZEN || []).reduce((a, m, i) => a + (d.q[i] || 0) * Number(m.price || 0), 0);
-  const STEPS = ['sender', 'count', 'dest', 'items', 'confirm'];
+  const STEPS = ['sender', 'dest', 'items', 'confirm'];
   const noItem = () => S.dests.findIndex(x => !amtOf(x));
 
   function setProg(){ const k = STEPS.indexOf(S.step); document.querySelectorAll('#prog span').forEach((s, i) => s.classList.toggle('on', i <= k)); }
@@ -190,37 +190,19 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
     else if (S.step === 'dest') {
       $('#next').textContent = S.editing ? '次へ（確認）' : S.cur < S.dests.length - 1 ? '次へ（お届け先' + (NUM[S.cur + 1] || S.cur + 2) + 'へ）' : '次へ（商品を選ぶ）';
       const filled = d.name || d.tel || d.addr;
-      if (!S.addrMode && !filled) {
-        $('#next').hidden = true;
-        m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">どなたに送りますか？</div><p class="qs">入れ方を選んでください。</p>' +
-          '<button class="big" id="mContact"><span class="ic">📇</span><span><b>iPhoneの連絡先から選ぶ</b><small>名前・電話・住所がまとめて入ります</small></span></button>' +
-          '<button class="big" id="mHand"><span class="ic">✍️</span><span><b>手で入力する</b><small>郵便番号を入れると住所が自動で入ります</small></span></button>' +
-          (S.sender.name ? '<button class="big" id="mSelf"><span class="ic">🏠</span><span><b>自分の家に送る</b><small>' + esc(S.sender.name) + '様の住所が入ります</small></span></button>' : '');
-        $('#mContact').onclick = () => { S.addrMode = 'contact'; render(); };
-        $('#mHand').onclick = () => { S.addrMode = 'hand'; render(); };
-        if ($('#mSelf')) $('#mSelf').onclick = () => { const x = S.sender; Object.assign(d, { name: x.name, kana: x.kana, tel: x.tel, zip: x.zip, addr: x.addr, bldg: x.bldg }); S.addrMode = 'hand'; render(); };
-        return;
-      }
       $('#next').hidden = false;
-      if (S.addrMode === 'contact' && !filled) {
-        $('#next').hidden = true;
-        m.innerHTML = '<div class="q">iPhoneの連絡先から選ぶ</div>' +
-          '<div class="howto"><b>① いったん「連絡先」アプリを開く</b><ol><li>送り先の人をタップ</li><li>下の方の「<b>連絡先を共有</b>」をタップ</li><li>「<b>"ファイル"に保存</b>」→ 右上の「保存」</li></ol></div>' +
-          '<div class="howto"><b>② この画面に戻って、下のボタンを押す</b><ol><li>「<b>ファイルを選択</b>」をタップ</li><li>いま保存した連絡先をタップ</li></ol></div>' +
-          '<button class="btn main" id="pick">📇 保存した連絡先を選ぶ</button><p class="msg" id="vmsg"></p>' +
-          '<button class="link" id="toHand">うまくいかないときは、手で入力する</button>';
-        $('#pick').onclick = () => { const f = $('#vcf'); f.value = ''; f.click(); };
-        $('#toHand').onclick = () => { S.addrMode = 'hand'; render(); };
-        return;
-      }
-      m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + (filled ? '<div class="q">送り先を確認してください</div><p class="qs">間違いがあれば直してください。</p>' : '<div class="q">送り先を入力してください</div><p class="qs">郵便番号を入れると住所が自動で入ります。</p>') + addrForm('d', d) +
+      m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + (filled ? '<div class="q">送り先を確認してください</div><p class="qs">間違いがあれば直してください。</p>' : '<div class="q">送り先を入力してください</div><p class="qs">郵便番号を入れると住所が自動で入ります。</p>') +
+        (!filled && S.sender.name && !S.dests.some((x, k) => k !== S.cur && x.name === S.sender.name && x.addr === S.sender.addr) ? '<button class="btn sub" id="mSelf" style="margin-bottom:6px">🏠 自分（' + esc(S.sender.name) + '様）の家に送る</button>' : '') + addrForm('d', d) +
         '<details><summary>お届け日時の指定・メモ（なくてもOK）</summary>' +
         '<label>お届け希望日</label><select id="d_date">' + dateOpts(d.date) + '</select>' +
         '<label>時間帯</label><select id="d_time">' + Object.keys(TL).map(k => '<option value="' + k + '"' + (d.time === k ? ' selected' : '') + '>' + TL[k] + '</option>').join('') + '</select><p class="qs" style="margin:4px 0 0">地域によってはご希望の日に届かない場合があります。</p>' +
         '<label>メモ（のし・ギフトなど）</label><input id="d_note" value="' + esc(d.note) + '"></details>' +
-        '<button class="link" id="redo">入れ方を選び直す</button>';
+        (filled ? '<button class="link" id="redo">入力をやり直す（空にする）</button>' : '') +
+        (!S.editing && S.cur === S.dests.length - 1 ? '<button class="btn sub" id="addMore" style="margin-top:14px">＋ 別の人にも送る（送り先を追加）</button>' : '');
       bindZip('d');
-      $('#redo').onclick = () => { Object.assign(d, { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'' }); S.addrMode = ''; render(); };
+      if ($('#addMore')) $('#addMore').onclick = () => { collect('d', d); const miss = check(d); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; } S.dests.push(newDest()); S.cur = S.dests.length - 1; S.addrMode = ''; render(); };
+      if ($('#mSelf')) $('#mSelf').onclick = () => { const x = S.sender; Object.assign(d, { name: x.name, kana: x.kana, tel: x.tel, zip: x.zip, addr: x.addr, bldg: x.bldg }); render(); };
+      if ($('#redo')) $('#redo').onclick = () => { Object.assign(d, { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'' }); S.addrMode = ''; render(); };
     }
     else if (S.step === 'sender') {
       $('#next').textContent = '次へ（送り先へ）';
@@ -302,8 +284,9 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
 
   $('#back').onclick = () => {
     if (S.editing && S.step !== 'confirm') { if (S.step === 'dest') collect('d', S.dests[S.cur]); if (S.step === 'sender') collect('s', S.sender); S.editing = false; S.step = 'confirm'; }
-    else if (S.step === 'count') { S.step = 'sender'; }
-    else if (S.step === 'dest') { collect('d', S.dests[S.cur]); if (S.addrMode && !(S.dests[S.cur].name || S.dests[S.cur].addr)) S.addrMode = ''; else if (S.cur > 0) { S.cur--; S.addrMode = 'hand'; } else S.step = 'count'; }
+    else if (S.step === 'dest') { collect('d', S.dests[S.cur]); const em = !(S.dests[S.cur].name || S.dests[S.cur].addr);
+      if (S.cur > 0) { if (em) S.dests.splice(S.cur, 1); S.cur--; S.addrMode = 'hand'; }
+      else S.step = 'sender'; }
     else if (S.step === 'items') { if (S.cur > 0) S.cur--; else { S.cur = S.dests.length - 1; S.step = 'dest'; S.addrMode = 'hand'; } }
     else if (S.step === 'confirm') { S.cur = S.dests.length - 1; S.step = 'items'; }
     render();
@@ -324,7 +307,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
     } else if (S.step === 'sender') {
       collect('s', S.sender);
       const miss = check(S.sender); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; }
-      if (S.editing) { S.editing = false; S.step = 'confirm'; } else S.step = S.dests[0].name ? 'confirm' : 'count'; render();
+      if (S.editing) { S.editing = false; S.step = 'confirm'; } else { S.step = S.dests[0].name ? 'confirm' : 'dest'; S.cur = 0; } render();
     } else if (S.step === 'confirm') {
       const b = $('#next'); b.disabled = true; b.textContent = '送信中…';
       const s = S.sender;
