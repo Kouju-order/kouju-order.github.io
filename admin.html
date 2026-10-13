@@ -98,7 +98,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-0955'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1150'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -169,13 +169,13 @@
         lines.push([cur, px, bold]);
       });
     };
+    if (part === 'bill') { wrap('■ お会計', 34, true); lines.push(['', 4, false]); }
     lines.push(['@', 48, true, 0, 0, [{ t: 'テーブル', hl: false }, { t: String(o.table), hl: true }]]);
     lines.push(['', 6, false]);
     wrap('No.' + o.no + '　' + o.time, 20, false);
     if (part === 'drink') wrap('■ ドリンク', 34, true);
     if (part === 'food') wrap('■ 料理', 34, true);
     if (part === 'gyoza') wrap('■ 餃子', 34, true);
-    if (part === 'bill') wrap('■ お会計', 34, true);
     lines.push(['—', 14, false]);
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
     const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
