@@ -179,6 +179,8 @@
 <script src="i18n.js?v=3"></script>
 <script src="i18n2.js?v=23"></script>
 <script>
+  // 臨時休業日（テイクアウト・上海蟹の予約を受けない日）。11/16・11/17は月餅づくりのため休業
+  var KYUGYO = ['2026-11-16', '2026-11-17'];
   const API = document.body.dataset.api;
   async function call(params, body) {
     const opt = body ? { method: 'POST', body: JSON.stringify(body), credentials: 'omit' } : { credentials: 'omit' };
@@ -672,8 +674,6 @@
   Object.assign(RT.zhs, { oPay: '请于11/30（周一）前到店付款。可使用现金、信用卡、交通IC卡以及PayPay、支付宝、微信支付等各种支付方式。如11/30前未付款，我们会致电确认。' });
   Object.assign(RT.zht, { oPay: '請於11/30（週一）前到店付款。可使用現金、信用卡、交通IC卡以及PayPay、支付寶、微信支付等各種支付方式。如11/30前未付款，我們會致電確認。' });
   const CRAB_FROM = '2026-10-30', CRAB_TO = '2026-11-15', CRAB_EARLY_TO = '2026-10-27', CRAB_OFF = ['2026-10-29'];
-  // 臨時休業日（テイクアウト・上海蟹の予約を受けない日）。11/16・11/17は月餅づくりのため休業
-  var KYUGYO = ['2026-11-16', '2026-11-17'];
   // 上海蟹：大きいサイズ(220g)は10/24〜11/15のみ。通常サイズは10/15〜12/25（水曜休み）
   const CRAB_ALL_FROM = '2026-10-15', CRAB_ALL_TO = '2026-12-25';
   const CRAB_BIG = [['大オス220g', 4800], ['大メス220g', 5400]];
