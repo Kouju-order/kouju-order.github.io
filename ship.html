@@ -105,7 +105,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
       <button type="button" class="btn ghost same">自分あてに送る</button>
       <button type="button" class="btn ghost pst">📋 住所を貼り付け</button>
     </div>
-    <div class="paste"><textarea rows="3" placeholder="連絡先アプリで住所をコピーして、ここに貼り付けてください（〒・電話番号も一緒でOK）"></textarea><button type="button" class="btn ghost doPaste" style="margin-top:6px">貼り付けた内容を入れる</button></div>
+    <div class="paste"><textarea rows="4" placeholder="ここを長押しして「ペースト」してください（名前・〒・住所・電話番号がまとめて入っていてもOK）"></textarea><p class="hint pmsg" style="color:var(--red);font-weight:700"></p><button type="button" class="btn ghost doPaste" style="margin-top:6px">もう一度読み取る</button></div>
     <label>お名前<span class="req">必須</span></label>
     <input name="name" placeholder="山田 花子">
     <label>フリガナ</label>
@@ -183,27 +183,46 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
 
   // 住所のテキストを貼り付けて分解
   function parsePaste(t){
-    t = z2h(t).replace(/\r/g,'').replace(/[，、,]/g, '\n');
-    const o = {}, lines = [];
-    t.split(/\n+/).forEach(raw => {
-      let l = raw.replace(/^(住所|電話|TEL|自宅|携帯|勤務先|ホーム|名前|氏名)[:：]?/i,'').trim();
-      if (!l || l === '日本' || /^japan$/i.test(l)) return;
-      const dg = l.replace(/[^\d]/g, '');
-      if (!o.tel && /^[+\d\s()-]+$/.test(l) && (/^\+81/.test(l) ? dg.length >= 11 : dg.length >= 10)) { o.tel = l.replace(/^\+81[\s-]?/, '0').replace(/[\s()]+/g, '-').replace(/-+/g, '-'); return; }
-      const zm = l.match(/(?:〒\s*|^|[^\d-])(\d{3})-?(\d{4})(?![\d-])/);
-      if (!o.zip && zm && (/〒/.test(zm[0]) || /^\d{3}-?\d{4}$/.test(l) || /[都道府県]/.test(l))) { o.zip = zm[1] + '-' + zm[2]; l = l.replace(zm[0], zm[0].match(/^[^\d〒]/) ? zm[0][0] : '').trim(); if (!l) return; }
-      lines.push(l);
-    });
+    t = z2h(String(t || '')).replace(/\r/g, '').replace(/[‐‑–—―ｰ]/g, '-').replace(/ /g, ' ');
+    const o = {};
+    // 電話番号（どこにあってもOK）
+    const telRe = /(\+81[\s-]?\(?0?\d{1,4}\)?|\(?0\d{1,4}\)?)[\s-]?\d{1,4}[\s-]?\d{3,4}/g;
+    let m;
+    while ((m = telRe.exec(t))) {
+      let v = m[0].replace(/^\+81[\s-]?\(?0?/, '0').replace(/[()]/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      const d = v.replace(/\D/g, '');
+      const before = t.slice(Math.max(0, m.index - 1), m.index);
+      if ((d.length === 10 || d.length === 11) && !/〒/.test(t.slice(Math.max(0, m.index - 2), m.index)) && !/[\d-]/.test(before)) {
+        if (!/-/.test(v)) v = d.length === 11 ? d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7) : d;
+        o.tel = v; t = t.slice(0, m.index) + '\n' + t.slice(m.index + m[0].length); break;
+      }
+    }
+    // 郵便番号
+    const zm = t.match(/〒\s*(\d{3})-?(\d{4})/) || t.match(/(?:^|[^\d-])(\d{3})-(\d{4})(?![\d-])/) || t.match(/(?:^|[^\d-])(\d{7})(?![\d-])/);
+    if (zm) {
+      o.zip = zm[2] ? zm[1] + '-' + zm[2] : zm[1].slice(0,3) + '-' + zm[1].slice(3);
+      t = t.replace(zm[0], zm[0].match(/^[^\d〒]/) ? zm[0][0] + '\n' : '\n');
+    }
+    const LABEL = /^(住所|電話番号?|TEL|自宅|携帯|勤務先|会社|ホーム|職場|その他|名前|氏名|メイン|iPhone|モバイル)\s*[:：]?\s*/i;
+    const lines = t.split(/[\n,，、]+/).map(l => l.replace(LABEL, '').replace(/^〒/, '').trim()).filter(l => l && !/^(日本|japan)$/i.test(l));
     const isPref = l => PREF.some(p => p && l.startsWith(p));
-    const isCity = l => /[市区町村郡]$/.test(l) || (/[市区町村郡]/.test(l) && !/\d/.test(l));
-    const isAddr = l => isPref(l) || /[都道府県市区町村郡]/.test(l) || /\d+[-‐丁目番地号]/.test(l) || /\d+-\d+/.test(l);
-    const addr = lines.filter(isAddr), rest = lines.filter(l => !isAddr(l));
+    const prefAt = l => { let k = -1; PREF.forEach(p => { if (!p) return; const x = l.indexOf(p); if (x >= 0 && (k < 0 || x < k)) k = x; }); return k; };
+    const isCity = l => /^[^\d]*[市区町村郡]$/.test(l) || (/[市区町村郡]/.test(l) && !/\d/.test(l));
+    const isAddr = l => prefAt(l) >= 0 || /[市区町村郡]/.test(l) || /\d+(丁目|番地?|号)/.test(l) || /\d+-\d+/.test(l);
+    const addr = [], rest = [];
+    lines.forEach(l => {
+      const k = prefAt(l);
+      if (k > 0) { const head = l.slice(0, k).trim(); if (head) rest.push(head); addr.push(l.slice(k).trim()); }
+      else if (isAddr(l)) addr.push(l);
+      else rest.push(l);
+    });
     if (addr.length) {
       const rank = l => isPref(l) ? 0 : isCity(l) ? 1 : 2;
-      o.addr = addr.map((l, k) => [rank(l), k, l]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]).join('').replace(/\s+/g,'');
+      o.addr = addr.map((l, k) => [rank(l), k, l]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(x => x[2]).join('').replace(/\s+/g, '');
+      if (o.addr.length > 0 && !isPref(o.addr) && o.zip) o.needPref = true;
     }
-    const nm = rest.find(l => l.length <= 20 && !/\d/.test(l) && !/@/.test(l));
-    if (nm) o.name = nm;
+    const nm = rest.find(l => l.length <= 20 && !/\d/.test(l) && !/@/.test(l) && !/^(様|さん)$/.test(l));
+    if (nm) o.name = nm.replace(/\s*(様|さん)$/, '');
     return o;
   }
 
@@ -216,12 +235,30 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     node.querySelector('.del').onclick = () => { node.remove(); renum(); };
     node.querySelector('.same').onclick = () => { const s = read($('#sender')); F.forEach(k => setv(node, k, s[k])); };
     const pst = node.querySelector('.paste');
-    node.querySelector('.pst').onclick = () => { pst.classList.toggle('on'); if (pst.classList.contains('on')) pst.querySelector('textarea').focus(); };
-    node.querySelector('.doPaste').onclick = () => {
-      const o = parsePaste(pst.querySelector('textarea').value);
-      ['name','tel','zip','addr'].forEach(k => { if (o[k]) setv(node, k, o[k]); });
-      pst.classList.remove('on'); pst.querySelector('textarea').value = '';
+    const ta = pst.querySelector('textarea'), pmsg = pst.querySelector('.pmsg');
+    const apply = async txt => {
+      const o = parsePaste(txt);
+      const got = [];
+      if (o.name) { setv(node, 'name', o.name); got.push('お名前'); }
+      if (o.tel) { setv(node, 'tel', o.tel); got.push('電話'); }
+      if (o.zip) { setv(node, 'zip', o.zip); got.push('〒'); }
+      if (o.addr) {
+        let a = o.addr;
+        if (o.needPref && o.zip) { const r = await zipLookup(o.zip.replace('-', '')); if (r && !a.startsWith(PREF[r[0]])) { const town = r[2] || '', k = town ? a.indexOf(town) : -1; a = k >= 0 ? PREF[r[0]] + (r[1] || '') + a.slice(k) : PREF[r[0]] + a; } }
+        const ad = node.querySelector('[name=addr]'); ad.value = a; ad.dataset.auto = ''; got.push('住所');
+      }
+      pmsg.textContent = got.length ? '✓ ' + got.join('・') + 'を入れました。下で確認してください' : '読み取れませんでした。お手数ですが下の欄に直接入力してください';
+      return got.length;
     };
+    node.querySelector('.pst').onclick = async () => {
+      let txt = '';
+      try { if (navigator.clipboard && navigator.clipboard.readText) txt = await navigator.clipboard.readText(); } catch (e) {}
+      pst.classList.add('on');
+      if (txt && txt.trim()) { ta.value = txt; await apply(txt); }
+      else { pmsg.textContent = ''; ta.focus(); }
+    };
+    ta.addEventListener('paste', () => setTimeout(() => apply(ta.value), 50));
+    node.querySelector('.doPaste').onclick = () => apply(ta.value);
     if (canPick) {
       const pk = node.querySelector('.pick'); pk.hidden = false;
       pk.onclick = async () => {
