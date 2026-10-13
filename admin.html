@@ -119,7 +119,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-1300'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1305'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -323,6 +323,18 @@
     try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p));
       const h = paidHist_(); (h[t] = h[t] || []).push(prev); localStorage.setItem(PAIDKEY + '_hist', JSON.stringify(h)); } catch (e) {}
     if (lastD) show(lastD);
+  }
+  // 緑の「会計済」を押したら、取り消すか聞く
+  function askUndoPaid(t) {
+    const old = document.getElementById('mvbox'); if (old) old.remove();
+    const bx = document.createElement('div'); bx.id = 'mvbox';
+    bx.innerHTML = '<div class="mvin"><div class="mvt"></div><button class="mvok upgo">会計を取り消す</button><button class="ghost mvno">やめる</button></div>';
+    bx.querySelector('.mvt').textContent = 'テーブル ' + t + ' の会計を取り消しますか？';
+    bx.querySelector('.upgo').style.cssText = 'width:100%;margin-bottom:8px;padding:14px;font-size:20px';
+    bx.querySelector('.upgo').onclick = () => { bx.remove(); undoPaid(t); };
+    bx.querySelector('.mvno').onclick = () => bx.remove();
+    bx.onclick = e => { if (e.target === bx) bx.remove(); };
+    document.body.appendChild(bx);
   }
   function undoPaid(t) {
     let prev = 0;
@@ -558,12 +570,12 @@
       const s = document.createElement('span');
       s.textContent = `No.${o.no}　テーブル ${o.table}　${o.time}　${yen(o.total)}`;
       // 「会計済み」を押した席の、それより前の注文には印を付ける
-      { const pt = paidAt(String(o.table)); if (pt && atOf(o) <= pt) { r.classList.add('paidrow'); const pb = document.createElement('span'); pb.className = 'paidb'; pb.textContent = '💴 会計済'; s.appendChild(document.createTextNode('　')); s.appendChild(pb); r._paidT = String(o.table); } }
+      { const pt = paidAt(String(o.table)); if (pt && atOf(o) <= pt) { r.classList.add('paidrow'); const pb = document.createElement('span'); pb.className = 'paidb'; pb.textContent = '💴 会計済'; s.appendChild(document.createTextNode('　')); pb.style.cursor = 'pointer'; const pt2 = String(o.table); pb.onclick = () => askUndoPaid(pt2); s.appendChild(pb); } }
       const b = document.createElement('button'); b.className = 'ghost back'; b.textContent = '未対応に戻す';
       if (restoring.has(o.no)) { b.disabled = true; b.textContent = '⏳ 戻しています…'; }
       b.onclick = () => setStatus(o.no, '未対応', b);
       const mv = document.createElement('button'); mv.className = 'ghost back'; mv.textContent = '席変更'; mv.onclick = () => moveTable(o);
-      if (r._paidT) { const ub = document.createElement('button'); ub.className = 'undopaid'; ub.textContent = '会計取り消し'; ub.onclick = () => undoPaid(r._paidT); r.append(s, ub, mv, b); } else r.append(s, mv, b); dn.appendChild(r);
+      r.append(s, mv, b); dn.appendChild(r);
     });
 
     const t = new Date();
