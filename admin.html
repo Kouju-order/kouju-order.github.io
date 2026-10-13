@@ -107,7 +107,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-1230'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1220'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -538,7 +538,8 @@
     bx.querySelector('.mvt').textContent = 'No.' + o.no + '（今：テーブル ' + o.table + '）をどの席に移しますか？';
     const inp = bx.querySelector('.mvi'), ok = bx.querySelector('.mvok');
     const all = ((lastD && lastD.pending) || []).concat((lastD && lastD.done) || []);
-    const seen = [...new Set(all.filter(x => !isCall(x)).map(x => String(x.table)))].filter(x => x && x !== String(o.table) && !/持|予約/.test(x)).sort();
+    // A・B・C・D はいつもボタンで出す。ほかに今日使った席があれば後ろに足す
+    const seen = [...new Set(['A', 'B', 'C', 'D'].concat(all.filter(x => !isCall(x)).map(x => String(x.table)).filter(x => !/持|予約/.test(x)).sort()))].filter(x => x && x !== String(o.table));
     seen.forEach(x => { const b = document.createElement('button'); b.textContent = x; b.onclick = () => go(x); bx.querySelector('.mvc').appendChild(b); });
     if (!seen.length) bx.querySelector('.mvc').remove();
     const go = v => {
