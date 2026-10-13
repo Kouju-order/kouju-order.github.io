@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>発送受付一覧｜公珠</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/encoding-japanese/2.0.0/encoding.min.js"></script>
+<style>
+:root{--red:#b5262b;--ink:#2a1a14;--sub:#6b5548;--bg:#fffaf0;--line:#e7d6bf}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px}
+header{background:var(--red);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:18px;flex:1}
+header a{color:#fff;font-size:13px}
+main{max-width:980px;margin:0 auto;padding:12px}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.ctl label{font-size:12px;color:var(--sub);display:block;margin-bottom:3px}
+.ctl input,.ctl select{font:inherit;padding:8px;border:1px solid #d9c6ad;border-radius:8px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:0;padding:10px 14px;font-weight:700}
+.main{background:var(--red);color:#fff}
+.sub{background:#f4ebdd;color:var(--ink)}
+.item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:34px 1fr;gap:6px 8px}
+.item.done{opacity:.55}
+.item input[type=checkbox]{width:22px;height:22px;margin-top:2px}
+.hd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--sub)}
+.st{font-size:12px;padding:2px 8px;border-radius:99px;background:#fde3e3;color:var(--red);font-weight:700}
+.st.発行済{background:#e3f1e3;color:#2e7d32}.st.取消{background:#eee;color:#777}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:14px;margin-top:4px}
+.cols b{font-size:15px}
+.warn{color:#c25400;font-size:12px}
+.small{font-size:12px;color:var(--sub)}
+.empty{text-align:center;color:var(--sub);padding:30px}
+#setbox{display:none;margin-top:8px;width:100%}
+#setbox.on{display:flex;gap:10px;flex-wrap:wrap}
+@media (max-width:600px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>🧊 発送受付一覧（B2クラウド用）</h1><a href="ship.html" target="_blank">お客様用ページ</a></header>
+<main>
+  <div class="ctl">
+    <div><label>表示</label><select id="filter"><option value="未発行">未発行のみ</option><option value="">すべて</option><option value="発行済">発行済</option><option value="取消">取消</option></select></div>
+    <div><label>出荷予定日</label><input type="date" id="shipDate"></div>
+    <button class="main" id="dl">✓ 選んだ受付をB2用CSVでダウンロード</button>
+    <button class="sub" id="mark">発行済にする</button>
+    <button class="sub" id="cancel">取消にする</button>
+    <button class="sub" id="reload">↻ 更新</button>
+    <button class="sub" id="setBtn">⚙ 請求先設定</button>
+    <div id="setbox">
+      <div><label>請求先顧客コード（12桁）</label><input id="bill" inputmode="numeric" maxlength="12"></div>
+      <div><label>分類コード（3桁・なければ空）</label><input id="billCls" inputmode="numeric" maxlength="3" style="width:90px"></div>
+      <div><label>運賃管理番号</label><input id="fare" inputmode="numeric" maxlength="2" style="width:70px"></div>
+      <div class="small" style="align-self:center">この端末に保存されます</div>
+    </div>
+  </div>
+  <div id="list"><div class="empty">読み込み中…</div></div>
+</main>
+<script>
+(function(){
+  const API = 'https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec';
+  const KEY = new URLSearchParams(location.search).get('key') || '';
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const TL = { '':'指定なし','0812':'午前中','1416':'14〜16時','1618':'16〜18時','1820':'18〜20時','1921':'19〜21時' };
+  let data = [], conf = {};
+  const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; } };
+  const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+  $("#shipDate").value = today();
+
+  async function load(){
+    if (!KEY) { $('#list').innerHTML = '<div class="empty">URLに管理キーがありません</div>'; return; }
+    try {
+      const r = await fetch(API + '?api=ships&key=' + encodeURIComponent(KEY), { credentials: 'omit' }).then(r => r.json());
+      if (!r.ok) throw new Error(r.error);
+      data = r.data.list; conf = r.data.conf || {};
+      $('#bill').value = ls('b2_bill') || conf.bill || ''; $('#billCls').value = ls('b2_billcls') || conf.billCls || ''; $('#fare').value = ls('b2_fare') || conf.fare || '01';
+      if (!$('#bill').value) $('#setbox').classList.add('on');
+      render();
+    } catch (e) { $('#list').innerHTML = '<div class="empty">読み込めませんでした：' + esc(e.message) + '</div>'; }
+  }
+  ['bill','billCls','fare'].forEach(id => $('#' + id).addEventListener('change', e => ls('b2_' + id.toLowerCase(), e.target.value.trim())));
+  $('#setBtn').onclick = () => $('#setbox').classList.toggle('on');
+
+  // お届け先住所は B2 の上限（32文字）を超えた分を建物名へ回す
+  const W = s => [...String(s || '')].length;
+  function splitAddr(a, b){ a = String(a || ''); b = String(b || ''); if (W(a) <= 32) return [a, b]; const ch = [...a]; return [ch.slice(0, 32).join(''), (ch.slice(32).join('') + ' ' + b).trim()]; }
+
+  function render(){
+    const f = $('#filter').value;
+    const rows = data.filter(r => !f || r['状態'] === f);
+    if (!rows.length) { $('#list').innerHTML = '<div class="empty">該当する受付はありません</div>'; return; }
+    $('#list').innerHTML = rows.map(r => {
+      const warn = [];
+      if (W(r['お届け先住所']) > 32) warn.push('住所が長いので、32文字を超えた分は建物名の欄に入れます');
+      if (W(r['お届け先建物']) > 16 || W(r['依頼主建物']) > 16) warn.push('建物名が16文字を超えています');
+      if (W(r['お届け先名']) > 16 || W(r['依頼主名']) > 16) warn.push('名前が16文字を超えています');
+      if (!r['品名']) warn.push('品物が空欄（「冷凍食品」で出力します）');
+      return '<div class="item' + (r['状態'] !== '未発行' ? ' done' : '') + '"><input type="checkbox" value="' + esc(r['受付番号']) + '"' + (r['状態'] === '未発行' ? ' checked' : '') + '><div>' +
+        '<div class="hd"><span class="st ' + esc(r['状態']) + '">' + esc(r['状態']) + '</span>No.' + esc(r['受付番号']) + '　' + esc(r['受付日時']) + '</div>' +
+        '<div class="cols"><div><span class="small">お届け先</span><br><b>' + esc(r['お届け先名']) + ' 様</b>　' + esc(r['お届け先電話']) + '<br>〒' + esc(r['お届け先郵便']) + ' ' + esc(r['お届け先住所']) + ' ' + esc(r['お届け先建物']) + '</div>' +
+        '<div><span class="small">ご依頼主</span><br>' + esc(r['依頼主名']) + ' 様　' + esc(r['依頼主電話']) + '<br>〒' + esc(r['依頼主郵便']) + ' ' + esc(r['依頼主住所']) + ' ' + esc(r['依頼主建物']) + '</div>' +
+        '<div><span class="small">品物</span> ' + esc(r['品名'] || '—') + '</div><div><span class="small">お届け</span> ' + esc(r['お届け希望日'] ? r['お届け希望日'].replace(/-/g, '/') : '指定なし') + '　' + esc(TL[r['時間帯']] || '') + (r['備考'] ? '　<span class="small">メモ</span> ' + esc(r['備考']) : '') + '</div></div>' +
+        (warn.length ? '<div class="warn">⚠ ' + warn.map(esc).join('／') + '</div>' : '') + '</div></div>';
+    }).join('');
+  }
+  $('#filter').onchange = render;
+  $('#reload').onclick = load;
+  const picked = () => [...document.querySelectorAll('#list input:checked')].map(c => c.value);
+
+  // 全角カナ・ひらがな → 半角カナ（B2のカナ欄用）
+  const HK = {'ア':'ｱ','イ':'ｲ','ウ':'ｳ','エ':'ｴ','オ':'ｵ','カ':'ｶ','キ':'ｷ','ク':'ｸ','ケ':'ｹ','コ':'ｺ','サ':'ｻ','シ':'ｼ','ス':'ｽ','セ':'ｾ','ソ':'ｿ','タ':'ﾀ','チ':'ﾁ','ツ':'ﾂ','テ':'ﾃ','ト':'ﾄ','ナ':'ﾅ','ニ':'ﾆ','ヌ':'ﾇ','ネ':'ﾈ','ノ':'ﾉ','ハ':'ﾊ','ヒ':'ﾋ','フ':'ﾌ','ヘ':'ﾍ','ホ':'ﾎ','マ':'ﾏ','ミ':'ﾐ','ム':'ﾑ','メ':'ﾒ','モ':'ﾓ','ヤ':'ﾔ','ユ':'ﾕ','ヨ':'ﾖ','ラ':'ﾗ','リ':'ﾘ','ル':'ﾙ','レ':'ﾚ','ロ':'ﾛ','ワ':'ﾜ','ヲ':'ｦ','ン':'ﾝ','ァ':'ｧ','ィ':'ｨ','ゥ':'ｩ','ェ':'ｪ','ォ':'ｫ','ッ':'ｯ','ャ':'ｬ','ュ':'ｭ','ョ':'ｮ','ー':'ｰ','・':'･','　':' ',
+    'ガ':'ｶﾞ','ギ':'ｷﾞ','グ':'ｸﾞ','ゲ':'ｹﾞ','ゴ':'ｺﾞ','ザ':'ｻﾞ','ジ':'ｼﾞ','ズ':'ｽﾞ','ゼ':'ｾﾞ','ゾ':'ｿﾞ','ダ':'ﾀﾞ','ヂ':'ﾁﾞ','ヅ':'ﾂﾞ','デ':'ﾃﾞ','ド':'ﾄﾞ','バ':'ﾊﾞ','ビ':'ﾋﾞ','ブ':'ﾌﾞ','ベ':'ﾍﾞ','ボ':'ﾎﾞ','パ':'ﾊﾟ','ピ':'ﾋﾟ','プ':'ﾌﾟ','ペ':'ﾍﾟ','ポ':'ﾎﾟ','ヴ':'ｳﾞ'};
+  function hankana(s){
+    s = String(s || '').replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
+    const out = [...s].map(c => HK[c] !== undefined ? HK[c] : (/[ -~ｦ-ﾟ]/.test(c) ? c : null));
+    return out.includes(null) ? '' : out.join('').slice(0, 50);
+  }
+
+  const HEAD = ['お客様管理番号','送り状種類','クール区分','伝票番号','出荷予定日','お届け予定日','配達時間帯','お届け先コード','お届け先電話番号','お届け先電話番号枝番','お届け先郵便番号','お届け先住所','お届け先アパートマンション名','お届け先会社・部門１','お届け先会社・部門２','お届け先名','お届け先名(ｶﾅ)','敬称','ご依頼主コード','ご依頼主電話番号','ご依頼主電話番号枝番','ご依頼主郵便番号','ご依頼主住所','ご依頼主アパートマンション','ご依頼主名','ご依頼主名(ｶﾅ)','品名コード１','品名１','品名コード２','品名２','荷扱い１','荷扱い２','記事','ｺﾚｸﾄ代金引換額（税込)','内消費税額等','止置き','営業所コード','発行枚数','個数口表示フラグ','請求先顧客コード','請求先分類コード','運賃管理番号'];
+  const NCOL = 95;
+  function toRow(r, shipDate, bill, billCls, fare){
+    const a = new Array(NCOL).fill('');
+    const [da, db] = splitAddr(r['お届け先住所'], r['お届け先建物']);
+    const [sa, sb] = splitAddr(r['依頼主住所'], r['依頼主建物']);
+    a[0] = r['受付番号']; a[1] = '0'; a[2] = '1';
+    a[4] = shipDate; a[5] = r['お届け希望日'] ? r['お届け希望日'].replace(/-/g, '/') : ''; a[6] = r['時間帯'] || '';
+    a[8] = r['お届け先電話']; a[10] = r['お届け先郵便']; a[11] = da; a[12] = db;
+    a[15] = r['お届け先名']; a[16] = hankana(r['お届け先カナ']);
+    a[19] = r['依頼主電話']; a[21] = r['依頼主郵便']; a[22] = sa; a[23] = sb;
+    a[24] = r['依頼主名']; a[25] = hankana(r['依頼主カナ']);
+    a[27] = [...(r['品名'] || '冷凍食品')].slice(0, 25).join('');
+    a[32] = [...(r['備考'] || '')].slice(0, 22).join('');
+    a[39] = bill; a[40] = billCls; a[41] = fare;
+    return a;
+  }
+  const q = v => { v = String(v == null ? '' : v).replace(/^'/, ''); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+
+  $('#dl').onclick = () => {
+    const ids = picked(); if (!ids.length) { alert('受付を選んでください'); return; }
+    const bill = $('#bill').value.trim(), billCls = $('#billCls').value.trim(), fare = $('#fare').value.trim() || '01';
+    if (!/^\d{10,12}$/.test(bill)) { $('#setbox').classList.add('on'); alert('⚙ 請求先設定に「請求先顧客コード」を入れてください'); return; }
+    const sd = $('#shipDate').value; if (!sd) { alert('出荷予定日を入れてください'); return; }
+    const rows = data.filter(r => ids.includes(r['受付番号'])).map(r => toRow(r, sd.replace(/-/g, '/'), bill, billCls, fare));
+    const head = HEAD.concat(new Array(NCOL - HEAD.length).fill(''));
+    const text = [head].concat(rows).map(r => r.map(q).join(',')).join('\r\n') + '\r\n';
+    const sj = Encoding.convert(Encoding.stringToCode(text), { to: 'SJIS', from: 'UNICODE' });
+    const blob = new Blob([new Uint8Array(sj)], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'B2_発送受付_' + sd.replace(/-/g, '') + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => { if (confirm(rows.length + '件のCSVを作りました。\nB2クラウドに取り込んだら「OK」で発行済にします。')) setState(ids, '発行済'); }, 600);
+  };
+  async function setState(ids, state){
+    const r = await fetch(API, { method: 'POST', body: JSON.stringify({ action: 'shipState', key: KEY, ids, state }), credentials: 'omit' }).then(r => r.json()).catch(e => ({ ok: false, error: e.message }));
+    if (!r.ok) alert('更新できませんでした：' + r.error);
+    load();
+  }
+  $('#mark').onclick = () => { const ids = picked(); if (ids.length) setState(ids, '発行済'); };
+  $('#cancel').onclick = () => { const ids = picked(); if (ids.length && confirm(ids.length + '件を取消にしますか？')) setState(ids, '取消'); };
+  load();
+})();
+</script>
+</body>
+</html>
