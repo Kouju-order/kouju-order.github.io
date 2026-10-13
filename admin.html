@@ -16,6 +16,15 @@
   #mvbox .mvi { flex:1; min-width:0; font-size:22px; padding:10px; border:1px solid #ccc; border-radius:10px; }
   #mvbox .mvok { padding:10px 22px; font-size:20px; }
   #mvbox .mvno { width:100%; padding:10px; }
+  #mvbox .splist { max-height:50vh; overflow:auto; margin-bottom:10px; border-top:1px solid #eee; }
+  #mvbox .sprow { display:flex; align-items:center; gap:10px; padding:10px 4px; border-bottom:1px solid #eee; font-size:20px; }
+  #mvbox .sprow input { width:28px; height:28px; flex:none; }
+  #mvbox .spn { flex:1; }
+  #mvbox .spp { font-weight:700; }
+  #mvbox .spdone { color:#aaa; }
+  #mvbox .spdone .spn { text-decoration:line-through; }
+  #mvbox .spsum { font-size:20px; font-weight:700; margin-bottom:10px; }
+  #mvbox .spgo, #mvbox .spclr { width:100%; margin-bottom:8px; padding:12px; font-size:18px; }
   :root { --red:#a8231b; --ink:#231f1c; --muted:#7a716a; --bg:#f3eee6; --card:#fff; --line:#e3dacd; --warn:#d9822b; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; background:var(--bg); color:var(--ink); }
@@ -107,7 +116,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-1230'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1240'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -333,7 +342,7 @@
   // 餃子かどうかは、メニューの分類（焼餃子・水餃子・持帰の餃子）で決める。伝票名（金(5)など）は注文の品名と並び順で対応させて覚える
   const GYOZA_CATS = ['焼餃子', '水餃子', 'テイクアウト 餃子'];
   let gyozaNames = null; const gyozaSlips = new Set();
-  call({ api: 'menu' }).then(m => { gyozaNames = new Set((m || []).filter(x => GYOZA_CATS.includes(x.cat)).map(x => x.name)); if (lastD) learnSlips(lastD); }).catch(() => {});
+  call({ api: 'menu' }).then(m => { (m || []).forEach(x => { priceOf_[x.name] = Number(x.price); }); gyozaNames = new Set((m || []).filter(x => GYOZA_CATS.includes(x.cat)).map(x => x.name)); if (lastD) learnSlips(lastD); }).catch(() => {});
   const keyOf = l => l.replace(/\s×\s\d+$/, '').trim();
   function learnSlips(d) {
     if (!gyozaNames) return;
@@ -401,6 +410,11 @@
       const run = r.run.slice().sort((a, b) => atOf(a) - atOf(b));
       const o = { table: t, no: run.map(x => x.no).join('・'), time: run[0].time + '〜' + run[run.length - 1].time, total: r.sum,
         _txt: sumLines(run.map(x => x.slip || shortItems(x.items))) };
+      sendBill_(o);
+    } catch (e) { alert('会計伝票を作れませんでした：' + e.message); }
+  }
+  function sendBill_(o) {
+    try {
       const c = slipCanvas(o, 'bill', 1, 1); const wmm = 48, hmm = wmm * c.height / c.width;
       const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm], orientation: hmm >= wmm ? 'portrait' : 'landscape' });
       pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
@@ -514,10 +528,11 @@
       const nowM = minsOf({ at: Date.now() });
       Object.keys(latest).sort().forEach(t => { const r = tableRun(latest[t], 1); if (!r || nowM - r.start > 300) return;
         const ch = document.createElement('div'); ch.className = 'tchip';
-        ch.innerHTML = '<b class="t"></b><span class="s"></span><span class="n"></span><button class="bill">🖨 会計伝票</button><button class="paid">会計済み</button>';
+        ch.innerHTML = '<b class="t"></b><span class="s"></span><span class="n"></span><button class="bill">🖨 会計伝票</button><button class="split">✂ 分ける</button><button class="paid">会計済み</button>';
         ch.querySelector('.t').textContent = t; ch.querySelector('.s').textContent = yen(r.sum); ch.querySelector('.n').textContent = '（' + r.n + '回分）';
         ch.querySelector('.paid').onclick = () => setPaid(t);
         ch.querySelector('.bill').onclick = () => printBill(t, r);
+        ch.querySelector('.split').onclick = () => splitBill(t, r);
         tw.appendChild(ch); }); }
     const dn = $('done'); dn.innerHTML = '';
     d.done.forEach(o => {
@@ -560,6 +575,62 @@
     inp.onkeydown = e => { if (e.key === 'Enter') go(inp.value); };
     bx.querySelector('.mvno').onclick = () => bx.remove();
     bx.onclick = e => { if (e.target === bx) bx.remove(); };
+    document.body.appendChild(bx);
+  }
+
+  // ===== 分けて会計：その席の品を1品ずつ並べ、払う人の分だけ選んで会計伝票を出す =====
+  var priceOf_ = {};
+  function splitKey_(t) { return 'kouju_split_' + new Date().toDateString() + '_' + t; }
+  function splitDone_(t) { try { return JSON.parse(localStorage.getItem(splitKey_(t)) || '{}'); } catch (e) { return {}; } }
+  function splitUnits_(r) {
+    const units = [];
+    r.run.slice().sort((a, b) => atOf(a) - atOf(b)).forEach(o => {
+      const full = String(o.items || '').split('\n').filter(s => s.trim());
+      const sl = String(o.slip || shortItems(o.items)).split('\n').filter(s => s.trim());
+      const parsed = full.map((raw, i) => {
+        const m = raw.match(/^(.*?)\s×\s(\d+)$/); const name = (m ? m[1] : raw).trim(); const q = m ? Number(m[2]) : 1;
+        const sm = (sl[i] || '').match(/^(.*?)\s×\s(\d+)$/);
+        return { name, q, label: sm ? sm[1].trim() : (sl[i] || name), price: priceOf_[name] };
+      });
+      // 値段がわからない品は、その注文の合計の残りを割り振る
+      const known = parsed.reduce((a, p) => a + (p.price != null ? p.price * p.q : 0), 0);
+      const unk = parsed.filter(p => p.price == null); const unkQ = unk.reduce((a, p) => a + p.q, 0);
+      unk.forEach(p => { p.price = unkQ ? Math.round(Math.max(0, Number(o.total || 0) - known) / unkQ) : 0; });
+      parsed.forEach((p, i) => { for (let k = 0; k < p.q; k++) units.push({ id: o.no + '-' + i + '-' + k, label: p.label, price: p.price }); });
+    });
+    return units;
+  }
+  function splitBill(t, r) {
+    const old = document.getElementById('mvbox'); if (old) old.remove();
+    const done = splitDone_(t), units = splitUnits_(r);
+    const bx = document.createElement('div'); bx.id = 'mvbox';
+    bx.innerHTML = '<div class="mvin"><div class="mvt"></div><div class="splist"></div><div class="spsum"></div><button class="mvok spgo">🖨 選んだ分の会計伝票</button><button class="ghost spclr">「済」を全部消す（やり直し）</button><button class="ghost mvno">閉じる</button></div>';
+    bx.querySelector('.mvt').textContent = 'テーブル ' + t + '：払う人の分を選んでください';
+    const list = bx.querySelector('.splist'); const sel = new Set();
+    const upd = () => {
+      const s = units.filter(u => sel.has(u.id)).reduce((a, u) => a + u.price, 0);
+      const rest = units.filter(u => !done[u.id]).reduce((a, u) => a + u.price, 0);
+      bx.querySelector('.spsum').textContent = '選んだ分 ' + yen(s) + '　／　まだの分 ' + yen(rest);
+      bx.querySelector('.spgo').disabled = !sel.size;
+    };
+    units.forEach(u => {
+      const row = document.createElement('label'); row.className = 'sprow' + (done[u.id] ? ' spdone' : '');
+      row.innerHTML = '<input type="checkbox"><span class="spn"></span><span class="spp"></span>';
+      row.querySelector('.spn').textContent = u.label + (done[u.id] ? '（済）' : '');
+      row.querySelector('.spp').textContent = yen(u.price);
+      const cb = row.querySelector('input'); cb.onchange = () => { if (cb.checked) sel.add(u.id); else sel.delete(u.id); upd(); };
+      list.appendChild(row);
+    });
+    upd();
+    bx.querySelector('.spgo').onclick = () => {
+      const pick = units.filter(u => sel.has(u.id)); if (!pick.length) return;
+      const d2 = splitDone_(t); pick.forEach(u => { d2[u.id] = 1; }); try { localStorage.setItem(splitKey_(t), JSON.stringify(d2)); } catch (e) {}
+      const run = r.run.slice().sort((a, b) => atOf(a) - atOf(b));
+      sendBill_({ table: t, no: run.map(x => x.no).join('・'), time: run[0].time + '〜' + run[run.length - 1].time,
+        total: pick.reduce((a, u) => a + u.price, 0), _txt: sumLines(pick.map(u => u.label + ' × 1')) });
+    };
+    bx.querySelector('.spclr').onclick = () => { try { localStorage.removeItem(splitKey_(t)); } catch (e) {} splitBill(t, r); };
+    bx.querySelector('.mvno').onclick = () => bx.remove();
     document.body.appendChild(bx);
   }
 
