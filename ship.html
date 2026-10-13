@@ -71,6 +71,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     <input name="addr" autocomplete="street-address" placeholder="神奈川県横浜市南区井土ケ谷下町37-6">
     <label>建物名・部屋番号</label>
     <input name="bldg" autocomplete="address-line2" placeholder="〇〇マンション 101">
+    <label>メールアドレス（送り状番号が必要な方）</label>
+    <input name="email" type="email" autocomplete="email" inputmode="email" placeholder="example@mail.com">
+    <p class="hint">ご記入いただくと、ヤマト運輸から配達予定メールと一緒に送り状番号が届きます。</p>
+    <label>備考</label>
+    <input name="memo" placeholder="">
   </section>
 
   <div id="dests"></div>
@@ -169,11 +174,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
   const val = (box, n) => (box.querySelector('[name=' + n + ']').value || '').trim();
   const setv = (box, n, v) => { const el = box.querySelector('[name=' + n + ']'); el.value = v || ''; };
   const F = ['name','kana','tel','zip','addr','bldg'];
+  const FS = F.concat(['email']);
   const read = box => { const o = {}; box.querySelectorAll('[name]').forEach(el => o[el.name] = (el.value || '').trim()); if (o.zip) o.zip = zipNorm(o.zip); if (o.tel) o.tel = z2h(o.tel).replace(/[^\d-]/g,''); return o; };
 
   // 前回の依頼主情報（この端末だけに保存）
   let last = null; try { last = JSON.parse(localStorage.getItem('kouju_ship_sender') || 'null'); } catch(e) {}
-  if (last && last.name) { const b = $('#useLast'); b.hidden = false; b.textContent = '前回の内容を使う（' + last.name + '様）'; b.onclick = () => { F.forEach(k => setv($('#sender'), k, last[k])); b.hidden = true; }; }
+  if (last && last.name) { const b = $('#useLast'); b.hidden = false; b.textContent = '前回の内容を使う（' + last.name + '様）'; b.onclick = () => { FS.forEach(k => setv($('#sender'), k, last[k])); b.hidden = true; }; }
 
   // 住所のテキストを貼り付けて分解
   function parsePaste(t){
@@ -233,6 +239,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     const o = read(box), miss = [];
     if (!o.name) miss.push('お名前'); if (!/^\d[\d-]{8,13}$/.test(o.tel || '')) miss.push('電話番号');
     if (!/^\d{3}-\d{4}$/.test(o.zip || '')) miss.push('郵便番号'); if (!o.addr) miss.push('住所');
+    if (o.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.email)) miss.push('メールアドレス');
     return miss.length ? title + '：' + miss.join('・') : '';
   }
   const TL = { '':'指定なし','0812':'午前中','1416':'14〜16時','1618':'16〜18時','1820':'18〜20時','1921':'19〜21時' };
@@ -248,7 +255,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
       const sender = read($('#sender'));
       const dests = [...document.querySelectorAll('.dest')].map(read);
       payload = { action: 'ship', sender, dests, rid: Date.now().toString(36) + Math.random().toString(36).slice(2,8) };
-      $('#sumBox').innerHTML = '<h2>ご依頼主</h2><dl>' + row('お名前', sender.name + ' 様') + row('電話', sender.tel) + row('住所', '〒' + sender.zip + ' ' + sender.addr + ' ' + sender.bldg) + '</dl>' +
+      $('#sumBox').innerHTML = '<h2>ご依頼主</h2><dl>' + row('お名前', sender.name + ' 様') + row('電話', sender.tel) + row('住所', '〒' + sender.zip + ' ' + sender.addr + ' ' + sender.bldg) + (sender.email ? row('メール', sender.email) : '') + (sender.memo ? row('備考', sender.memo) : '') + '</dl>' +
         dests.map((d, i) => '<h2 style="margin-top:14px">お届け先 ' + (i + 1) + '</h2><dl>' + row('お名前', d.name + ' 様') + row('電話', d.tel) + row('住所', '〒' + d.zip + ' ' + d.addr + ' ' + d.bldg) +
           row('品物', d.item || '（レジでご相談）') + row('お届け日時', (d.date ? d.date.replace(/-/g,'/') : '指定なし') + '　' + TL[d.time || '']) + (d.note ? row('メモ', d.note) : '') + '</dl>').join('');
       $('#form').hidden = true; $('#confirm').hidden = false; $('#next').textContent = 'この内容で受付する'; step = 'confirm'; scrollTo(0, 0);
@@ -257,7 +264,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
       try {
         const r = await fetch(API, { method: 'POST', body: JSON.stringify(payload), credentials: 'omit' }).then(r => r.json());
         if (!r.ok) throw new Error(r.error || '送信できませんでした');
-        try { const s = payload.sender; localStorage.setItem('kouju_ship_sender', JSON.stringify({ name: s.name, kana: s.kana, tel: s.tel, zip: s.zip, addr: s.addr, bldg: s.bldg })); } catch(e) {}
+        try { const s = payload.sender; localStorage.setItem('kouju_ship_sender', JSON.stringify({ name: s.name, kana: s.kana, tel: s.tel, zip: s.zip, addr: s.addr, bldg: s.bldg, email: s.email })); } catch(e) {}
         $('#doneNo').textContent = '受付 No.' + r.data.no;
         $('#doneSum').textContent = payload.sender.name + '様　お届け先 ' + payload.dests.length + '件';
         $('#confirm').hidden = true; $('#done').hidden = false; $('#bar').hidden = true; step = 'done'; scrollTo(0, 0);
