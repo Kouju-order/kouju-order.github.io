@@ -418,7 +418,7 @@
       const items = idx.map(i => mm[i]);
       const ord = ['醤油', '塩', 'その他', 'etc', 'board', 'add'].map(k => items.filter(x => nsubOf(x) === k)).flat();
       if (ord.length === items.length) idx.forEach((i, j) => { mm[i] = ord[j]; }); }
-    const NSUBL = { '醤油': ['醤油', 'Soy sauce', '酱油', '醬油', '#8a4b1c'], '塩': ['塩', 'Salt', '盐味', '鹽味', '#1a6fc0'], 'その他': ['その他', 'Others', '其他', '其他', '#c0281c'], 'board': ['黒板メニュー', 'Chalkboard', '黑板菜单', '黑板菜單', '#2f3b33'], 'add': ['麺に追加', 'Add-ons', '加料', '加料', '#777'] };
+    const NSUBL = { '醤油': ['醤油', 'Soy sauce', '酱油', '醬油', '#8a4b1c'], '塩': ['塩', 'Salt', '盐味', '鹽味', '#1a6fc0'], 'その他': ['その他', 'Others', '其他', '其他', '#c0281c'], 'board': ['黒板メニュー', 'Chalkboard', '黑板菜单', '黑板菜單', '#2f3b33'], 'add': ['麺に追加', 'Add-ons / Toppings', '加料', '加料', '#777'] };
     // 辛さ：数字の数だけ🌶を付ける
     const SPICY = { '貴州牛肉麺': 1, '赤麻婆豆腐（赤唐辛子・山椒・花椒）': 1, '緑麻婆豆腐（青唐辛子・花椒）': 2 };
     window._SY = {};
