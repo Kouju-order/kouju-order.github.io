@@ -39,6 +39,8 @@ input:focus,select:focus{outline:none;border-color:var(--red)}
 .it.on{background:#fff4e8}
 .it .nm{flex:1;font-size:15px;line-height:1.35}
 .it .nm small{display:block;color:var(--sub);font-size:13px}
+.it .nm b{font-weight:600}
+.it .nm small.sc{color:var(--ink);font-size:12.5px;line-height:1.45;margin:2px 0}
 .it .qb{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--red);background:#fff;color:var(--red);font-size:21px;font-weight:800;line-height:1;padding:0;cursor:pointer}
 .it .qb.p{background:var(--red);color:#fff}
 .it .qty{min-width:24px;text-align:center;font-weight:800;font-size:18px}
@@ -125,6 +127,9 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   const menuP = fetch(API + '?api=menu', { credentials: 'omit' }).then(r => r.json())
     .then(r => { FROZEN = ((r && r.data) || []).filter(m => m.cat === 'テイクアウト 冷凍' && !/保冷/.test(m.name)); })
     .catch(() => { FROZEN = []; });
+  const SETC = { '【冷凍】特選Aセット': '金餃子8個／銀餃子8個／しそ餃子8個／ワンタン7個（スープ付き）', '【冷凍】特選Bセット': '金餃子8個／豚まん3個／ワンタン7個（スープ付き）／えびワンタン7個（スープ付き）',
+    '【冷凍】特選Cセット': '金餃子20個／しそ餃子8個／豚まん3個／ワンタン7個（スープ付き）／えびワンタン7個（スープ付き）', '【冷凍】超お得セット': '金餃子20個／銀餃子8個／しそ餃子8個／豚まん3個／小籠包6個×2',
+    '【冷凍】点心バラエティーセット': '金餃子20個／銀餃子20個／しそ餃子20個／豚まん3個／あんまん1個／小籠包6個／蓮の葉チマキ2個／ワンタン7個（スープ付き）／えびワンタン7個（スープ付き）' };
   const shortName = n => String(n).replace(/^【冷凍】/, '').replace(/[（(][^）)]*[）)]/g, '').replace(/\s+/g, '');
 
   // 状態
@@ -165,7 +170,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
         let html = '', cg = -1;
         order.forEach(i => { const it = FROZEN[i], g = grp(it.name);
           if (g !== cg) { cg = g; html += '<div class="gh">' + G[g][0] + '</div>'; }
-          html += '<div class="it' + (d.q[i] ? ' on' : '') + '" data-i="' + i + '"><div class="nm">' + esc(String(it.name).replace(/^【冷凍】/, '')) + '<small>' + yen(it.price) + '</small></div><button class="qb m" aria-label="減らす">−</button><span class="qty">' + (d.q[i] || 0) + '</span><button class="qb p" aria-label="増やす">＋</button></div>'; });
+          html += '<div class="it' + (d.q[i] ? ' on' : '') + '" data-i="' + i + '"><div class="nm"><b>' + esc(String(it.name).replace(/^【冷凍】/, '')) + '</b>' + (SETC[it.name] ? '<small class="sc">' + esc(SETC[it.name]) + '</small>' : '') + '<small>' + yen(it.price) + '</small></div><button class="qb m" aria-label="減らす">−</button><span class="qty">' + (d.q[i] || 0) + '</span><button class="qb p" aria-label="増やす">＋</button></div>'; });
         box.innerHTML = html + '<div class="isum" id="isum"></div>';
         const upd = () => { const a = amtOf(d); $('#isum').textContent = a ? '商品代 ' + yen(a) + '（送料は別）' : '商品を選んでください'; };
         box.querySelectorAll('.it').forEach(row => {
