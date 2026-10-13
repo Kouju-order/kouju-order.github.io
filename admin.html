@@ -119,7 +119,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-1255'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1300'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -563,7 +563,7 @@
       if (restoring.has(o.no)) { b.disabled = true; b.textContent = '⏳ 戻しています…'; }
       b.onclick = () => setStatus(o.no, '未対応', b);
       const mv = document.createElement('button'); mv.className = 'ghost back'; mv.textContent = '席変更'; mv.onclick = () => moveTable(o);
-      if (r._paidT) { const ub = document.createElement('button'); ub.className = 'undopaid'; ub.textContent = '取消'; ub.onclick = () => undoPaid(r._paidT); r.append(s, ub, mv, b); } else r.append(s, mv, b); dn.appendChild(r);
+      if (r._paidT) { const ub = document.createElement('button'); ub.className = 'undopaid'; ub.textContent = '会計取り消し'; ub.onclick = () => undoPaid(r._paidT); r.append(s, ub, mv, b); } else r.append(s, mv, b); dn.appendChild(r);
     });
 
     const t = new Date();
