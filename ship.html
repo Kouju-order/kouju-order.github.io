@@ -209,10 +209,9 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
         return;
       }
       m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + (filled ? '<div class="q">送り先を確認してください</div><p class="qs">間違いがあれば直してください。</p>' : '<div class="q">送り先を入力してください</div><p class="qs">郵便番号を入れると住所が自動で入ります。</p>') + addrForm('d', d) +
-        '<details><summary>お届け日時・フリガナ・メモ（任意）</summary>' +
-        '<label>お届け希望日</label><input type="date" id="d_date" value="' + esc(d.date) + '">' +
-        '<label>時間帯</label><select id="d_time">' + Object.keys(TL).map(k => '<option value="' + k + '"' + (d.time === k ? ' selected' : '') + '>' + TL[k] + '</option>').join('') + '</select>' +
-        '<label>フリガナ</label><input id="d_kana" value="' + esc(d.kana) + '">' +
+        '<details><summary>お届け日時の指定・メモ（なくてもOK）</summary>' +
+        '<label>お届け希望日</label><select id="d_date">' + dateOpts(d.date) + '</select>' +
+        '<label>時間帯</label><select id="d_time">' + Object.keys(TL).map(k => '<option value="' + k + '"' + (d.time === k ? ' selected' : '') + '>' + TL[k] + '</option>').join('') + '</select><p class="qs" style="margin:4px 0 0">地域によってはご希望の日に届かない場合があります。</p>' +
         '<label>メモ（のし・ギフトなど）</label><input id="d_note" value="' + esc(d.note) + '"></details>' +
         '<button class="link" id="redo">入れ方を選び直す</button>';
       bindZip('d');
@@ -224,9 +223,8 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       m.innerHTML = '<div class="q">まず、あなた（送り主）の情報</div><p class="qs">送り状の「ご依頼主」になります。</p>' +
         (last && last.name && !s.name ? '<button class="big" id="useLast"><span class="ic">↩️</span><span><b>前回と同じ（' + esc(last.name) + '様）</b><small>タップで入ります</small></span></button>' : '') +
         addrForm('s', s) +
-        '<details><summary>メールアドレス・フリガナ・備考（任意）</summary>' +
+        '<details><summary>メールアドレス・備考（なくてもOK）</summary>' +
         '<label>メールアドレス</label><input type="email" id="s_email" inputmode="email" autocomplete="email" value="' + esc(s.email) + '"><p class="qs" style="margin:4px 0 0">書くと、ヤマトから配達予定メールと送り状番号が届きます。</p>' +
-        '<label>フリガナ</label><input id="s_kana" value="' + esc(s.kana) + '">' +
         '<label>備考</label><input id="s_memo" value="' + esc(s.memo) + '"></details>';
       bindZip('s', true);
       if ($('#useLast')) $('#useLast').onclick = () => { Object.assign(s, last); render(); };
@@ -248,6 +246,13 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
     }
   }
 
+  function dateOpts(sel){
+    const W = '日月火水木金土', out = ['<option value="">指定なし（いちばん早い日）</option>'];
+    const t = new Date(); t.setHours(12, 0, 0, 0);
+    for (let k = 1; k <= 30; k++) { const x = new Date(t.getTime() + k * 864e5); const v = x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+      out.push('<option value="' + v + '"' + (sel === v ? ' selected' : '') + '>' + (x.getMonth() + 1) + '月' + x.getDate() + '日（' + W[x.getDay()] + '）</option>'); }
+    return out.join('');
+  }
   function addrForm(p, o){
     return '<label>お名前</label><input id="' + p + '_name" autocomplete="' + (p === 's' ? 'name' : 'off') + '" value="' + esc(o.name) + '">' +
       '<label>電話番号</label><input id="' + p + '_tel" type="tel" inputmode="tel" autocomplete="' + (p === 's' ? 'tel' : 'off') + '" value="' + esc(o.tel) + '">' +
