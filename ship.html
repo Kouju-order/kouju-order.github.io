@@ -210,9 +210,8 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       m.innerHTML = '<div class="q">まず、あなた（送り主）の情報</div><p class="qs">送り状の「ご依頼主」になります。</p>' +
         (last && last.name && !s.name ? '<button class="big" id="useLast"><span class="ic">↩️</span><span><b>前回と同じ（' + esc(last.name) + '様）</b><small>タップで入ります</small></span></button>' : '') +
         addrForm('s', s) +
-        '<details><summary>メールアドレス・備考（なくてもOK）</summary>' +
-        '<label>メールアドレス</label><input type="email" id="s_email" inputmode="email" autocomplete="email" value="' + esc(s.email) + '"><p class="qs" style="margin:4px 0 0">書くと、ヤマトから配達予定メールと送り状番号が届きます。</p>' +
-        '<label>備考</label><input id="s_memo" value="' + esc(s.memo) + '"></details>';
+        '<label>メールアドレス <span style="font-weight:400">（なくてもOK）</span></label><input type="email" id="s_email" inputmode="email" autocomplete="email" value="' + esc(s.email) + '"><p class="qs" style="margin:4px 0 0">書くと、ヤマトから配達予定メールと送り状番号が届きます。</p>' +
+        '<label>備考 <span style="font-weight:400">（なくてもOK）</span></label><input id="s_memo" value="' + esc(s.memo) + '">';
       bindZip('s', true);
       if ($('#useLast')) $('#useLast').onclick = () => { Object.assign(s, last); render(); };
     }
