@@ -16,6 +16,8 @@
   #mvbox .mvi { flex:1; min-width:0; font-size:22px; padding:10px; border:1px solid #ccc; border-radius:10px; }
   #mvbox .mvok { padding:10px 22px; font-size:20px; }
   #mvbox .mvno { width:100%; padding:10px; }
+  .done.paidrow { background:#eef7ee; }
+  .paidb { display:inline-block; background:#2e7d32; color:#fff; font-weight:700; padding:2px 10px; border-radius:999px; font-size:15px; }
   #mvbox .splist { max-height:50vh; overflow:auto; margin-bottom:10px; border-top:1px solid #eee; }
   #mvbox .sprow { display:flex; align-items:center; gap:10px; padding:10px 4px; border-bottom:1px solid #eee; font-size:20px; }
   #mvbox .sprow input { width:28px; height:28px; flex:none; }
@@ -116,7 +118,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261013-1240'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261013-1245'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -539,6 +541,8 @@
       const r = document.createElement('div'); r.className = 'done';
       const s = document.createElement('span');
       s.textContent = `No.${o.no}　テーブル ${o.table}　${o.time}　${yen(o.total)}`;
+      // 「会計済み」を押した席の、それより前の注文には印を付ける
+      { const pt = paidAt(String(o.table)); if (pt && atOf(o) <= pt) { r.classList.add('paidrow'); const pb = document.createElement('span'); pb.className = 'paidb'; pb.textContent = '💴 会計済'; s.appendChild(document.createTextNode('　')); s.appendChild(pb); } }
       const b = document.createElement('button'); b.className = 'ghost back'; b.textContent = '未対応に戻す';
       if (restoring.has(o.no)) { b.disabled = true; b.textContent = '⏳ 戻しています…'; }
       b.onclick = () => setStatus(o.no, '未対応', b);
