@@ -59,7 +59,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
-<header><h1>🧊 冷凍品の発送受付　公珠</h1><div class="prog" id="prog"><span></span><span></span><span></span><span></span></div></header>
+<header><h1>🧊 冷凍品の発送受付　公珠</h1><div class="prog" id="prog"><span></span><span></span><span></span><span></span><span></span></div></header>
 <main id="main"></main>
 <div class="bar" id="bar"><button class="btn back" id="back">戻る</button><button class="btn main" id="next">次へ</button></div>
 <input type="file" id="vcf" accept=".vcf,text/vcard,text/x-vcard,text/directory" hidden>
@@ -129,21 +129,31 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
 
   // 状態
   let last = null; try { last = JSON.parse(localStorage.getItem('kouju_ship_sender') || 'null'); } catch (e) {}
-  const S = { step: 'items', cur: 0, dests: [newDest()], sender: { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', email:'', memo:'' }, addrMode: '' };
+  const S = { step: 'count', cur: 0, dests: [newDest()], sender: { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', email:'', memo:'' }, addrMode: '' };
   function newDest(){ return { q: {}, name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', date:'', time:'', note:'' }; }
   const itemsOf = d => (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
   const amtOf = d => (FROZEN || []).reduce((a, m, i) => a + (d.q[i] || 0) * Number(m.price || 0), 0);
-  const STEPS = ['items', 'dest', 'sender', 'confirm'];
+  const STEPS = ['count', 'items', 'dest', 'sender', 'confirm'];
 
   function setProg(){ const k = STEPS.indexOf(S.step); document.querySelectorAll('#prog span').forEach((s, i) => s.classList.toggle('on', i <= k)); }
-  const label = () => S.dests.length > 1 || S.cur > 0 ? 'お届け先' + (NUM[S.cur] || S.cur + 1) : '';
+  const label = () => S.dests.length > 1 ? 'お届け先' + (NUM[S.cur] || S.cur + 1) + '（全' + S.dests.length + '件）' : '';
 
   function render(){
     setProg(); scrollTo(0, 0);
     const m = $('#main'), d = S.dests[S.cur];
     $('#bar').hidden = S.step === 'done';
-    $('#back').hidden = S.step === 'items' && S.cur === 0;
-    if (S.step === 'items') {
+    $('#back').hidden = S.step === 'count';
+    $('#next').hidden = false;
+    if (S.step === 'count') {
+      $('#next').hidden = true;
+      m.innerHTML = '<div class="q">送り先は何件ですか？</div><p class="qs">お届けする先の数を選んでください。</p>' +
+        [1,2,3,4].map(n => '<button class="big cnt" data-n="' + n + '"><span class="ic">' + (NUM[n-1]) + '</span><span><b>' + n + '件</b><small>' + (n === 1 ? '1か所に送る' : n + 'か所に送る') + '</small></span></button>').join('') +
+        '<div class="row" style="align-items:center"><input id="cntN" type="number" min="5" max="20" inputmode="numeric" placeholder="5件以上はこちらに数字"><button class="btn sub" id="cntGo" style="flex:0 0 90px;padding:12px">決定</button></div>';
+      const go = n => { n = Math.max(1, Math.min(20, n | 0)); while (S.dests.length < n) S.dests.push(newDest()); S.dests.length = n; S.cur = 0; S.addrMode = ''; S.step = 'items'; render(); };
+      m.querySelectorAll('.cnt').forEach(b => b.onclick = () => go(Number(b.dataset.n)));
+      $('#cntGo').onclick = () => { const n = Number($('#cntN').value); if (n >= 1) go(n); };
+    }
+    else if (S.step === 'items') {
       $('#next').textContent = '次へ（送り先を入力）';
       m.innerHTML = (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">何を送りますか？</div><p class="qs">「＋」で数を選んでください。</p><div class="items" id="items"><p style="padding:12px">商品を読み込み中…</p></div>';
       menuP.then(() => {
@@ -168,7 +178,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       });
     }
     else if (S.step === 'dest') {
-      $('#next').textContent = '次へ';
+      $('#next').textContent = S.cur < S.dests.length - 1 ? '次へ（お届け先' + (NUM[S.cur + 1] || S.cur + 2) + 'へ）' : '次へ';
       const filled = d.name || d.tel || d.addr;
       if (!S.addrMode && !filled) {
         $('#next').hidden = true;
@@ -275,7 +285,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   };
 
   $('#back').onclick = () => {
-    if (S.step === 'items') { if (S.cur > 0) { const x = S.dests[S.cur]; if (!x.name && !x.addr) S.dests.splice(S.cur, 1); S.cur = 0; S.step = 'confirm'; } }
+    if (S.step === 'items') { if (S.cur > 0) { S.cur--; S.step = 'dest'; S.addrMode = 'hand'; } else S.step = 'count'; }
     else if (S.step === 'dest') { collect('d', S.dests[S.cur]); if (S.addrMode && !(S.dests[S.cur].name || S.dests[S.cur].addr)) S.addrMode = ''; else S.step = 'items'; }
     else if (S.step === 'sender') { collect('s', S.sender); S.step = 'dest'; S.addrMode = 'hand'; }
     else if (S.step === 'confirm') { S.step = 'sender'; }
@@ -289,7 +299,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
     } else if (S.step === 'dest') {
       const d = S.dests[S.cur]; collect('d', d);
       const miss = check(d); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; }
-      S.step = S.sender.name ? 'confirm' : 'sender'; render();
+      if (S.cur < S.dests.length - 1 && !(S.dests[S.cur + 1].name)) { S.cur++; S.addrMode = ''; S.step = 'items'; } else S.step = S.sender.name ? 'confirm' : 'sender'; render();
     } else if (S.step === 'sender') {
       collect('s', S.sender);
       const miss = check(S.sender); if (miss.length) { alertBox('次の項目を確認してください\n・' + miss.join('\n・')); return; }
