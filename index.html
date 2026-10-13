@@ -752,6 +752,8 @@
   // 上海蟹のご案内リンク（?rsv=crab&m=オス数&f=メス数）：予約フォームを開いて数を入れておく
   (function () {
     const q = new URLSearchParams(location.search);
+    // おせちのチラシのQR（?rsv=osechi）：おせちの予約フォームをすぐ開く
+    if (q.get('rsv') === 'osechi') { $('askTable').hidden = true; openRsv('osechi'); return; }
     if (q.get('rsv') !== 'crab') return;
     $('askTable').hidden = true;
     openRsv('crab');
