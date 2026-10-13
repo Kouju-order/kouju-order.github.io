@@ -103,8 +103,12 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     <div class="tools">
       <button type="button" class="btn ghost pick" hidden>📒 電話帳から選ぶ</button>
       <button type="button" class="btn ghost same">自分あてに送る</button>
-      <button type="button" class="btn ghost pst">📋 住所を貼り付け</button>
+      <button type="button" class="btn ghost vcf">📇 連絡先をまるごと読み込む</button>
+      <button type="button" class="btn ghost pst">📋 コピーした文字を貼り付け</button>
+      <input type="file" class="vcfin" accept=".vcf,text/vcard,text/x-vcard,text/directory" hidden>
     </div>
+    <p class="hint vhelp" hidden>iPhoneの場合：「連絡先」アプリで送り先の人を開く →「連絡先を共有」→「"ファイル"に保存」→ この画面に戻って、もう一度「📇 連絡先をまるごと読み込む」→「ファイルを選択」で、いま保存した連絡先を選んでください。名前・フリガナ・電話・〒・住所がまとめて入ります。</p>
+    <p class="hint vmsg" style="color:var(--red);font-weight:700"></p>
     <div class="paste"><textarea rows="4" placeholder="ここを長押しして「ペースト」してください（名前・〒・住所・電話番号がまとめて入っていてもOK）"></textarea><p class="hint pmsg" style="color:var(--red);font-weight:700"></p><button type="button" class="btn ghost doPaste" style="margin-top:6px">もう一度読み取る</button></div>
     <label>お名前<span class="req">必須</span></label>
     <input name="name" placeholder="山田 花子">
@@ -226,6 +230,33 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     return o;
   }
 
+  function parseVcard(txt){
+    txt = String(txt || '').replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '');
+    if (!/BEGIN:VCARD/i.test(txt)) return null;
+    const card = txt.split(/END:VCARD/i)[0];
+    const un = v => v.replace(/\\n/gi, ' ').replace(/\\([,;\\])/g, '$1').trim();
+    const qp = (v, p) => /QUOTED-PRINTABLE/i.test(p) ? (() => { try { return decodeURIComponent(v.replace(/=\n/g, '').replace(/=([0-9A-F]{2})/gi, '%$1')); } catch (e) { return v; } })() : v;
+    const props = [];
+    card.split('\n').forEach(l => { const m = l.match(/^(?:[\w-]+\.)?([A-Z-]+)((?:;[^:]*)?):(.*)$/i); if (m) props.push({ k: m[1].toUpperCase(), p: m[2] || '', v: qp(m[3], m[2] || '') }); });
+    const get = k => props.filter(x => x.k === k);
+    const o = {};
+    const n = get('N')[0];
+    if (n) { const a = n.v.split(';').map(un); o.name = [a[0], a[1]].filter(Boolean).join(' '); }
+    if (!o.name && get('FN')[0]) o.name = un(get('FN')[0].v);
+    const kl = get('X-PHONETIC-LAST-NAME')[0], kf = get('X-PHONETIC-FIRST-NAME')[0], sn = get('SORT-STRING')[0];
+    const kana = [kl && un(kl.v), kf && un(kf.v)].filter(Boolean).join(' ') || (sn ? un(sn.v) : '');
+    if (kana) o.kana = kana.replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
+    const tels = get('TEL'); const tl = tels.find(x => /CELL|IPHONE|MOBILE/i.test(x.p)) || tels[0];
+    if (tl) { let v = z2h(un(tl.v)).replace(/^tel:/i, '').replace(/^\+81[\s-]?\(?0?/, '0').replace(/[\s()]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''); const d = v.replace(/\D/g, ''); if (!/-/.test(v) && d.length === 11) v = d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7); o.tel = v; }
+    const ads = get('ADR'); const ad = ads.find(x => /HOME/i.test(x.p)) || ads[0];
+    if (ad) {
+      const a = ad.v.split(';').map(un); // 0:私書箱 1:拡張 2:番地 3:市区町村 4:都道府県 5:〒 6:国
+      const zip = z2h(a[5] || '').replace(/\D/g, '');
+      if (zip.length === 7) o.zip = zip.slice(0,3) + '-' + zip.slice(3);
+      o.addr = z2h([a[4], a[3], a[2], a[1]].filter(Boolean).join('')).replace(/\s+/g, '').replace(/^日本/, '');
+    }
+    return (o.name || o.tel || o.addr) ? o : null;
+  }
   const canPick = 'contacts' in navigator && 'select' in (navigator.contacts || {});
   let n = 0;
   function addDest(){
@@ -259,6 +290,21 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     };
     ta.addEventListener('paste', () => setTimeout(() => apply(ta.value), 50));
     node.querySelector('.doPaste').onclick = () => apply(ta.value);
+    const vin = node.querySelector('.vcfin'), vmsg = node.querySelector('.vmsg'), vhelp = node.querySelector('.vhelp');
+    node.querySelector('.vcf').onclick = () => { vhelp.hidden = false; vin.value = ''; vin.click(); };
+    vin.onchange = async () => {
+      const f = vin.files && vin.files[0]; if (!f) return;
+      const c = parseVcard(await f.text());
+      if (!c) { vmsg.textContent = '連絡先のファイルを読み取れませんでした'; return; }
+      const got = [];
+      if (c.name) { setv(node, 'name', c.name); got.push('お名前'); }
+      if (c.kana) { setv(node, 'kana', c.kana); got.push('フリガナ'); }
+      if (c.tel) { setv(node, 'tel', c.tel); got.push('電話'); }
+      if (c.zip) { setv(node, 'zip', c.zip); got.push('〒'); }
+      if (c.addr) { const ad = node.querySelector('[name=addr]'); ad.value = c.addr; ad.dataset.auto = ''; got.push('住所'); }
+      vhelp.hidden = true;
+      vmsg.textContent = got.length ? '✓ ' + got.join('・') + 'を入れました。下で確認してください' + (c.addr ? '' : '（住所は登録がないようです）') : '名前・電話・住所が見つかりませんでした';
+    };
     if (canPick) {
       const pk = node.querySelector('.pick'); pk.hidden = false;
       pk.onclick = async () => {
