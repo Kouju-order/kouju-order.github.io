@@ -36,6 +36,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
 .done dd{margin:0;font-weight:700}
 .tel{display:inline-block;margin-top:8px;color:var(--red);font-weight:800;font-size:18px}
 .note{font-size:13px;color:var(--sub);margin-top:6px}
+.chk{display:flex;gap:10px;align-items:flex-start;color:var(--ink);font-size:15px;margin-top:18px;cursor:pointer}
+.chk input{width:22px;height:22px;flex:none;margin:1px 0 0;padding:0}
 </style>
 </head>
 <body>
@@ -59,6 +61,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     <label><span data-t="ppl"></span><span class="req" data-t="req"></span></label>
     <select id="ppl"></select>
     <div class="note" data-t="pplNote"></div>
+    <label><span data-t="kd"></span></label>
+    <select id="kd"></select>
+    <label class="chk"><input type="checkbox" id="chair"><span data-t="chair"></span></label>
+    <div class="note" data-t="chairNote"></div>
     <label><span data-t="name"></span><span class="req" data-t="req"></span></label>
     <input id="name" maxlength="30" autocomplete="name">
     <label><span data-t="tel"></span><span class="req" data-t="req"></span></label>
@@ -77,10 +83,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
   const TEL = '045-298-9091';
   const $ = id => document.getElementById(id);
   const TX = {
-    ja: { ttl: '公珠　お席のご予約', sub: '横浜・井土ケ谷の中華料理', hours: 'ラストオーダー：ランチ 14:10／ディナー 21:15　水曜定休', date: 'ご来店日', req: '必須', loading: '読み込み中…', choose: '選んでください', slot: '時間帯', lunch: 'ランチ', dinner: 'ディナー', time: 'ご来店時間', ppl: '人数', pplNote: '15名以上・貸切のご相談はお電話（' + TEL + '）でお願いします。', name: 'お名前', tel: '電話番号', memo: 'ご要望（任意）', memoPh: '例：子ども用の椅子がほしい、アレルギーがある など', send: 'この内容で予約する', sending: '送信中…', policy: '送っていただいた内容でご予約完了です。ご予約がいっぱいの場合は、お店からお電話してご相談させていただきます。', closedWed: '定休日', closedTmp: '臨時休業', full: '貸切', ppln: '{n}名', need: 'お名前・電話番号を入れて、日付・時間・人数を選んでください', fail: '送れませんでした。お電話（' + TEL + '）でお願いします', doneT: 'ご予約を承りました', doneP: 'ご来店をお待ちしております。ご予約がいっぱいの場合は、お店からお電話してご相談させていただきます。', dt: '日時', dn: '人数', dname: 'お名前', change: '変更・キャンセルはお電話でお願いします', wk: '日月火水木金土', ldOnly: '（ディナーのみ）', lnOnly: '（ランチのみ）', noTime: 'この日はもう受付時間を過ぎました' },
-    en: { ttl: 'Kouju — Table Reservation', sub: 'Chinese restaurant in Idogaya, Yokohama', hours: 'Last order: lunch 14:10 / dinner 21:15. Closed Wednesdays.', date: 'Date', req: 'required', loading: 'Loading…', choose: 'Please choose', slot: 'Lunch or dinner', lunch: 'Lunch', dinner: 'Dinner', time: 'Arrival time', ppl: 'Number of people', pplNote: 'For 15 or more people or private hire, please call ' + TEL + '.', name: 'Name', tel: 'Phone number', memo: 'Requests (optional)', memoPh: 'e.g. high chair, allergies', send: 'Book this table', sending: 'Sending…', policy: 'Your reservation is complete once sent. If we are fully booked, we will call you to discuss.', closedWed: 'Closed', closedTmp: 'Closed', full: 'Private event', ppln: '{n}', need: 'Please enter your name and phone, and choose date, time and number of people', fail: 'Could not send. Please call ' + TEL, doneT: 'Reservation received', doneP: 'We look forward to seeing you. If we are fully booked, we will call you to discuss.', dt: 'Date & time', dn: 'People', dname: 'Name', change: 'To change or cancel, please call us.', wk: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], ldOnly: ' (dinner only)', lnOnly: ' (lunch only)', noTime: 'Booking time for today has passed' },
-    zhs: { ttl: '公珠　座位预约', sub: '横滨・井土谷的中华料理', hours: '最后点餐：午餐 14:10／晚餐 21:15　周三休息', date: '日期', req: '必填', loading: '加载中…', choose: '请选择', slot: '时段', lunch: '午餐', dinner: '晚餐', time: '到店时间', ppl: '人数', pplNote: '15位以上或包场请致电 ' + TEL + '。', name: '姓名', tel: '电话', memo: '要求（可不填）', memoPh: '例：需要儿童椅、有过敏 等', send: '提交预约', sending: '发送中…', policy: '提交即完成预约，如预约已满，店家会致电与您商量。', closedWed: '休息', closedTmp: '临时休息', full: '包场', ppln: '{n}位', need: '请填写姓名和电话，并选择日期、时间和人数', fail: '发送失败，请致电 ' + TEL, doneT: '已收到预约', doneP: '期待您的光临。如预约已满，店家会致电与您商量。', dt: '日期时间', dn: '人数', dname: '姓名', change: '如需更改或取消，请致电。', wk: '日一二三四五六', ldOnly: '（仅晚餐）', lnOnly: '（仅午餐）', noTime: '今天的预约时间已过' },
-    zht: { ttl: '公珠　座位預約', sub: '橫濱・井土谷的中華料理', hours: '最後點餐：午餐 14:10／晚餐 21:15　週三休息', date: '日期', req: '必填', loading: '載入中…', choose: '請選擇', slot: '時段', lunch: '午餐', dinner: '晚餐', time: '到店時間', ppl: '人數', pplNote: '15位以上或包場請致電 ' + TEL + '。', name: '姓名', tel: '電話', memo: '要求（可不填）', memoPh: '例：需要兒童椅、有過敏 等', send: '提交預約', sending: '傳送中…', policy: '提交即完成預約，如預約已滿，店家會致電與您商量。', closedWed: '休息', closedTmp: '臨時休息', full: '包場', ppln: '{n}位', need: '請填寫姓名和電話，並選擇日期、時間和人數', fail: '傳送失敗，請致電 ' + TEL, doneT: '已收到預約', doneP: '期待您的光臨。如預約已滿，店家會致電與您商量。', dt: '日期時間', dn: '人數', dname: '姓名', change: '如需更改或取消，請致電。', wk: '日一二三四五六', ldOnly: '（僅晚餐）', lnOnly: '（僅午餐）', noTime: '今天的預約時間已過' }
+    ja: { ttl: '公珠　お席のご予約', sub: '横浜・井土ケ谷の中華料理', hours: 'ラストオーダー：ランチ 14:10／ディナー 21:15　水曜定休', date: 'ご来店日', req: '必須', loading: '読み込み中…', choose: '選んでください', slot: '時間帯', lunch: 'ランチ', dinner: 'ディナー', time: 'ご来店時間', ppl: '人数（お子さまも含めて）', pplNote: '15名以上・貸切のご相談はお電話（' + TEL + '）でお願いします。', name: 'お名前', tel: '電話番号', memo: 'ご要望（任意）', memoPh: '例：記念日のお祝いです、ベビーカーで行きます など', kd: 'お子さま用の食器（取り皿・スプーンなど）', kdNone: 'いらない', kdN: '{n}人分', chair: 'テーブルにつけるベビーチェア（6ヶ月〜1歳半向け）を使いたい', chairNote: 'ベビーチェアは1台のみのため、ご用意できない場合があります。', kdShort: '子ども食器', chairShort: '＋ベビーチェア', send: 'この内容で予約する', sending: '送信中…', policy: '送っていただいた内容でご予約完了です。ご予約がいっぱいの場合は、お店からお電話してご相談させていただきます。', closedWed: '定休日', closedTmp: '臨時休業', full: '貸切', ppln: '{n}名', need: 'お名前・電話番号を入れて、日付・時間・人数を選んでください', fail: '送れませんでした。お電話（' + TEL + '）でお願いします', doneT: 'ご予約を承りました', doneP: 'ご来店をお待ちしております。ご予約がいっぱいの場合は、お店からお電話してご相談させていただきます。', dt: '日時', dn: '人数', dname: 'お名前', change: '変更・キャンセルはお電話でお願いします', wk: '日月火水木金土', ldOnly: '（ディナーのみ）', lnOnly: '（ランチのみ）', noTime: 'この日はもう受付時間を過ぎました' },
+    en: { ttl: 'Kouju — Table Reservation', sub: 'Chinese restaurant in Idogaya, Yokohama', hours: 'Last order: lunch 14:10 / dinner 21:15. Closed Wednesdays.', date: 'Date', req: 'required', loading: 'Loading…', choose: 'Please choose', slot: 'Lunch or dinner', lunch: 'Lunch', dinner: 'Dinner', time: 'Arrival time', ppl: 'Number of people (including children)', pplNote: 'For 15 or more people or private hire, please call ' + TEL + '.', name: 'Name', tel: 'Phone number', memo: 'Requests (optional)', memoPh: 'e.g. celebrating an anniversary, coming with a stroller', kd: 'Kids tableware (small plates, spoons)', kdNone: 'Not needed', kdN: 'for {n}', chair: 'Use a table-mounted baby chair (for 6 to 18 months)', chairNote: 'We have only one baby chair, so it may not be available.', kdShort: 'kids tableware x', chairShort: '+ baby chair', send: 'Book this table', sending: 'Sending…', policy: 'Your reservation is complete once sent. If we are fully booked, we will call you to discuss.', closedWed: 'Closed', closedTmp: 'Closed', full: 'Private event', ppln: '{n}', need: 'Please enter your name and phone, and choose date, time and number of people', fail: 'Could not send. Please call ' + TEL, doneT: 'Reservation received', doneP: 'We look forward to seeing you. If we are fully booked, we will call you to discuss.', dt: 'Date & time', dn: 'People', dname: 'Name', change: 'To change or cancel, please call us.', wk: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], ldOnly: ' (dinner only)', lnOnly: ' (lunch only)', noTime: 'Booking time for today has passed' },
+    zhs: { ttl: '公珠　座位预约', sub: '横滨・井土谷的中华料理', hours: '最后点餐：午餐 14:10／晚餐 21:15　周三休息', date: '日期', req: '必填', loading: '加载中…', choose: '请选择', slot: '时段', lunch: '午餐', dinner: '晚餐', time: '到店时间', ppl: '人数（含儿童）', pplNote: '15位以上或包场请致电 ' + TEL + '。', name: '姓名', tel: '电话', memo: '要求（可不填）', memoPh: '例：纪念日庆祝、带婴儿车 等', kd: '儿童餐具（小盘、勺子等）', kdNone: '不需要', kdN: '{n}份', chair: '需要桌挂式婴儿椅（6个月〜1岁半）', chairNote: '婴儿椅只有1把，可能无法提供。', kdShort: '儿童餐具', chairShort: '＋婴儿椅', send: '提交预约', sending: '发送中…', policy: '提交即完成预约，如预约已满，店家会致电与您商量。', closedWed: '休息', closedTmp: '临时休息', full: '包场', ppln: '{n}位', need: '请填写姓名和电话，并选择日期、时间和人数', fail: '发送失败，请致电 ' + TEL, doneT: '已收到预约', doneP: '期待您的光临。如预约已满，店家会致电与您商量。', dt: '日期时间', dn: '人数', dname: '姓名', change: '如需更改或取消，请致电。', wk: '日一二三四五六', ldOnly: '（仅晚餐）', lnOnly: '（仅午餐）', noTime: '今天的预约时间已过' },
+    zht: { ttl: '公珠　座位預約', sub: '橫濱・井土谷的中華料理', hours: '最後點餐：午餐 14:10／晚餐 21:15　週三休息', date: '日期', req: '必填', loading: '載入中…', choose: '請選擇', slot: '時段', lunch: '午餐', dinner: '晚餐', time: '到店時間', ppl: '人數（含兒童）', pplNote: '15位以上或包場請致電 ' + TEL + '。', name: '姓名', tel: '電話', memo: '要求（可不填）', memoPh: '例：紀念日慶祝、帶嬰兒車 等', kd: '兒童餐具（小盤、湯匙等）', kdNone: '不需要', kdN: '{n}份', chair: '需要桌掛式嬰兒椅（6個月〜1歲半）', chairNote: '嬰兒椅只有1把，可能無法提供。', kdShort: '兒童餐具', chairShort: '＋嬰兒椅', send: '提交預約', sending: '傳送中…', policy: '提交即完成預約，如預約已滿，店家會致電與您商量。', closedWed: '休息', closedTmp: '臨時休息', full: '包場', ppln: '{n}位', need: '請填寫姓名和電話，並選擇日期、時間和人數', fail: '傳送失敗，請致電 ' + TEL, doneT: '已收到預約', doneP: '期待您的光臨。如預約已滿，店家會致電與您商量。', dt: '日期時間', dn: '人數', dname: '姓名', change: '如需更改或取消，請致電。', wk: '日一二三四五六', ldOnly: '（僅晚餐）', lnOnly: '（僅午餐）', noTime: '今天的預約時間已過' }
   };
   const LANGS = [['ja', '日本語'], ['en', 'English'], ['zhs', '简体中文'], ['zht', '繁體中文']];
   let lang = (function () {
@@ -150,6 +156,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
     const sel = $('ppl'), keep = sel.value || '2'; sel.innerHTML = '';
     for (let n = 2; n <= 14; n++) { const o = document.createElement('option'); o.value = n; o.textContent = T('ppln').replace('{n}', n); sel.appendChild(o); }
     sel.value = keep;
+    const ks = $('kd'), kk = ks.value || '0'; ks.innerHTML = '';
+    for (let n = 0; n <= 10; n++) { const o = document.createElement('option'); o.value = n; o.textContent = n ? T('kdN').replace('{n}', n) : T('kdNone'); ks.appendChild(o); }
+    ks.value = kk;
   }
   function applyLang() {
     document.documentElement.lang = { ja: 'ja', en: 'en', zhs: 'zh-Hans', zht: 'zh-Hant' }[lang];
@@ -175,7 +184,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
   })();
   let rid = null;
   $('send').onclick = async () => {
-    const v = { date: $('date').value, slot, time: $('time').value, ppl: Number($('ppl').value), name: $('name').value.trim(), tel: $('tel').value.trim(), memo: $('memo').value.trim() };
+    const v = { date: $('date').value, slot, time: $('time').value, ppl: Number($('ppl').value), name: $('name').value.trim(), tel: $('tel').value.trim(), memo: $('memo').value.trim(), kd: Number($('kd').value || 0), chair: $('chair').checked };
     if (!v.date || !v.slot || !v.time || !v.ppl || !v.name || !v.tel) { $('err').textContent = T('need'); return; }
     $('err').textContent = ''; $('send').disabled = true; $('send').textContent = T('sending');
     rid = rid || Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -188,7 +197,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
       const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
       $('form').hidden = true;
       $('done').hidden = false;
-      $('done').innerHTML = '<div class="done"><h2>✅ ' + esc(T('doneT')) + '</h2><dl><dt>' + esc(T('dt')) + '</dt><dd>' + esc(when) + '</dd><dt>' + esc(T('dn')) + '</dt><dd>' + esc(T('ppln').replace('{n}', v.ppl)) + '</dd><dt>' + esc(T('dname')) + '</dt><dd>' + esc(v.name) + '</dd></dl><p>' + esc(T('doneP')) + '</p><p class="note">' + esc(T('change')) + '</p><a class="tel" href="tel:0452989091">☎ ' + TEL + '</a></div>';
+      $('done').innerHTML = '<div class="done"><h2>✅ ' + esc(T('doneT')) + '</h2><dl><dt>' + esc(T('dt')) + '</dt><dd>' + esc(when) + '</dd><dt>' + esc(T('dn')) + '</dt><dd>' + esc(T('ppln').replace('{n}', v.ppl)) + (v.kd ? '（' + esc(T('kdShort')) + ' ' + v.kd + '）' : '') + (v.chair ? esc(T('chairShort')) : '') + '</dd><dt>' + esc(T('dname')) + '</dt><dd>' + esc(v.name) + '</dd></dl><p>' + esc(T('doneP')) + '</p><p class="note">' + esc(T('change')) + '</p><a class="tel" href="tel:0452989091">☎ ' + TEL + '</a></div>';
       window.scrollTo(0, 0);
     } catch (e) {
       $('err').textContent = (e && e.message && lang === 'ja' ? e.message + '　' : '') + T('fail');
