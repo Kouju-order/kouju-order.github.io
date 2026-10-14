@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>お席のご予約｜公珠</title>
+<style>
+:root{--red:#b5262b;--ink:#2a1a14;--sub:#6b5548;--bg:#fffaf0;--line:#e7d6bf}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","PingFang SC","Microsoft YaHei",sans-serif;font-size:16px;line-height:1.55}
+header{background:var(--red);color:#fff;padding:12px 16px}
+header h1{margin:0;font-size:19px}
+header p{margin:2px 0 0;font-size:13px;opacity:.9}
+.langs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.langs button{border:1px solid rgba(255,255,255,.7);background:transparent;color:#fff;border-radius:99px;padding:3px 11px;font:inherit;font-size:13px;cursor:pointer}
+.langs button.on{background:#fff;color:var(--red);font-weight:700}
+main{max-width:560px;margin:0 auto;padding:16px 16px 60px}
+.info{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;color:var(--sub);margin-bottom:6px}
+label{display:block;font-size:14px;font-weight:700;color:var(--sub);margin:16px 0 5px}
+label .req{color:var(--red);font-size:12px;margin-left:4px}
+input,select,textarea{width:100%;font:inherit;font-size:17px;padding:12px;border:1.5px solid #d9c6ad;border-radius:10px;background:#fff;color:var(--ink)}
+textarea{min-height:84px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;border:2px solid var(--line);background:#fff;border-radius:12px;padding:12px 6px;font:inherit;font-weight:700;cursor:pointer;color:var(--ink)}
+.seg button small{display:block;font-weight:400;font-size:12px;color:var(--sub)}
+.seg button.on{border-color:var(--red);background:#fff1ee;color:var(--red)}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:15px;font:inherit;font-weight:800;font-size:17px;cursor:pointer;margin-top:22px;background:var(--red);color:#fff}
+.btn:disabled{opacity:.5}
+.err{color:#c0281c;font-weight:700;min-height:1.4em;margin:10px 0 0}
+.done{background:#fff;border:2px solid var(--red);border-radius:14px;padding:18px;text-align:center}
+.done h2{color:var(--red);margin:0 0 10px;font-size:21px}
+.done dl{text-align:left;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:12px 0}
+.done dt{color:var(--sub)}
+.done dd{margin:0;font-weight:700}
+.tel{display:inline-block;margin-top:8px;color:var(--red);font-weight:800;font-size:18px}
+.note{font-size:13px;color:var(--sub);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="ttl">公珠　お席のご予約</h1>
+  <p id="sub">横浜・井土ケ谷の中華料理</p>
+  <div class="langs" id="langs"></div>
+</header>
+<main>
+  <div id="form">
+    <div class="info" id="hours"></div>
+    <label><span data-t="date"></span><span class="req" data-t="req"></span></label>
+    <select id="date"><option value="" data-t="loading"></option></select>
+    <label><span data-t="slot"></span><span class="req" data-t="req"></span></label>
+    <div class="seg" id="slot">
+      <button type="button" data-v="lunch"><span data-t="lunch"></span><small>11:30〜</small></button>
+      <button type="button" data-v="dinner"><span data-t="dinner"></span><small>17:30〜</small></button>
+    </div>
+    <label><span data-t="time"></span><span class="req" data-t="req"></span></label>
+    <select id="time"></select>
+    <label><span data-t="ppl"></span><span class="req" data-t="req"></span></label>
+    <select id="ppl"></select>
+    <div class="note" data-t="pplNote"></div>
+    <label><span data-t="name"></span><span class="req" data-t="req"></span></label>
+    <input id="name" maxlength="30" autocomplete="name">
+    <label><span data-t="tel"></span><span class="req" data-t="req"></span></label>
+    <input id="tel" type="tel" inputmode="tel" maxlength="20" autocomplete="tel">
+    <label><span data-t="memo"></span></label>
+    <textarea id="memo" maxlength="300"></textarea>
+    <button class="btn" id="send" data-t="send"></button>
+    <p class="err" id="err"></p>
+    <p class="note" data-t="policy"></p>
+  </div>
+  <div id="done" hidden></div>
+</main>
+<script>
+(function () {
+  const API = 'https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec';
+  const TEL = '045-298-9091';
+  const $ = id => document.getElementById(id);
+  const TX = {
+    ja: { ttl: '公珠　お席のご予約', sub: '横浜・井土ケ谷の中華料理', hours: 'ラストオーダー：ランチ 14:10／ディナー 21:15　水曜定休', date: 'ご来店日', req: '必須', loading: '読み込み中…', choose: '選んでください', slot: '時間帯', lunch: 'ランチ', dinner: 'ディナー', time: 'ご来店時間', ppl: '人数', pplNote: '21名以上・貸切のご相談はお電話（' + TEL + '）でお願いします。', name: 'お名前', tel: '電話番号', memo: 'ご要望（任意）', memoPh: '例：子ども用の椅子がほしい、アレルギーがある など', send: 'この内容で予約する', sending: '送信中…', policy: '送っていただいた内容でご予約完了です。ご予約がいっぱいの場合のみ、お店からお電話いたします。', closedWed: '定休日', closedTmp: '臨時休業', full: '貸切', ppln: '{n}名', need: 'お名前・電話番号を入れて、日付・時間・人数を選んでください', fail: '送れませんでした。お電話（' + TEL + '）でお願いします', doneT: 'ご予約を承りました', doneP: 'ご来店をお待ちしております。ご予約がいっぱいの場合のみ、お店からお電話いたします。', dt: '日時', dn: '人数', dname: 'お名前', change: '変更・キャンセルはお電話でお願いします', wk: '日月火水木金土', ldOnly: '（ディナーのみ）', lnOnly: '（ランチのみ）', noTime: 'この日はもう受付時間を過ぎました' },
+    en: { ttl: 'Kouju — Table Reservation', sub: 'Chinese restaurant in Idogaya, Yokohama', hours: 'Last order: lunch 14:10 / dinner 21:15. Closed Wednesdays.', date: 'Date', req: 'required', loading: 'Loading…', choose: 'Please choose', slot: 'Lunch or dinner', lunch: 'Lunch', dinner: 'Dinner', time: 'Arrival time', ppl: 'Number of people', pplNote: 'For 21 or more people or private hire, please call ' + TEL + '.', name: 'Name', tel: 'Phone number', memo: 'Requests (optional)', memoPh: 'e.g. high chair, allergies', send: 'Book this table', sending: 'Sending…', policy: 'Your reservation is complete once sent. We will call you only if we are fully booked.', closedWed: 'Closed', closedTmp: 'Closed', full: 'Private event', ppln: '{n}', need: 'Please enter your name and phone, and choose date, time and number of people', fail: 'Could not send. Please call ' + TEL, doneT: 'Reservation received', doneP: 'We look forward to seeing you. We will call you only if we are fully booked.', dt: 'Date & time', dn: 'People', dname: 'Name', change: 'To change or cancel, please call us.', wk: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], ldOnly: ' (dinner only)', lnOnly: ' (lunch only)', noTime: 'Booking time for today has passed' },
+    zhs: { ttl: '公珠　座位预约', sub: '横滨・井土谷的中华料理', hours: '最后点餐：午餐 14:10／晚餐 21:15　周三休息', date: '日期', req: '必填', loading: '加载中…', choose: '请选择', slot: '时段', lunch: '午餐', dinner: '晚餐', time: '到店时间', ppl: '人数', pplNote: '21位以上或包场请致电 ' + TEL + '。', name: '姓名', tel: '电话', memo: '要求（可不填）', memoPh: '例：需要儿童椅、有过敏 等', send: '提交预约', sending: '发送中…', policy: '提交即完成预约，仅在预约已满时店家会致电联系。', closedWed: '休息', closedTmp: '临时休息', full: '包场', ppln: '{n}位', need: '请填写姓名和电话，并选择日期、时间和人数', fail: '发送失败，请致电 ' + TEL, doneT: '已收到预约', doneP: '期待您的光临。仅在预约已满时店家会致电联系。', dt: '日期时间', dn: '人数', dname: '姓名', change: '如需更改或取消，请致电。', wk: '日一二三四五六', ldOnly: '（仅晚餐）', lnOnly: '（仅午餐）', noTime: '今天的预约时间已过' },
+    zht: { ttl: '公珠　座位預約', sub: '橫濱・井土谷的中華料理', hours: '最後點餐：午餐 14:10／晚餐 21:15　週三休息', date: '日期', req: '必填', loading: '載入中…', choose: '請選擇', slot: '時段', lunch: '午餐', dinner: '晚餐', time: '到店時間', ppl: '人數', pplNote: '21位以上或包場請致電 ' + TEL + '。', name: '姓名', tel: '電話', memo: '要求（可不填）', memoPh: '例：需要兒童椅、有過敏 等', send: '提交預約', sending: '傳送中…', policy: '提交即完成預約，僅在預約已滿時店家會致電聯繫。', closedWed: '休息', closedTmp: '臨時休息', full: '包場', ppln: '{n}位', need: '請填寫姓名和電話，並選擇日期、時間和人數', fail: '傳送失敗，請致電 ' + TEL, doneT: '已收到預約', doneP: '期待您的光臨。僅在預約已滿時店家會致電聯繫。', dt: '日期時間', dn: '人數', dname: '姓名', change: '如需更改或取消，請致電。', wk: '日一二三四五六', ldOnly: '（僅晚餐）', lnOnly: '（僅午餐）', noTime: '今天的預約時間已過' }
+  };
+  const LANGS = [['ja', '日本語'], ['en', 'English'], ['zhs', '简体中文'], ['zht', '繁體中文']];
+  let lang = (function () {
+    const q = new URLSearchParams(location.search).get('lang'); if (TX[q]) return q;
+    try { const s = localStorage.getItem('kouju_lang'); if (TX[s]) return s; } catch (e) {}
+    for (const raw of (navigator.languages || [navigator.language || 'ja'])) { const l = String(raw).toLowerCase(); if (l.startsWith('ja')) return 'ja'; if (l.startsWith('zh')) return /hant|tw|hk|mo/.test(l) ? 'zht' : 'zhs'; if (l.startsWith('en')) return 'en'; }
+    return 'en';
+  })();
+  const T = k => TX[lang][k] !== undefined ? TX[lang][k] : TX.ja[k];
+  let conf = null, slot = '';
+  const LUNCH = ['11:30', '12:00', '12:30', '13:00', '13:30'];
+  const DINNER = ['17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'];
+  const jstNow = () => { const n = new Date(); return new Date(n.getTime() + (n.getTimezoneOffset() + 540) * 60000); };
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function dayState(ds, wd) {
+    if (wd === 3) return { off: T('closedWed') };
+    if (conf.closed.includes(ds)) return { off: T('closedTmp') };
+    if (conf.full.includes(ds)) return { off: T('full') };
+    return { lunch: !conf.full.includes(ds + ' 昼'), dinner: !conf.full.includes(ds + ' 夜') };
+  }
+  function timesFor(ds, s) {
+    let list = s === 'lunch' ? LUNCH : DINNER;
+    const now = jstNow();
+    if (ds === ymd(now)) { const lim = now.getHours() * 60 + now.getMinutes() + 60; list = list.filter(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m >= lim; }); }
+    return list;
+  }
+  function fillDates() {
+    const sel = $('date'), keep = sel.value; sel.innerHTML = '';
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = T('choose'); sel.appendChild(o0);
+    const base = jstNow();
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+      const ds = ymd(d), wd = d.getDay(), st = dayState(ds, wd);
+      const o = document.createElement('option'); o.value = ds;
+      let lab = (d.getMonth() + 1) + '/' + d.getDate() + ' (' + T('wk')[wd] + ')';
+      if (st.off) { lab += '　' + st.off; o.disabled = true; }
+      else {
+        const l = st.lunch && timesFor(ds, 'lunch').length, n = st.dinner && timesFor(ds, 'dinner').length;
+        if (!l && !n) { o.disabled = true; lab += '　—'; }
+        else if (!l) lab += T('ldOnly'); else if (!n) lab += T('lnOnly');
+      }
+      o.textContent = lab; sel.appendChild(o);
+    }
+    if (keep && [...sel.options].some(o => o.value === keep && !o.disabled)) sel.value = keep;
+    onDate();
+  }
+  function onDate() {
+    const ds = $('date').value;
+    const btns = [...document.querySelectorAll('#slot button')];
+    if (!ds) { btns.forEach(b => { b.disabled = false; }); fillTimes(); return; }
+    const d = new Date(ds + 'T12:00:00'), st = dayState(ds, d.getDay());
+    btns.forEach(b => { const v = b.dataset.v; b.disabled = !(st[v] && timesFor(ds, v).length); });
+    if (slot && btns.find(b => b.dataset.v === slot).disabled) slot = '';
+    if (!slot) { const ok = btns.find(b => !b.disabled); if (ok) slot = ok.dataset.v; }
+    btns.forEach(b => b.classList.toggle('on', b.dataset.v === slot));
+    fillTimes();
+  }
+  function fillTimes() {
+    const sel = $('time'), keep = sel.value; sel.innerHTML = '';
+    const ds = $('date').value;
+    const list = ds && slot ? timesFor(ds, slot) : [];
+    const o0 = document.createElement('option'); o0.value = ''; o0.textContent = T('choose'); sel.appendChild(o0);
+    list.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); });
+    if (list.includes(keep)) sel.value = keep;
+  }
+  function fillPpl() {
+    const sel = $('ppl'), keep = sel.value || '2'; sel.innerHTML = '';
+    for (let n = 1; n <= 20; n++) { const o = document.createElement('option'); o.value = n; o.textContent = T('ppln').replace('{n}', n); sel.appendChild(o); }
+    sel.value = keep;
+  }
+  function applyLang() {
+    document.documentElement.lang = { ja: 'ja', en: 'en', zhs: 'zh-Hans', zht: 'zh-Hant' }[lang];
+    document.title = T('ttl') + (lang === 'ja' ? '' : ' | Kouju');
+    $('ttl').textContent = T('ttl'); $('sub').textContent = T('sub'); $('hours').textContent = T('hours');
+    document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T(el.dataset.t); });
+    $('memo').placeholder = T('memoPh');
+    const box = $('langs'); box.innerHTML = '';
+    LANGS.forEach(([c, l]) => { const b = document.createElement('button'); b.textContent = l; b.classList.toggle('on', c === lang); b.onclick = () => { lang = c; try { localStorage.setItem('kouju_lang', c); } catch (e) {} applyLang(); }; box.appendChild(b); });
+    fillPpl();
+    if (conf) fillDates();
+  }
+  document.querySelectorAll('#slot button').forEach(b => b.onclick = () => { if (b.disabled) return; slot = b.dataset.v; document.querySelectorAll('#slot button').forEach(x => x.classList.toggle('on', x === b)); fillTimes(); });
+  $('date').onchange = onDate;
+  try { const s = JSON.parse(localStorage.getItem('kouju_rsv_me') || '{}'); if (s.name) $('name').value = s.name; if (s.tel) $('tel').value = s.tel; } catch (e) {}
+  applyLang();
+  (async function load() {
+    for (let i = 0; i < 3; i++) {
+      try { const r = await fetch(API + '?api=rsvconf', { credentials: 'omit' }).then(r => r.json()); if (r.ok) { conf = r.data; fillDates(); return; } } catch (e) {}
+      await new Promise(s => setTimeout(s, 1500));
+    }
+    $('err').textContent = T('fail');
+  })();
+  let rid = null;
+  $('send').onclick = async () => {
+    const v = { date: $('date').value, slot, time: $('time').value, ppl: Number($('ppl').value), name: $('name').value.trim(), tel: $('tel').value.trim(), memo: $('memo').value.trim() };
+    if (!v.date || !v.slot || !v.time || !v.ppl || !v.name || !v.tel) { $('err').textContent = T('need'); return; }
+    $('err').textContent = ''; $('send').disabled = true; $('send').textContent = T('sending');
+    rid = rid || Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    try {
+      const r = await fetch(API, { method: 'POST', credentials: 'omit', body: JSON.stringify(Object.assign({ action: 'seat', rid, lang }, v)) }).then(r => r.json());
+      if (!r.ok) throw new Error(r.error || '');
+      try { localStorage.setItem('kouju_rsv_me', JSON.stringify({ name: v.name, tel: v.tel })); } catch (e) {}
+      const d = new Date(v.date + 'T12:00:00');
+      const when = (d.getMonth() + 1) + '/' + d.getDate() + ' (' + T('wk')[d.getDay()] + ') ' + v.time;
+      const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+      $('form').hidden = true;
+      $('done').hidden = false;
+      $('done').innerHTML = '<div class="done"><h2>✅ ' + esc(T('doneT')) + '</h2><dl><dt>' + esc(T('dt')) + '</dt><dd>' + esc(when) + '</dd><dt>' + esc(T('dn')) + '</dt><dd>' + esc(T('ppln').replace('{n}', v.ppl)) + '</dd><dt>' + esc(T('dname')) + '</dt><dd>' + esc(v.name) + '</dd></dl><p>' + esc(T('doneP')) + '</p><p class="note">' + esc(T('change')) + '</p><a class="tel" href="tel:0452989091">☎ ' + TEL + '</a></div>';
+      window.scrollTo(0, 0);
+    } catch (e) {
+      $('err').textContent = (e && e.message && lang === 'ja' ? e.message + '　' : '') + T('fail');
+      $('send').disabled = false; $('send').textContent = T('send');
+    }
+  };
+})();
+</script>
+</body>
+</html>

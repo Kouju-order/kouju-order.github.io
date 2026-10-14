@@ -181,7 +181,9 @@
 <script src="i18n2.js?v=23"></script>
 <script>
   // 臨時休業日（テイクアウト・上海蟹の予約を受けない日）。11/16・11/17は月餅づくりのため休業
-  var KYUGYO = ['2026-11-16', '2026-11-17'];
+  var KYUGYO = ['2026-10-29', '2026-11-16', '2026-11-17'];
+  // 席の予約ページ（?rsv=seat）は reserve.html へ
+  if (new URLSearchParams(location.search).get('rsv') === 'seat') location.replace('reserve.html' + location.search.replace(/[?&]rsv=seat/, '').replace(/^&/, '?'));
   const API = document.body.dataset.api;
   async function call(params, body) {
     const opt = body ? { method: 'POST', body: JSON.stringify(body), credentials: 'omit' } : { credentials: 'omit' };
