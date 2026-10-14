@@ -41,6 +41,7 @@
   .item .price .dealp { color:#c0281c; font-size:17px; }
   .row .ja { display:block; font-size:12px; color:var(--muted); }
   .step { display:flex; align-items:center; gap:8px; }
+  body.view .step, body.view #bar, body.view #callBtn, body.view #histBtn { display:none !important; }
   .step button { width:38px; height:38px; border-radius:50%; border:1.5px solid var(--red); background:#fff; color:var(--red); font-size:22px; line-height:1; }
   .step button.plus { background:var(--red); color:#fff; }
   .step .q { min-width:20px; text-align:center; font-size:17px; font-weight:700; }
@@ -196,13 +197,18 @@
   }
   const STAFF = new URLSearchParams(location.search).get('staff') === '1';
   const TAKEOUT = new URLSearchParams(location.search).get('takeout') === '1';
+  // 見るだけのメニュー（Googleビジネスプロフィール用）：注文ボタン・カートなし
+  const VIEW = !TAKEOUT && !STAFF && new URLSearchParams(location.search).get('view') === '1';
+  if (VIEW) document.body.classList.add('view');
+  const VTX = { label: { ja: 'メニュー（閲覧用）', en: 'Menu (view only)', zhs: '菜单（仅供浏览）', zht: '菜單（僅供瀏覽）' }, note: { ja: 'こちらは閲覧用のメニューです（価格は税込）。ご注文はご来店時に、テーブルのQRコードからどうぞ。お持ち帰り・ご予約はお電話（045-298-9091）でも承ります。', en: 'This menu is for viewing only (prices include tax). Please order at the restaurant using the QR code on your table. For takeout or reservations, please call 045-298-9091.', zhs: '本菜单仅供浏览（价格含税）。请到店后扫描桌上的二维码点餐。外带或预约也可致电 045-298-9091。', zht: '本菜單僅供瀏覽（價格含稅）。請到店後掃描桌上的QR碼點餐。外帶或預約也可致電 045-298-9091。' } };
+  const VT = k => VTX[k][lang] || VTX[k].ja;
   let toInfo = '', toTel = '';
   // 店内のお客様が店内メニューからテイクアウトを開いた場合（seat=卓番号）：名前・電話・時間は聞かない
   const SEAT = TAKEOUT ? (new URLSearchParams(location.search).get('seat') || '').slice(0, 6) : '';
   // 予約のお客様の事前注文（table=8）：お名前だけ入れてもらう
-  const RESV = !TAKEOUT && !STAFF && (new URLSearchParams(location.search).get('table') || '') === '8';
+  const RESV = !TAKEOUT && !STAFF && !VIEW && (new URLSearchParams(location.search).get('table') || '') === '8';
   let rvName = '';
-  let table = TAKEOUT ? '持帰' : STAFF ? '' : (new URLSearchParams(location.search).get('table') || '').slice(0, 10);
+  let table = TAKEOUT ? '持帰' : VIEW ? '閲覧' : STAFF ? '' : (new URLSearchParams(location.search).get('table') || '').slice(0, 10);
   let menu = [];
   let rid = null;
   const cart = {};
@@ -263,7 +269,8 @@
     document.title = T('title');
     document.querySelectorAll('[data-t]').forEach(el => { el.innerHTML = T(el.dataset.t); });
     document.querySelectorAll('[data-tp]').forEach(el => { el.placeholder = T(el.dataset.tp); });
-    if (TAKEOUT) $('tblLabel').textContent = T('toLabel', { t: toInfo || '—' });
+    if (VIEW) $('tblLabel').textContent = VT('label');
+    else if (TAKEOUT) $('tblLabel').textContent = T('toLabel', { t: toInfo || '—' });
     else if (RESV) $('tblLabel').textContent = 'ご予約：' + (rvName ? rvName + ' 様' : '—');
     else if (table) $('tblLabel').textContent = T('table', { t: table });
     const box = $('langs'); box.innerHTML = '';
@@ -286,7 +293,7 @@
   function setTable(t) { table = t; $('tblLabel').textContent = T('table', { t }) + (STAFF ? '（タップで変更）' : ''); }
   if (STAFF) $('tblLabel').onclick = () => { $('tblInput').value = ''; $('askTable').hidden = false; };
   applyLang();
-  if (table) setTable(table); else $('askTable').hidden = false;
+  if (VIEW) {} else if (table) setTable(table); else $('askTable').hidden = false;
   $('tblOk').onclick = () => {
     const v = $('tblInput').value.trim().replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).toUpperCase();
     if (v) { setTable(v); $('askTable').hidden = true; }
@@ -406,6 +413,7 @@
   function renderMenu() {
     const root = $('menu');
     root.innerHTML = '';
+    if (VIEW) { const p = document.createElement('p'); p.className = 'deal'; p.textContent = VT('note'); root.appendChild(p); }
     const mm = (TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)) : menu.filter(m => !/^テイクアウト/.test(m.cat))).filter(m => m.cat !== 'リクエスト' && !/^【グラス】/.test(m.name));
     // 黒板メニューの品は、ふだんのカテゴリーにも「黒板メニュー」の印つきで出す
     const BOARD_DUP = { '横浜名物 公珠サンマー麺': '麺類', '馬拉糕（中国風蒸しカステラ）2個': '小菜・点心', 'ジャスミン柚子の冷茶（茉莉柚茶）': 'ソフトドリンク', '烏蘇（ウースー）ビール 500ml': '瓶ビール・ビアカクテル', 'ハルピンビール': '瓶ビール・ビアカクテル', 'ギネスビール': '瓶ビール・ビアカクテル', '青島スタウト': '瓶ビール・ビアカクテル', '横浜IPAブラック（はま黒）': '瓶ビール・ビアカクテル' };
@@ -504,7 +512,7 @@
       });
     });
     // ===== 最後に「ご予約（上海蟹・おせち）」と、店内用だけ「テイクアウト」 =====
-    if (!STAFF) {
+    if (!STAFF && !VIEW) {
       const extra = [['季節料理のご予約', 'rsv']]; if (!TAKEOUT) extra.push(['テイクアウト', 'to']);
       extra.forEach(([gname, kind]) => {
         const sec = document.createElement('section'); sec.className = 'group'; sec.id = 'g' + usedGroups.length; sec.dataset.group = gname;
@@ -583,6 +591,7 @@
   $('back').onclick = () => { $('confirm').hidden = true; };
 
   $('send').onclick = () => {
+    if (VIEW) return;
     if (TAKEOUT && !toInfo) { $('confirm').hidden = true; $('askTo').hidden = false; return; }
     if (RESV && !rvName) { $('confirm').hidden = true; $('askRv').hidden = false; return; }
     if (cartItems().some(i => BOTTLE.test(i.name))) {
