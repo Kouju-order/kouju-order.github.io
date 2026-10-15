@@ -688,11 +688,18 @@
   };
   // おせち（店頭受取の1,000円引き後の価格・税込）
   const OSE = [['二段重', 25000], ['三段重', 36000], ['五段重', 58000]];
+  // 配送版（?rsv=osechi&deli=1）：12/31午後に店主夫婦が直接お届け。1,000円引きなし・送料込み
+  const DELI = new URLSearchParams(location.search).get('deli') === '1';
+  const OPR = pr => pr + (DELI ? 1000 : 0);
   const OSN = k => (({ en: { '二段重': '2-tier box', '三段重': '3-tier box', '五段重': '5-tier box' }, zhs: { '二段重': '两层', '三段重': '三层', '五段重': '五层' }, zht: { '二段重': '兩層', '三段重': '三層', '五段重': '五層' } })[lang] || {})[k] || k;
   Object.assign(RT.ja, { cInfo: '上海蟹は店内でのお召し上がりのみです（お持ち帰りはできません）。価格は1匹あたり・税込です。水曜定休。ご予約がいっぱいの場合のみ、お店からお電話でご相談させていただきます。', oInfo: '12/31（木）12:30〜16:00の間にお店へお越しください（時間のご指定は不要です）。お店でのお受け取りのみ承ります。価格は税込です。', oEarly: '🎁 10/31までのご予約で10年カメ紹興酒プレゼント', otime: 'お受け取り時間（12/31）', oNeed: '段数と数量を選んでください', total: '合計' });
   Object.assign(RT.en, { cInfo: 'Shanghai crab is served for dine-in only (no takeout). Closed Wednesdays.', oInfo: 'Pickup at the restaurant only: please come any time between 12:30 and 16:00 on Dec 31 (Thu). No need to choose a time. Prices include tax.', oEarly: '🎁 Reserve by Oct 31 and get a jar of 10-year Shaoxing wine.', otime: 'Pickup time (Dec 31)', oNeed: 'Please choose a box and quantity', total: 'Total' });
   Object.assign(RT.zhs, { cInfo: '大闸蟹仅限店内享用（不可外带）。周三休息。', oInfo: '仅限到店取货：请于12/31（周四）12:30〜16:00之间到店，无需指定时间。价格为含税价。', oEarly: '🎁 10/31前预约赠送10年坛装绍兴酒', otime: '取货时间（12/31）', oNeed: '请选择层数和数量', total: '合计' });
   Object.assign(RT.zht, { cInfo: '大閘蟹僅限店內享用（不可外帶）。週三公休。', oInfo: '僅限到店取貨：請於12/31（週四）12:30〜16:00之間到店，無需指定時間。價格為含稅價。', oEarly: '🎁 10/31前預約贈送10年罈裝紹興酒', otime: '取貨時間（12/31）', oNeed: '請選擇層數和數量', total: '合計' });
+  Object.assign(RT.ja, { dInfo: '12/31（木）の午後、公珠の店主夫婦がお宅まで直接お届けします（12:30ごろ横浜市南区を出発し、最後は厚木方面まで順番に回ります）。お届け時間のご指定はできませんので、12/31の午後にご在宅いただける方に限ります。価格は税込・送料込みです。', dPay: 'お代金は11/30（月）までに公珠の店頭でお支払いいただくか、お届けの際に商品と引き換えで現金でお支払いください。', zip: '郵便番号', addr: 'お届け先のご住所（建物名・部屋番号まで）', dTitle: '（配送）', dNeed: 'お届け先のご住所を入れてください' });
+  Object.assign(RT.en, { dInfo: 'On the afternoon of Dec 31 (Thu), the owners of Kouju will deliver to your home in person (starting around 12:30 from Minami-ku, Yokohama, and heading toward Atsugi). Delivery times cannot be specified, so this is only for customers who will be home on the afternoon of Dec 31. Prices include tax and delivery.', dPay: 'Please pay at the restaurant by Nov 30 (Mon), or pay in cash upon delivery.', zip: 'Postal code', addr: 'Delivery address (incl. building / room)', dTitle: ' (delivery)', dNeed: 'Please enter the delivery address' });
+  Object.assign(RT.zhs, { dInfo: '12/31（周四）下午由公珠店主夫妇亲自送货上门（约12:30从横滨市南区出发，依次送到厚木方向）。无法指定送达时间，仅限12/31下午在家的顾客。价格含税、含运费。', dPay: '请于11/30（周一）前到店付款，或在送达时以现金付款。', zip: '邮政编码', addr: '送货地址（含楼名・房间号）', dTitle: '（送货）', dNeed: '请填写送货地址' });
+  Object.assign(RT.zht, { dInfo: '12/31（週四）下午由公珠店主夫婦親自送貨到府（約12:30從橫濱市南區出發，依序送到厚木方向）。無法指定送達時間，僅限12/31下午在家的顧客。價格含稅、含運費。', dPay: '請於11/30（週一）前到店付款，或於送達時以現金付款。', zip: '郵遞區號', addr: '送貨地址（含大樓名・房號）', dTitle: '（送貨）', dNeed: '請填寫送貨地址' });
   // おせちのお支払い：11/30までに店頭で（各種キャッシュレス可）。過ぎたら確認のお電話
   Object.assign(RT.ja, { oPay: 'お代金は11/30（月）までに、公珠の店頭でお支払いください。現金のほか、クレジットカード・交通系IC・PayPayなど各種キャッシュレス決済がご利用いただけます。11/30までにお支払いがない場合は、確認のお電話をさせていただきます。' });
   Object.assign(RT.en, { oPay: 'Please pay at the restaurant by Nov 30 (Mon). Cash, credit cards, IC cards and QR payments such as PayPay, Alipay and WeChat Pay are accepted. If we have not received payment by Nov 30, we will call you to confirm.' });
@@ -733,21 +740,23 @@
       // おせち：12/31（木）12:30〜16:00 店頭受取のみ（時間指定なし）。価格は店頭受取の1,000円引き
       const info = document.createElement('p'); info.className = 'deal'; info.style.margin = '8px 0';
       const early = new Date() < new Date('2026-11-01T00:00:00+09:00');
-      info.textContent = RS('oInfo') + (early ? '　' + RS('oEarly') : ''); f.appendChild(info);
-      { const pay = document.createElement('p'); pay.className = 'deal'; pay.style.margin = '8px 0'; pay.textContent = '💴 ' + RS('oPay'); f.appendChild(pay); }
-      F.oq = OSE.map(([k, pr]) => row(OSN(k) + '　¥' + pr.toLocaleString(), sel(nums(0, 5))));
+      info.textContent = RS(DELI ? 'dInfo' : 'oInfo') + (early ? '　' + RS('oEarly') : ''); f.appendChild(info);
+      { const pay = document.createElement('p'); pay.className = 'deal'; pay.style.margin = '8px 0'; pay.textContent = '💴 ' + RS(DELI ? 'dPay' : 'oPay'); f.appendChild(pay); }
+      if (DELI) { F.zip = row(RS('zip'), inp('text', '232-0000')); F.zip.inputMode = 'numeric'; F.zip.maxLength = 8; F.addr = row(RS('addr'), inp('text')); F.addr.maxLength = 60; }
+      F.oq = OSE.map(([k, pr]) => row(OSN(k) + '　¥' + OPR(pr).toLocaleString(), sel(nums(0, 5))));
       const tot = document.createElement('p'); tot.style.cssText = 'font-weight:700;font-size:17px;text-align:right;margin:8px 0 0'; f.appendChild(tot);
-      const upd = () => { const s = OSE.reduce((a, [, pr], i) => a + pr * Number(F.oq[i].value), 0); tot.textContent = s ? RS('total') + ' ¥' + s.toLocaleString() : ''; };
+      const upd = () => { const s = OSE.reduce((a, [, pr], i) => a + OPR(pr) * Number(F.oq[i].value), 0); tot.textContent = s ? RS('total') + ' ¥' + s.toLocaleString() : ''; };
       F.oq.forEach(s => { s.onchange = upd; });
     }
     F.memo = row(RS('memo'), inp('text')); F.memo.maxLength = 60;
-    $('rsvTitle').textContent = (kind === 'crab' ? '🦀 ' : '🎍 ') + RS(kind === 'crab' ? 'crab' : 'osechi');
+    $('rsvTitle').textContent = (kind === 'crab' ? '🦀 ' : '🎍 ') + RS(kind === 'crab' ? 'crab' : 'osechi') + (kind !== 'crab' && DELI ? RS('dTitle') : '');
     $('rsvSend').textContent = RS('send'); $('rsvSend').disabled = false; $('rsvClose').textContent = RS('close');
     $('rsvSend').onclick = () => {
       const n = F.name.value.trim(), tel = F.tel.value.replace(/[^0-9０-９+\-－]/g, ''), d = kind === 'crab' ? F.date.value : '2026-12-31';
       if (!n || tel.replace(/[^0-9０-９]/g, '').length < 10 || !d) { $('rsvMsg').textContent = RS('need'); return; }
       const dt = new Date(d + 'T12:00:00'); if (dt.getDay() === 3) { $('rsvMsg').textContent = RS('wed'); return; }
       if (KYUGYO.includes(d)) { $('rsvMsg').textContent = '11/16（月）・11/17（火）は臨時休業です。別の日をお選びください。'; return; }
+      if (kind !== 'crab' && DELI && !F.addr.value.trim()) { $('rsvMsg').textContent = RS('dNeed'); return; }
       if (kind === 'crab' && !F.ppl.value) { $('rsvMsg').textContent = 'ご来店の人数を選んでください。'; return; }
       if (kind === 'crab') {
         // 上海蟹：10/24〜11/15、水曜と10/29はお休み。10/24〜27は残りわずか（メニューシートの「【受付】上海蟹10/24〜27」のチェックを外すと締め切り）
@@ -770,10 +779,10 @@
       const ds = (dt.getMonth() + 1) + '/' + dt.getDate() + '(' + '日月火水木金土'[dt.getDay()] + ')';
       const note = (kind === 'crab'
         ? '【上海蟹予約】' + n + '様 TEL ' + tel + ' ' + ds + ' ' + F.time.value + ' ' + F.ppl.value + '名 ' + F.crabList().map(([k, q]) => k + '×' + q).join(' ') + ' 計¥' + F.crabList().reduce((a, [, q, pr]) => a + q * pr, 0).toLocaleString()
-        : '【おせち予約】' + n + '様 TEL ' + tel + ' 12/31店頭受取(12:30〜16:00) ' + OSE.filter((o, i) => Number(F.oq[i].value) > 0).map(([k], j) => k + '×' + F.oq[OSE.findIndex(x => x[0] === k)].value).join(' ') + ' 計¥' + OSE.reduce((a, [, pr], i) => a + pr * Number(F.oq[i].value), 0).toLocaleString() + (new Date() < new Date('2026-11-01T00:00:00+09:00') ? (() => { const sm = Number(F.oq[0].value) + Number(F.oq[1].value), lg = Number(F.oq[2].value); return ' 🎁早割 ' + [sm ? '小カメ×' + sm : '', lg ? '大カメ×' + lg : ''].filter(Boolean).join(' '); })() : '')) + (F.memo.value.trim() ? ' / ' + F.memo.value.trim() : '');
+        : (DELI ? '【おせち配送】' + n + '様 TEL ' + tel + ' 12/31午後お届け 〒' + F.zip.value.trim() + ' ' + F.addr.value.trim() + ' ' : '【おせち予約】' + n + '様 TEL ' + tel + ' 12/31店頭受取(12:30〜16:00) ') + OSE.filter((o, i) => Number(F.oq[i].value) > 0).map(([k], j) => k + '×' + F.oq[OSE.findIndex(x => x[0] === k)].value).join(' ') + ' 計¥' + OSE.reduce((a, [, pr], i) => a + OPR(pr) * Number(F.oq[i].value), 0).toLocaleString() + (DELI ? '(送料込・当日現金可)' : '') + (new Date() < new Date('2026-11-01T00:00:00+09:00') ? (() => { const sm = Number(F.oq[0].value) + Number(F.oq[1].value), lg = Number(F.oq[2].value); return ' 🎁早割 ' + [sm ? '小カメ×' + sm : '', lg ? '大カメ×' + lg : ''].filter(Boolean).join(' '); })() : '')) + (F.memo.value.trim() ? ' / ' + F.memo.value.trim() : '');
       $('rsvSend').disabled = true;
       call(null, { action: 'order', rid: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), table: '予約', items: [{ name: kind === 'crab' ? '【予約】上海蟹' : '【予約】おせち', qty: 1 }], note: note.slice(0, 200) })
-        .then(() => { $('rsvMsg').style.color = '#1a7a3a'; $('rsvMsg').textContent = RS('ok') + ((typeof kind !== 'undefined' && kind === 'osechi') ? '　' + RS('oPay') : ''); })
+        .then(() => { $('rsvMsg').style.color = '#1a7a3a'; $('rsvMsg').textContent = RS('ok') + ((typeof kind !== 'undefined' && kind === 'osechi') ? '　' + RS(DELI ? 'dPay' : 'oPay') : ''); })
         .catch(() => { $('rsvMsg').style.color = '#c0281c'; $('rsvMsg').textContent = RS('fail'); $('rsvSend').disabled = false; });
     };
     $('rsvSheet').hidden = false;
