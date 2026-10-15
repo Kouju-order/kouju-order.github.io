@@ -136,10 +136,10 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   let last = null; try { last = JSON.parse(localStorage.getItem('kouju_ship_sender') || 'null'); } catch (e) {}
   const S = { step: 'sender', cur: 0, dests: [newDest()], sender: { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', email:'', memo:'' }, addrMode: '' };
   function newDest(){ return { q: {}, name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', date:'', time:'', note:'' }; }
-  const itemsOf = d => S.itemMode === 'told' ? (S.toldMemo ? 'お店に伝え済み：' + S.toldMemo : 'お店に伝え済みの商品（いつもの商品）') : (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
+  const itemsOf = d => S.itemMode === 'later' ? '商品は後で決める（お店で相談）' : S.itemMode === 'told' ? (S.toldMemo ? 'お店に伝え済み：' + S.toldMemo : 'お店に伝え済みの商品（いつもの商品）') : (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
   const amtOf = d => (FROZEN || []).reduce((a, m, i) => a + (d.q[i] || 0) * Number(m.price || 0), 0);
   const STEPS = ['sender', 'dest', 'items', 'confirm'];
-  const noItem = () => S.itemMode === 'told' ? -1 : S.dests.findIndex(x => !amtOf(x));
+  const noItem = () => (S.itemMode === 'told' || S.itemMode === 'later') ? -1 : S.dests.findIndex(x => !amtOf(x));
 
   function setProg(){ const k = STEPS.indexOf(S.step === 'mode' || S.step === 'told' ? 'items' : S.step); document.querySelectorAll('#prog span').forEach((s, i) => s.classList.toggle('on', i <= k)); }
   const label = () => S.dests.length > 1 ? 'お届け先' + (NUM[S.cur] || S.cur + 1) + '（全' + S.dests.length + '件）' : '';
@@ -166,8 +166,9 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
         (n > 1 ? '<button class="big" data-mode="same"><span class="ic">🟰</span><span><b>全員（' + n + '件）同じ商品を送る</b><small>商品を1回選ぶだけでOK</small></span></button>' +
                  '<button class="big" data-mode="each"><span class="ic">📝</span><span><b>お届け先ごとに商品を選ぶ</b><small>' + S.dests.map(x => esc(x.name) + '様').join('・') + '</small></span></button>'
                : '<button class="big" data-mode="each"><span class="ic">📝</span><span><b>商品を選ぶ</b><small>一覧から＋で選びます</small></span></button>') +
-        '<button class="big" data-mode="told"><span class="ic">🗣️</span><span><b>商品はお店に伝えてある・いつもの商品</b><small>選ばずに進めます</small></span></button>';
-      m.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.itemMode = b.dataset.mode; S.cur = 0; S.editing = false; S.step = S.itemMode === 'told' ? 'told' : 'items'; render(); });
+        '<button class="big" data-mode="told"><span class="ic">🗣️</span><span><b>商品はお店に伝えてある・いつもの商品</b><small>選ばずに進めます</small></span></button>' +
+        '<button class="big" data-mode="later"><span class="ic">⏳</span><span><b>商品は後で決める</b><small>お店で相談して決めます</small></span></button>';
+      m.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { S.itemMode = b.dataset.mode; S.cur = 0; S.editing = false; S.step = S.itemMode === 'told' ? 'told' : S.itemMode === 'later' ? 'confirm' : 'items'; render(); });
     }
     else if (S.step === 'told') {
       $('#next').textContent = '次へ（確認）';
