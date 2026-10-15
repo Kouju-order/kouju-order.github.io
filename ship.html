@@ -59,6 +59,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
 .tot{border-top:2px solid var(--red);padding:10px 0;font-weight:800;font-size:18px;text-align:right}
 .fee{background:#eef6fd;border:1px solid #b9d3ea;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px;line-height:1.6}
 .fee small{color:#555}
+.feet{width:100%;border-collapse:collapse;margin:6px 0;background:#fff}.feet th,.feet td{border:1px solid #cfe0f0;padding:4px 6px;text-align:right;font-size:14px}.feet th:first-child,.feet td:first-child{text-align:left}.feet th{background:#dcebf8}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -139,7 +140,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   const S = { step: 'sender', cur: 0, dests: [newDest()], sender: { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', email:'', memo:'' }, addrMode: '' };
   function newDest(){ return { q: {}, name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', date:'', time:'', note:'' }; }
   // 送料の目安（関東周辺・ヤマトのクール便）
-  const FEE = '<div class="fee">🚚 <b>送料の目安（関東周辺・クール便）</b><br>60サイズ：¥1,140＋クール代¥280＝<b>¥1,420</b><br>80サイズ：¥1,430＋クール代¥330＝<b>¥1,760</b><br><small>お届け先や箱の大きさで変わります。正確な送料はレジでご案内します。</small></div>';
+  const FEE = '<div class="fee">🚚 <b>送料の目安（クール便・1箱）</b><table class="feet"><tr><th>お届け先</th><th>60サイズ</th><th>80サイズ</th></tr><tr><td>関東周辺</td><td>¥1,420</td><td>¥1,760</td></tr><tr><td>関西・北東北</td><td>¥1,540</td><td>¥1,880</td></tr><tr><td>中国・四国</td><td>¥1,670</td><td>¥2,010</td></tr><tr><td>九州・北海道</td><td>¥1,940</td><td>¥2,280</td></tr></table><small>クール代込み（関東周辺：60サイズ ¥1,140＋クール代¥280／80サイズ ¥1,430＋クール代¥330。ほかの地域はこれに＋¥120〜¥520）。箱の大きさで変わります。正確な送料はレジでご案内します。</small></div>';
   const itemsOf = d => S.itemMode === 'later' ? '商品は後で決める（お店で相談）' : S.itemMode === 'told' ? (S.toldMemo ? 'お店に伝え済み：' + S.toldMemo : 'お店に伝え済みの商品（いつもの商品）') : (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
   const amtOf = d => (FROZEN || []).reduce((a, m, i) => a + (d.q[i] || 0) * Number(m.price || 0), 0);
   const STEPS = ['sender', 'dest', 'items', 'confirm'];
