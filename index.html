@@ -678,8 +678,9 @@
       d.append(v, pic('c_crab_photo.webp', '上海蟹'));
       setTimeout(() => { try { v.play(); } catch (e) {} }, 50);
     } else {
-      const w = document.createElement('div'); w.style.cssText = 'flex:1;position:relative';
-      const im = pic('c_osechi.webp', '中華おせち'); im.style.aspectRatio = '5/4'; w.appendChild(im);
+      // おせちの写真2枚（Googleドライブの公開画像。読めないときは前の写真）
+      const w = document.createElement('div'); w.style.cssText = 'flex:1;position:relative;display:flex;gap:6px';
+      ['1gdOIwAX91fVkAr3fBQr6C5n-5SenOcjv', '1S2HbNT6clP9BpGECl5AE_ofEJb5c6MaG'].forEach(id => { const im = pic('https://lh3.googleusercontent.com/d/' + id + '=w800', '中華おせち'); im.onerror = () => { im.onerror = null; im.src = 'c_osechi.webp'; }; w.appendChild(im); });
       const c = document.createElement('span'); c.textContent = ({ en: 'Image only', zhs: '图片仅供参考', zht: '圖片僅供參考' })[typeof lang !== 'undefined' ? lang : 'ja'] || '※写真はイメージです';
       c.style.cssText = 'position:absolute;right:8px;bottom:6px;font-size:11px;color:#fff;background:rgba(0,0,0,.45);padding:1px 6px;border-radius:8px';
       w.appendChild(c); d.appendChild(w);
