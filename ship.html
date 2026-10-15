@@ -57,6 +57,8 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
 .done{text-align:center}
 .done .no{font-size:30px;font-weight:900;color:var(--red);margin:8px 0}
 .tot{border-top:2px solid var(--red);padding:10px 0;font-weight:800;font-size:18px;text-align:right}
+.fee{background:#eef6fd;border:1px solid #b9d3ea;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px;line-height:1.6}
+.fee small{color:#555}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -136,6 +138,8 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
   let last = null; try { last = JSON.parse(localStorage.getItem('kouju_ship_sender') || 'null'); } catch (e) {}
   const S = { step: 'sender', cur: 0, dests: [newDest()], sender: { name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', email:'', memo:'' }, addrMode: '' };
   function newDest(){ return { q: {}, name:'', kana:'', tel:'', zip:'', addr:'', bldg:'', date:'', time:'', note:'' }; }
+  // 送料の目安（関東周辺・ヤマトのクール便）
+  const FEE = '<div class="fee">🚚 <b>送料の目安（関東周辺・クール便）</b><br>60サイズ：¥1,140＋クール代¥280＝<b>¥1,420</b><br>80サイズ：¥1,430＋クール代¥330＝<b>¥1,760</b><br><small>お届け先や箱の大きさで変わります。正確な送料はレジでご案内します。</small></div>';
   const itemsOf = d => S.itemMode === 'later' ? '商品は後で決める（お店で相談）' : S.itemMode === 'told' ? (S.toldMemo ? 'お店に伝え済み：' + S.toldMemo : 'お店に伝え済みの商品（いつもの商品）') : (FROZEN || []).map((m, i) => d.q[i] ? shortName(m.name) + '×' + d.q[i] : '').filter(Boolean).join('、');
   const amtOf = d => (FROZEN || []).reduce((a, m, i) => a + (d.q[i] || 0) * Number(m.price || 0), 0);
   const STEPS = ['sender', 'dest', 'items', 'confirm'];
@@ -181,7 +185,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
       $('#next').textContent = !S.editing && nx >= 0 ? '次へ（' + esc(S.dests[nx].name) + '様の商品）' : '次へ（確認）';
       m.innerHTML = (same ? '<div class="who">全員（' + S.dests.length + '件）に同じ商品</div><div class="q">1件あたりのお品物</div>' : (label() ? '<div class="who">' + label() + '</div>' : '') + '<div class="q">' + esc(d.name) + ' 様へのお品物</div>') + '<p class="qs">「＋」で数を選んでください。</p>' +
         (!same && S.cur > 0 && amtOf(S.dests[S.cur - 1]) ? '<button class="btn sub" id="same" style="margin-bottom:12px">' + esc(S.dests[S.cur - 1].name) + ' 様と同じ商品にする</button>' : '') +
-        '<div class="items" id="items"><p style="padding:12px">商品を読み込み中…</p></div>';
+        '<div class="items" id="items"><p style="padding:12px">商品を読み込み中…</p></div>' + FEE;
       if ($('#same')) $('#same').onclick = () => { d.q = Object.assign({}, S.dests[S.cur - 1].q); render(); };
       menuP.then(() => {
         const box = $('#items'); if (!box) return;
@@ -242,7 +246,7 @@ summary{font-weight:700;cursor:pointer;color:var(--sub)}
           (x.date || x.time ? '<div class="qs" style="margin:4px 0 0">お届け：' + esc(x.date ? x.date.replace(/-/g, '/') : '指定なし') + '　' + TL[x.time || ''] + '</div>' : '') + '</div>').join('') +
         '<button class="btn sub" id="more" style="margin:4px 0 14px">＋ 別の人にも送る</button>' +
         '<div class="card"><h3>送り主（あなた）<button class="link e" id="es">直す</button></h3>' + esc(S.sender.name) + ' 様　' + esc(S.sender.tel) + '<br>〒' + esc(S.sender.zip) + ' ' + esc(S.sender.addr) + ' ' + esc(S.sender.bldg) + '</div>' +
-        (tot ? '<div class="tot">商品代合計 ' + yen(tot) + '<br><span style="font-size:13px;font-weight:400">＋ 送料はレジでご案内します</span></div>' : '');
+        (tot ? '<div class="tot">商品代合計 ' + yen(tot) + '<br><span style="font-size:13px;font-weight:400">＋ 送料はレジでご案内します</span></div>' : '') + FEE;
       m.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { S.cur = Number(b.dataset.e); S.step = 'dest'; S.addrMode = 'hand'; S.editing = true; render(); });
       m.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { if (S.itemMode === 'each') { S.cur = Number(b.dataset.i); S.step = 'items'; S.editing = true; } else S.step = 'mode'; render(); });
       $('#es').onclick = () => { S.step = 'sender'; S.editing = true; render(); };
