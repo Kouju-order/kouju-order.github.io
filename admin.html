@@ -520,7 +520,7 @@
       const c = document.createElement('div');
       c.className = 'card' + (mins >= 15 ? ' late' : '');
       c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
-        '<div class="foot"><span class="sum"></span><div class="btns"><button class="ghost mv">席変更</button><button class="print">伝票印刷</button><button class="doneBtn">提供済み</button></div></div>';
+        '<div class="foot"><span class="sum"></span><div class="btns"><button class="ghost mv">席変更</button><button class="print">オーダー印刷</button><button class="doneBtn">提供済み</button></div></div>';
       { const tb = c.querySelector('.tbl'); tb.textContent = 'テーブル '; const b = document.createElement('b'); b.className = 'tno'; b.textContent = o.table; tb.appendChild(b); }
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
       const box = c.querySelector('.items');
