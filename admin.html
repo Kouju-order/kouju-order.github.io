@@ -566,7 +566,8 @@
         ch.querySelector('.split').onclick = () => splitBill(t, r);
         tw.appendChild(ch); }); }
     const dn = $('done'); dn.innerHTML = '';
-    d.done.forEach(o => {
+    // 会計の計算には今日の完了分を全部使うが、画面の「完了」一覧は直近10件だけ出す
+    d.done.slice(0, 10).forEach(o => {
       const r = document.createElement('div'); r.className = 'done';
       const s = document.createElement('span');
       s.textContent = `No.${o.no}　テーブル ${o.table}　${o.time}　${yen(o.total)}`;
