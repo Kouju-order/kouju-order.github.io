@@ -373,8 +373,21 @@
   // 餃子かどうかは、メニューの分類（焼餃子・水餃子・持帰の餃子）で決める。伝票名（金(5)など）は注文の品名と並び順で対応させて覚える
   const GYOZA_CATS = ['焼餃子', '水餃子', 'テイクアウト 餃子'];
   let gyozaNames = null; const gyozaSlips = new Set();
-  call({ api: 'menu' }).then(m => { (m || []).forEach(x => { priceOf_[x.name] = Number(x.price); }); gyozaNames = new Set((m || []).filter(x => GYOZA_CATS.includes(x.cat)).map(x => x.name)); if (lastD) learnSlips(lastD); }).catch(() => {});
+  call({ api: 'menu' }).then(m => { menuIdx_ = {}; (m || []).forEach((x, i) => { priceOf_[x.name] = Number(x.price); if (!(x.name in menuIdx_)) menuIdx_[x.name] = i; }); gyozaNames = new Set((m || []).filter(x => GYOZA_CATS.includes(x.cat)).map(x => x.name)); if (lastD) learnSlips(lastD); }).catch(() => {});
   const keyOf = l => l.replace(/\s×\s\d+$/, '').trim();
+  // 会計伝票はメニュー表の順番に並べる（伝票名→メニューの品名は、注文の品名と並び順で対応させる。「＋」の追加はその前の品と一緒に動かす）
+  let menuIdx_ = null;
+  function menuSort_(txt, run) {
+    if (!menuIdx_ || !txt) return txt;
+    const rank = {};
+    run.forEach(x => {
+      const it = String(x.items || '').split('\n').filter(s => s.trim()), sl = String(x.slip || '').split('\n').filter(s => s.trim());
+      it.forEach((n, i) => { const k = keyOf(n); const r = menuIdx_[k]; if (r == null) return; if (!(k in rank)) rank[k] = r; if (sl.length === it.length) { const sk = keyOf(sl[i]); if (!(sk in rank)) rank[sk] = r; } });
+    });
+    const blocks = [];
+    String(txt).split('\n').forEach(l => { if (!l.trim()) return; if (/^\s*＋/.test(l) && blocks.length) blocks[blocks.length - 1].push(l); else blocks.push([l]); });
+    return blocks.map((b, i) => ({ b, i, r: rank[keyOf(b[0])] != null ? rank[keyOf(b[0])] : 1e6 })).sort((a, c) => a.r - c.r || a.i - c.i).map(x => x.b.join('\n')).join('\n');
+  }
   function learnSlips(d) {
     if (!gyozaNames) return;
     (d.pending || []).concat(d.done || []).forEach(o => {
@@ -440,7 +453,7 @@
     try {
       const run = r.run.slice().sort((a, b) => atOf(a) - atOf(b));
       const o = { table: t, no: run.map(x => x.no).join('・'), time: run[0].time + '〜' + run[run.length - 1].time, total: r.sum,
-        _txt: sumLines(run.map(x => x.slip || shortItems(x.items))) };
+        _txt: menuSort_(sumLines(run.map(x => x.slip || shortItems(x.items))), run) };
       sendBill_(o);
     } catch (e) { alert('会計伝票を作れませんでした：' + e.message); }
   }
