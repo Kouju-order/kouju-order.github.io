@@ -513,6 +513,7 @@
         el.querySelector('.plus').onclick = () => { cart[m.name] = Math.min(50, (cart[m.name] || 0) + 1); all(); };
         minus.onclick = () => { cart[m.name] = Math.max(0, (cart[m.name] || 0) - 1); if (!cart[m.name]) delete cart[m.name]; all(); };
         sync();
+        if (SOLD_(m.name)) { el.classList.add('sold'); el.style.opacity = '.55'; const st = el.querySelector('.step'); st.innerHTML = ''; const sb = document.createElement('span'); sb.textContent = ({ en: 'Sold out', zhs: '售罄', zht: '售罄' })[lang] || '売り切れ'; sb.style.cssText = 'display:inline-block;padding:6px 12px;border-radius:8px;background:#555;color:#fff;font-weight:800;font-size:14px;white-space:nowrap'; st.appendChild(sb); if (cart[m.name]) { delete cart[m.name]; updateBar(); } }
         wrap.appendChild(el);
       });
     });
@@ -710,6 +711,8 @@
   Object.assign(RT.zht, { oPay: '請於11/30（週一）前到店付款。可使用現金、信用卡、交通IC卡以及PayPay、支付寶、微信支付等各種支付方式。如11/30前未付款，我們會致電確認。' });
   const CRAB_FROM = '2026-10-30', CRAB_TO = '2026-11-15', CRAB_EARLY_TO = '2026-10-27', CRAB_OFF = ['2026-10-29'];
   // 大きいサイズ(220g)は入荷に合わせた期間だけ。残りの匹数はメニューシートの「【残数】大オス10/30〜11/3」「【残数】大メス10/30〜11/3」（オス・メス別）か「【残数】大11/10〜11/15」（どちらでも）の値段欄。予約が入るとサーバーで自動で減る
+  // 売り切れ：メニューシートに「【売切】品名」の行がある品は、消さずに「売り切れ」と出して注文できないようにする
+  const SOLD_ = n => menu.some(x => x.name === '【売切】' + n);
   const CRAB_BATCH = [['2026-10-30', '2026-11-03', '10/30〜11/3'], ['2026-11-10', '2026-11-15', '11/10〜11/15']];
   const crabLeft = b => { const g = n => { const x = menu.find(m => m.name === '【残数】大' + n + b[2]); return x ? Number(x.price) || 0 : null; }; const any = g(''); return any != null ? { any } : { m: g('オス') || 0, f: g('メス') || 0 }; };
   const crabLeftTxt = b => { const r = crabLeft(b); return r.any != null ? (r.any ? '残り' + r.any + '匹' : '売り切れ') : (r.m + r.f ? '残り オス' + r.m + '・メス' + r.f : '売り切れ'); };
