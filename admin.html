@@ -321,7 +321,8 @@
   const PAIDKEY = 'kouju_paid_' + new Date().toDateString();
   const getPaid = () => { try { return JSON.parse(localStorage.getItem(PAIDKEY) || '{}'); } catch (e) { return {}; } };
   const paidMem = {};
-  const paidAt = t => Math.max(getPaid()[t] || 0, paidMem[t] || 0);
+  // 会計済みの時刻は、このiPadの記録とサーバーの記録（どのiPadから押しても共有）の新しいほう
+  const paidAt = t => Math.max(getPaid()[t] || 0, paidMem[t] || 0, Number((lastD && lastD.paid && lastD.paid[t]) || 0));
   // 「会計済み」を押す前の状態を覚えておき、間違えて押したときに取り消せるようにする
   function paidHist_() { try { return JSON.parse(localStorage.getItem(PAIDKEY + '_hist') || '{}'); } catch (e) { return {}; } }
   function setPaid(t) {
@@ -329,7 +330,8 @@
     paidMem[t] = Date.now();
     try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p));
       const h = paidHist_(); (h[t] = h[t] || []).push(prev); localStorage.setItem(PAIDKEY + '_hist', JSON.stringify(h)); } catch (e) {}
-    if (lastD) show(lastD);
+    call(null, { action: 'paid', key: KEY, table: t, at: paidMem[t] }).catch(() => {});
+    if (lastD) { lastD.paid = Object.assign({}, lastD.paid, { [t]: paidMem[t] }); show(lastD); }
   }
   // 緑の「会計済」を押したら、取り消すか聞く
   function askUndoPaid(t) {
@@ -348,7 +350,8 @@
     try { const h = paidHist_(); prev = Number((h[t] || []).pop() || 0); localStorage.setItem(PAIDKEY + '_hist', JSON.stringify(h)); } catch (e) {}
     paidMem[t] = prev;
     try { const p = getPaid(); if (prev) p[t] = prev; else delete p[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p)); } catch (e) {}
-    if (lastD) show(lastD);
+    call(null, { action: 'paid', key: KEY, table: t, at: prev }).catch(() => {});
+    if (lastD) { lastD.paid = Object.assign({}, lastD.paid); if (prev) lastD.paid[t] = prev; else delete lastD.paid[t]; show(lastD); }
   }
   // 席変更した注文は、移した時刻をその席に来た時刻として扱う（前のお客様の「会計済み」より前に注文していても、今のお客様の会計に入るように）
   function movedMap_() { try { return JSON.parse(localStorage.getItem('kouju_moved_' + new Date().toDateString()) || '{}'); } catch (e) { return {}; } }
