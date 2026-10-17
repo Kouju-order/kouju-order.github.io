@@ -743,7 +743,9 @@
         const t1 = document.createElement('div'); t1.style.cssText = 'font-size:19px;font-weight:900;letter-spacing:.05em'; t1.textContent = '🔥 残りわずか！ 🔥';
         const t2 = document.createElement('div'); t2.style.cssText = 'font-size:13px;font-weight:700;margin-top:2px'; t2.textContent = '入荷に合わせて、ご予約できる日にちが限られています';
         const t3 = document.createElement('div'); t3.style.cssText = 'background:#fff7d6;color:#7a3a00;border-radius:8px;margin-top:8px;padding:6px 8px;font-size:15px;font-weight:800;line-height:1.6';
-        CRAB_BATCH.forEach(bt => { const l = document.createElement('div'); l.textContent = '📅 ' + bt[2] + '　' + (menu.length ? crabLeftTxt(bt) : ''); t3.appendChild(l); });
+        // 初めて開いた人はメニューの読み込みが後から終わるので、読み込めたら残り数を出し直す
+        const fill = () => { t3.textContent = ''; CRAB_BATCH.forEach(bt => { const l = document.createElement('div'); l.textContent = '📅 ' + bt[2] + '　' + (menu.length ? crabLeftTxt(bt) : '確認中…'); t3.appendChild(l); }); };
+        fill(); if (!menu.length) { let n = 0; const iv = setInterval(() => { if (menu.length || ++n > 40) { clearInterval(iv); fill(); } }, 500); }
         w.append(t1, t2, t3); f.appendChild(w); }
       F.male = row('オス 220g　¥4,800', sel(nums(0, 20))); F.female = row('メス 220g　¥5,400', sel(nums(0, 20)));
       hd('🦀 通常サイズ', '10/15〜12/25（水曜定休・11/16〜17は臨時休業）');
