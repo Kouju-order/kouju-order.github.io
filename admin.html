@@ -81,11 +81,12 @@
   .tchip button { font-size:15px; padding:9px 12px; background:#2e7d32; }
   .tchip button.bill { background:#1d6fc2; color:#fff; border:1.5px solid #1d6fc2; }
   .tchip button.split { background:#fff; color:#2e7d32; border:1.5px solid #2e7d32; }
-  /* 新しい注文が入ったら30秒間点滅 */
-  .card.blink { animation: blinkc .8s ease-in-out infinite; }
-  @keyframes blinkc { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,180,0,0); } 50% { box-shadow: 0 0 0 8px #ffb400; background: #fff3c4; } }
-  #flashOv { position: fixed; inset: 0; pointer-events: none; border: 12px solid #ffb400; z-index: 9999; animation: blinko .8s steps(1) infinite; }
-  @keyframes blinko { 50% { opacity: 0; } }
+  /* 新しい注文：「オーダー印刷」か「確認済」を押すまで派手に点滅 */
+  .card.blink { animation: blinkc .5s steps(1) infinite; border-top-color: #e00000; }
+  @keyframes blinkc { 0% { background: #ffe14d; box-shadow: 0 0 0 10px #e00000; transform: scale(1.02); } 50% { background: #ffffff; box-shadow: 0 0 0 10px #ffb400; transform: scale(1); } }
+  .ackBtn { width: 100%; margin: 0 0 10px; padding: 14px; font-size: 20px; font-weight: 800; color: #fff; background: #e00000; border: 3px solid #fff; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+  #flashOv { position: fixed; inset: 0; pointer-events: none; z-index: 9999; border: 18px solid #e00000; animation: blinko .5s steps(1) infinite; }
+  @keyframes blinko { 0% { border-color: #e00000; background: rgba(255,0,0,.18); } 50% { border-color: #ffd000; background: rgba(255,208,0,.12); } }
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
@@ -516,11 +517,16 @@
   function markPrinted(nos) { const p = getPrinted(); nos.forEach(n => { p[n] = { at: Date.now(), sent: Date.now() }; }); savePrinted(p); }
   function unmarkPrinted(no) { const p = getPrinted(); delete p[no]; savePrinted(p); }
   let lastD = null; const forced = new Map();
-  // 新しい注文が入ったら、その注文のカードと画面のふちを30秒間点滅させる
-  const blinkUntil = {}; let flashT = null;
-  function flashScreen_() {
-    let ov = document.getElementById('flashOv'); if (!ov) { ov = document.createElement('div'); ov.id = 'flashOv'; document.body.appendChild(ov); }
-    clearTimeout(flashT); flashT = setTimeout(() => { const o = document.getElementById('flashOv'); if (o) o.remove(); }, 30000);
+  // 新しい注文は「オーダー印刷」か「確認済」を押すまで、カードと画面全体を点滅させる（押した注文はこのiPadに今日中覚えておく）
+  const ACKKEY = 'kouju_ack_' + new Date().toDateString();
+  const getAck_ = () => { try { return JSON.parse(localStorage.getItem(ACKKEY) || '{}'); } catch (e) { return {}; } };
+  const ackMem_ = {};
+  const needAck_ = o => !ackMem_[o.no] && !getAck_()[o.no];
+  function ack_(nos) { const a = getAck_(); nos.forEach(n => { a[n] = 1; ackMem_[n] = 1; }); try { localStorage.setItem(ACKKEY, JSON.stringify(a)); } catch (e) {} }
+  function flashScreen_(on) {
+    let ov = document.getElementById('flashOv');
+    if (on && !ov) { ov = document.createElement('div'); ov.id = 'flashOv'; document.body.appendChild(ov); }
+    if (!on && ov) ov.remove();
   }
   function show(d) {
     // 「未対応に戻す」を押した注文は、サーバーの返事を待たずにすぐ上の一覧に戻して見せる
@@ -534,7 +540,7 @@
     [...forced.keys()].forEach(no => { const f = forced.get(no); if (d.pending.some(p => p.no === no) || Date.now() - (f._t || 0) > 90000) forced.delete(no); });
     if (forced.size) d = Object.assign({}, d, { pending: d.pending.concat([...forced.values()]), done: d.done.filter(o => !forced.has(o.no)) });
     const maxAt = d.pending.reduce((a, o) => Math.max(a, o.at), 0);
-    if (loaded && maxAt > lastMax) { beep(); const t0 = Date.now(); d.pending.forEach(o => { if (o.at > lastMax) blinkUntil[o.no] = t0 + 30000; }); flashScreen_(); }
+    if (loaded && maxAt > lastMax) beep();
     lastMax = Math.max(lastMax, maxAt);
     loaded = true;
 
@@ -545,11 +551,11 @@
     const pa = $('printAll'); const sorted = pend.slice().sort((a, b) => a.at - b.at);
     curPend = sorted.filter(o => !isCall(o));
     pa.hidden = curPend.length < 2; pa.textContent = '🖨 まとめて印刷（' + curPend.length + '件）';
-    pa.onclick = () => printSlips(curPend);
+    pa.onclick = () => { ack_(curPend.map(x => x.no)); printSlips(curPend); };
     sorted.forEach(o => {
       const mins = Math.floor((now - o.at) / 60000);
       const c = document.createElement('div');
-      c.className = 'card' + (mins >= 15 ? ' late' : '') + ((blinkUntil[o.no] || 0) > Date.now() ? ' blink' : '');
+      c.className = 'card' + (mins >= 15 ? ' late' : '') + (needAck_(o) ? ' blink' : '');
       c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
         '<div class="foot"><span class="sum"></span><div class="btns"><button class="ghost mv">席変更</button><button class="print">オーダー印刷</button><button class="doneBtn">提供済み</button></div></div>';
       { const tb = c.querySelector('.tbl'); tb.textContent = 'テーブル '; const b = document.createElement('b'); b.className = 'tno'; b.textContent = o.table; tb.appendChild(b); }
@@ -576,13 +582,15 @@
       }
       c.querySelector('.sum').textContent = yen(o.total);
       { const tr = tableRun(o); if (tr) c.querySelector('.sum').textContent = yen(o.total) + '（追加分込み ' + tr.n + '回 ' + yen(tr.sum) + '）'; }
-      c.querySelector('.doneBtn').onclick = e => doneNow(o.no, c, e.currentTarget);
-      c.querySelector('.print').onclick = () => printSlip(o);
+      c.querySelector('.doneBtn').onclick = e => { ack_([o.no]); doneNow(o.no, c, e.currentTarget); };
+      c.querySelector('.print').onclick = () => { ack_(curPend.filter(x => NOMERGE(String(o.table)) ? x.no === o.no : String(x.table) === String(o.table)).map(x => x.no).concat([o.no])); printSlip(o); };
+      if (needAck_(o)) { const ab = document.createElement('button'); ab.className = 'ackBtn'; ab.textContent = '👀 確認済（点滅を止める）'; ab.onclick = () => { ack_([o.no]); show(lastD); }; c.insertBefore(ab, c.firstChild); }
       c.querySelector('.mv').onclick = () => moveTable(o);
       if (o.no === flashNo) { c.style.boxShadow = '0 0 0 5px #f5b400'; c.style.background = '#fff8dc'; }
       if (isCall(o)) { c.classList.add('call'); c.querySelector('.mv').remove(); if (!/【予約】/.test(o.items)) c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
       p.appendChild(c);
     });
+    flashScreen_(pend.some(needAck_));
 
     // 席ごとの今のお客様の合計（会計のときに見る）。最初の注文から5時間以内で、会計済みを押していない席を出す
     { const tw = $('tables'); tw.innerHTML = ''; const latest = {};
