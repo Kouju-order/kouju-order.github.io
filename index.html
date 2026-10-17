@@ -709,6 +709,10 @@
   Object.assign(RT.zhs, { oPay: '请于11/30（周一）前到店付款。可使用现金、信用卡、交通IC卡以及PayPay、支付宝、微信支付等各种支付方式。如11/30前未付款，我们会致电确认。' });
   Object.assign(RT.zht, { oPay: '請於11/30（週一）前到店付款。可使用現金、信用卡、交通IC卡以及PayPay、支付寶、微信支付等各種支付方式。如11/30前未付款，我們會致電確認。' });
   const CRAB_FROM = '2026-10-30', CRAB_TO = '2026-11-15', CRAB_EARLY_TO = '2026-10-27', CRAB_OFF = ['2026-10-29'];
+  // 大きいサイズ(220g)は入荷に合わせた期間だけ。残りの匹数はメニューシートの「【残数】大オス10/30〜11/3」「【残数】大メス10/30〜11/3」（オス・メス別）か「【残数】大11/10〜11/14」（どちらでも）の値段欄。予約が入るとサーバーで自動で減る
+  const CRAB_BATCH = [['2026-10-30', '2026-11-03', '10/30〜11/3'], ['2026-11-10', '2026-11-14', '11/10〜11/14']];
+  const crabLeft = b => { const g = n => { const x = menu.find(m => m.name === '【残数】大' + n + b[2]); return x ? Number(x.price) || 0 : null; }; const any = g(''); return any != null ? { any } : { m: g('オス') || 0, f: g('メス') || 0 }; };
+  const crabLeftTxt = b => { const r = crabLeft(b); return r.any != null ? (r.any ? '残り' + r.any + '匹' : '売り切れ') : (r.m + r.f ? '残り オス' + r.m + '・メス' + r.f : '売り切れ'); };
   // 上海蟹：大きいサイズ(220g)は10/24〜11/15のみ。通常サイズは10/15〜12/25（水曜休み）
   const CRAB_ALL_FROM = '2026-10-15', CRAB_ALL_TO = '2026-12-25';
   const CRAB_BIG = [['大オス220g', 4800], ['大メス220g', 5400]];
@@ -732,7 +736,7 @@
       F.date.onchange = () => { const d = F.date.value; [...F.time.options].forEach(o => { const x = !!d && F.isFull(d, o.value); o.disabled = x; o.textContent = o.value + (x ? '（満席）' : ''); }); const cur = F.time.selectedOptions[0]; if (cur && cur.disabled) { const ok = [...F.time.options].find(o => !o.disabled); if (ok) F.time.value = ok.value; } };
       F.ppl = row(RS('ppl'), sel(['', ...nums(1, 12)])); F.ppl.options[0].textContent = '選んでください'; F.ppl.value = '';
       const hd = (t, sub) => { const h = document.createElement('p'); h.style.cssText = 'margin:14px 0 0;font-weight:700;font-size:15px;border-top:1px solid #ddd;padding-top:10px'; h.textContent = t; if (sub) { const sp = document.createElement('span'); sp.style.cssText = 'display:block;font-weight:400;font-size:13px;color:#7a5a2a'; sp.textContent = sub; h.appendChild(sp); } f.appendChild(h); };
-      hd('🦀 大きいサイズ（約220g）', '10/30〜11/15のみ（水曜はお休み）');
+      hd('🦀 大きいサイズ（約220g）', CRAB_BATCH.map(b => b[2] + (menu.length ? '（' + crabLeftTxt(b) + '）' : '')).join('・') + 'のみ（水曜はお休み）');
       F.male = row('オス 220g　¥4,800', sel(nums(0, 20))); F.female = row('メス 220g　¥5,400', sel(nums(0, 20)));
       hd('🦀 通常サイズ', '10/15〜12/25（水曜定休・11/16〜17は臨時休業）');
       F.nor = CRAB_NOR.map(([k, pr]) => row(k.replace(/(\d+g)/, ' $1') + '　¥' + pr.toLocaleString(), sel(nums(0, 20))));
@@ -770,14 +774,11 @@
         if (F.isFull(d, F.time.value)) { $('rsvMsg').textContent = 'その日時はお席がいっぱいです。別の日にち・お時間をお選びください。'; return; }
         if (!F.crabList().length) { $('rsvMsg').textContent = '上海蟹の数を選んでください。'; return; }
         if (d < CRAB_ALL_FROM || d > CRAB_ALL_TO) { $('rsvMsg').textContent = '上海蟹のご予約は10/15〜12/25の間でお選びください。'; return; }
-        if (big && (d < CRAB_FROM || d > CRAB_TO)) { $('rsvMsg').textContent = '大きいサイズ（220g）は10/30〜11/15のみです（10/24〜27は満席になりました）。日にちを変えるか、通常サイズでお選びください。'; return; }
-        if (big && CRAB_OFF.includes(d)) { $('rsvMsg').textContent = '10/29（木）は大きいサイズのご予約を承れません。別の日をお選びください。'; return; }
-        if (big && d <= CRAB_EARLY_TO) {
-          // 残数はメニューシートの「【残数】大オス10/24〜27」「【残数】大メス10/24〜27」の値段欄
-          const stk = k => { const x = menu.find(m => m.name === '【残数】大' + k + '10/24〜27'); return x ? Number(x.price) || 0 : 0; };
-          const rm = stk('オス'), rf = stk('メス');
-          if (!rm && !rf) { $('rsvMsg').textContent = '10/24〜27の大きいサイズは売り切れました。10/30以降の日にちでお選びください。'; return; }
-          if (Number(F.male.value) > rm || Number(F.female.value) > rf) { $('rsvMsg').textContent = '10/24〜27の大きいサイズは残り オス' + rm + '匹・メス' + rf + '匹です。数を減らすか、10/30以降の日にちでお選びください。'; return; }
+        if (big) {
+          const b = CRAB_BATCH.find(x => d >= x[0] && d <= x[1]);
+          if (!b) { $('rsvMsg').textContent = '大きいサイズ（220g）は入荷に合わせて ' + CRAB_BATCH.map(x => x[2]).join('と') + ' のみです。日にちを変えるか、通常サイズでお選びください。'; return; }
+          const r = crabLeft(b), nm = Number(F.male.value), nf = Number(F.female.value);
+          if (r.any != null ? nm + nf > r.any : (nm > r.m || nf > r.f)) { $('rsvMsg').textContent = b[2] + 'の大きいサイズは' + crabLeftTxt(b) + 'です。数を減らすか、別の日にち・通常サイズでお選びください。'; return; }
         }
       }
       if (kind !== 'crab' && !F.oq.some(s => Number(s.value) > 0)) { $('rsvMsg').textContent = RS('oNeed'); return; }
