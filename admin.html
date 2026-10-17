@@ -81,6 +81,11 @@
   .tchip button { font-size:15px; padding:9px 12px; background:#2e7d32; }
   .tchip button.bill { background:#1d6fc2; color:#fff; border:1.5px solid #1d6fc2; }
   .tchip button.split { background:#fff; color:#2e7d32; border:1.5px solid #2e7d32; }
+  /* 新しい注文が入ったら30秒間点滅 */
+  .card.blink { animation: blinkc .8s ease-in-out infinite; }
+  @keyframes blinkc { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,180,0,0); } 50% { box-shadow: 0 0 0 8px #ffb400; background: #fff3c4; } }
+  #flashOv { position: fixed; inset: 0; pointer-events: none; border: 12px solid #ffb400; z-index: 9999; animation: blinko .8s steps(1) infinite; }
+  @keyframes blinko { 50% { opacity: 0; } }
 </style>
 </head>
 <body data-api="https://script.google.com/macros/s/AKfycbwa-2vEjFBCXPFlnAeDj183ezOX0XGquyYTlFIgafLjcIAuQXsEXa7PYhIan-4oa4ildg/exec">
@@ -511,6 +516,12 @@
   function markPrinted(nos) { const p = getPrinted(); nos.forEach(n => { p[n] = { at: Date.now(), sent: Date.now() }; }); savePrinted(p); }
   function unmarkPrinted(no) { const p = getPrinted(); delete p[no]; savePrinted(p); }
   let lastD = null; const forced = new Map();
+  // 新しい注文が入ったら、その注文のカードと画面のふちを30秒間点滅させる
+  const blinkUntil = {}; let flashT = null;
+  function flashScreen_() {
+    let ov = document.getElementById('flashOv'); if (!ov) { ov = document.createElement('div'); ov.id = 'flashOv'; document.body.appendChild(ov); }
+    clearTimeout(flashT); flashT = setTimeout(() => { const o = document.getElementById('flashOv'); if (o) o.remove(); }, 30000);
+  }
   function show(d) {
     // 「未対応に戻す」を押した注文は、サーバーの返事を待たずにすぐ上の一覧に戻して見せる
     lastD = d; learnSlips(d);
@@ -523,7 +534,7 @@
     [...forced.keys()].forEach(no => { const f = forced.get(no); if (d.pending.some(p => p.no === no) || Date.now() - (f._t || 0) > 90000) forced.delete(no); });
     if (forced.size) d = Object.assign({}, d, { pending: d.pending.concat([...forced.values()]), done: d.done.filter(o => !forced.has(o.no)) });
     const maxAt = d.pending.reduce((a, o) => Math.max(a, o.at), 0);
-    if (loaded && maxAt > lastMax) beep();
+    if (loaded && maxAt > lastMax) { beep(); const t0 = Date.now(); d.pending.forEach(o => { if (o.at > lastMax) blinkUntil[o.no] = t0 + 30000; }); flashScreen_(); }
     lastMax = Math.max(lastMax, maxAt);
     loaded = true;
 
@@ -538,7 +549,7 @@
     sorted.forEach(o => {
       const mins = Math.floor((now - o.at) / 60000);
       const c = document.createElement('div');
-      c.className = 'card' + (mins >= 15 ? ' late' : '');
+      c.className = 'card' + (mins >= 15 ? ' late' : '') + ((blinkUntil[o.no] || 0) > Date.now() ? ' blink' : '');
       c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
         '<div class="foot"><span class="sum"></span><div class="btns"><button class="ghost mv">席変更</button><button class="print">オーダー印刷</button><button class="doneBtn">提供済み</button></div></div>';
       { const tb = c.querySelector('.tbl'); tb.textContent = 'テーブル '; const b = document.createElement('b'); b.className = 'tno'; b.textContent = o.table; tb.appendChild(b); }
