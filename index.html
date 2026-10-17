@@ -736,7 +736,15 @@
       F.date.onchange = () => { const d = F.date.value; [...F.time.options].forEach(o => { const x = !!d && F.isFull(d, o.value); o.disabled = x; o.textContent = o.value + (x ? '（満席）' : ''); }); const cur = F.time.selectedOptions[0]; if (cur && cur.disabled) { const ok = [...F.time.options].find(o => !o.disabled); if (ok) F.time.value = ok.value; } };
       F.ppl = row(RS('ppl'), sel(['', ...nums(1, 12)])); F.ppl.options[0].textContent = '選んでください'; F.ppl.value = '';
       const hd = (t, sub) => { const h = document.createElement('p'); h.style.cssText = 'margin:14px 0 0;font-weight:700;font-size:15px;border-top:1px solid #ddd;padding-top:10px'; h.textContent = t; if (sub) { const sp = document.createElement('span'); sp.style.cssText = 'display:block;font-weight:400;font-size:13px;color:#7a5a2a'; sp.textContent = sub; h.appendChild(sp); } f.appendChild(h); };
-      hd('🦀 大きいサイズ（約220g）', CRAB_BATCH.map(b => b[2] + (menu.length ? '（' + crabLeftTxt(b) + '）' : '')).join('・') + 'のみ（水曜はお休み）');
+      hd('🦀 大きいサイズ（約220g）', '数量限定・水曜はお休み');
+      // 大きいサイズは入荷数が限られるので、目立つ「残りわずか」の案内を出す
+      { if (!document.getElementById('crabPulseCss')) { const st = document.createElement('style'); st.id = 'crabPulseCss'; st.textContent = '@keyframes crabPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}'; document.head.appendChild(st); }
+        const w = document.createElement('div'); w.style.cssText = 'background:#c0281c;color:#fff;border-radius:12px;padding:10px 12px;margin:6px 0 10px;text-align:center;box-shadow:0 2px 8px rgba(192,40,28,.35);animation:crabPulse 1.4s ease-in-out infinite';
+        const t1 = document.createElement('div'); t1.style.cssText = 'font-size:19px;font-weight:900;letter-spacing:.05em'; t1.textContent = '🔥 残りわずか！ 🔥';
+        const t2 = document.createElement('div'); t2.style.cssText = 'font-size:13px;font-weight:700;margin-top:2px'; t2.textContent = '入荷に合わせて、ご予約できる日にちが限られています';
+        const t3 = document.createElement('div'); t3.style.cssText = 'background:#fff7d6;color:#7a3a00;border-radius:8px;margin-top:8px;padding:6px 8px;font-size:15px;font-weight:800;line-height:1.6';
+        CRAB_BATCH.forEach(bt => { const l = document.createElement('div'); l.textContent = '📅 ' + bt[2] + '　' + (menu.length ? crabLeftTxt(bt) : ''); t3.appendChild(l); });
+        w.append(t1, t2, t3); f.appendChild(w); }
       F.male = row('オス 220g　¥4,800', sel(nums(0, 20))); F.female = row('メス 220g　¥5,400', sel(nums(0, 20)));
       hd('🦀 通常サイズ', '10/15〜12/25（水曜定休・11/16〜17は臨時休業）');
       F.nor = CRAB_NOR.map(([k, pr]) => row(k.replace(/(\d+g)/, ' $1') + '　¥' + pr.toLocaleString(), sel(nums(0, 20))));
