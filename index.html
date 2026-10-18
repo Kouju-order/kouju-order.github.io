@@ -181,7 +181,7 @@
 <script src="i18n2.js?v=23"></script>
 <script>
   // 臨時休業日（テイクアウト・上海蟹の予約を受けない日）。11/16・11/17は月餅づくりのため休業
-  var KYUGYO = ['2026-10-29', '2026-11-16', '2026-11-17'];
+  var KYUGYO = ['2026-10-29', '2026-11-16', '2026-11-17', '2026-12-29', '2026-12-30', '2026-12-31', '2027-01-01']; // 12/29・30おせち準備、12/31おせち店頭受取のみ、1/1休業
   // 席の予約ページ（?rsv=seat）は reserve.html へ
   if (new URLSearchParams(location.search).get('rsv') === 'seat') location.replace('reserve.html' + location.search.replace(/[?&]rsv=seat/, '').replace(/^&/, '?'));
   const API = document.body.dataset.api;
@@ -780,7 +780,7 @@
       const n = F.name.value.trim(), tel = F.tel.value.replace(/[^0-9０-９+\-－]/g, ''), d = kind === 'crab' ? F.date.value : '2026-12-31';
       if (!n || tel.replace(/[^0-9０-９]/g, '').length < 10 || !d) { $('rsvMsg').textContent = RS('need'); return; }
       const dt = new Date(d + 'T12:00:00'); if (dt.getDay() === 3) { $('rsvMsg').textContent = RS('wed'); return; }
-      if (KYUGYO.includes(d)) { $('rsvMsg').textContent = '11/16（月）・11/17（火）は臨時休業です。別の日をお選びください。'; return; }
+      if (KYUGYO.includes(d)) { $('rsvMsg').textContent = 'この日は臨時休業です。別の日をお選びください。'; return; }
       if (kind !== 'crab' && DELI && !F.addr.value.trim()) { $('rsvMsg').textContent = RS('dNeed'); return; }
       if (kind === 'crab' && !F.ppl.value) { $('rsvMsg').textContent = 'ご来店の人数を選んでください。'; return; }
       if (kind === 'crab') {
