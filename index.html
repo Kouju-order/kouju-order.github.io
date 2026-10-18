@@ -825,7 +825,7 @@
   })();
 
   // ===== 注文履歴（この端末で今日注文した分） =====
-  const HT = { ja: ['🧾 注文履歴', '注文履歴', '合計', 'この端末から本日ご注文いただいた内容です', '閉じる'], en: ['🧾 My orders', 'Your orders today', 'Total', 'Orders placed from this phone today', 'Close'], zhs: ['🧾 点单记录', '今日点单记录', '合计', '本手机今天的点单', '关闭'], zht: ['🧾 點單紀錄', '今日點單紀錄', '合計', '本手機今天的點單', '關閉'] };
+  const HT = { ja: ['🧾 注文履歴', '注文履歴', '合計', 'このテーブルの今回のご注文です（お会計前の分）', '閉じる'], en: ['🧾 My orders', 'Your orders today', 'Total', 'Orders for this table (before payment)', 'Close'], zhs: ['🧾 点单记录', '今日点单记录', '合计', '本桌本次的点单（结账前）', '关闭'], zht: ['🧾 點單紀錄', '今日點單紀錄', '合計', '本桌本次的點單（結帳前）', '關閉'] };
   const ht = i => (HT[lang] || HT.ja)[i];
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
   function loadHist() {
@@ -838,26 +838,35 @@
       all.push({ d: today(), table, no, t: String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), items: items.map(i => ({ name: i.name, qty: i.qty, price: i.price })) });
       localStorage.setItem('kouju_hist', JSON.stringify(all));
     } catch (e) {}
-    showHistBtn();
+    showHistBtn(); setTimeout(refreshHist_, 1500);
   }
-  function showHistBtn() { const h = loadHist(); $('histBtn').hidden = !h.length || STAFF; $('histBtn').textContent = ht(0); }
-  $('histBtn').onclick = () => {
-    const h = loadHist(); const box = $('histList'); box.innerHTML = ''; let sum = 0;
+  // 席の注文履歴はサーバーから取る（同じ席ならどのスマホからでも見られる。会計済みで区切る）。取れないときはこの端末の記録
+  let srvHist = null;
+  async function fetchHist_() { if (!table || STAFF || TAKEOUT || VIEW) return null; try { srvHist = await call({ api: 'tablehist', table }); } catch (e) { srvHist = null; } return srvHist; }
+  function histData_() {
+    if (srvHist && srvHist.length) return srvHist.map(o => ({ no: o.no, t: o.t, total: o.total, items: (o.items || []).map(l => { const mm = String(l).match(/^(.*?)\s×\s(\d+)$/); const name = mm ? mm[1] : String(l), qty = mm ? Number(mm[2]) : 1; const x = menu.find(m => m.name === name); return { name, qty, price: x ? Number(x.price) : null }; }) }));
+    return loadHist();
+  }
+  function showHistBtn() { const h = histData_(); $('histBtn').hidden = !h.length || STAFF; $('histBtn').textContent = ht(0); }
+  async function refreshHist_() { await fetchHist_(); showHistBtn(); }
+  $('histBtn').onclick = async () => {
+    await refreshHist_(); const h = histData_(); const box = $('histList'); box.innerHTML = ''; let sum = 0;
     h.forEach(o => {
       const head = document.createElement('div'); head.style.cssText = 'margin:10px 0 4px;font-weight:700;color:#a8261b'; head.textContent = 'No.' + o.no + '　' + o.t; box.appendChild(head);
       o.items.forEach(i => {
         const r = document.createElement('div'); r.style.cssText = 'display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px solid #eee';
         const nm = document.createElement('span'); nm.textContent = (typeof N === 'function' ? N(i.name) : i.name) + ' ×' + i.qty;
-        const pr = document.createElement('span'); pr.textContent = yen(i.price * i.qty); pr.style.whiteSpace = 'nowrap';
-        r.append(nm, pr); box.appendChild(r); sum += i.price * i.qty;
+        const pr = document.createElement('span'); pr.textContent = i.price != null ? yen(i.price * i.qty) : ''; pr.style.whiteSpace = 'nowrap';
+        r.append(nm, pr); box.appendChild(r); if (o.total == null && i.price != null) sum += i.price * i.qty;
       });
+      if (o.total != null) sum += Number(o.total);
     });
     $('histTitle').textContent = ht(1); $('histTotalL').textContent = ht(2); $('histTotal').textContent = yen(sum);
     $('histNote').textContent = ht(3); $('histClose').textContent = ht(4);
     $('hist').hidden = false;
   };
   $('histClose').onclick = () => { $('hist').hidden = true; };
-  setTimeout(showHistBtn, 0);
+  setTimeout(refreshHist_, 0); if (table && !STAFF && !TAKEOUT && !VIEW) setInterval(refreshHist_, 60000);
   document.addEventListener('click', e => { if (e.target && e.target.closest && e.target.closest('#langs')) setTimeout(showHistBtn, 50); });
   // ===== 呼び出し（店員を呼ぶ・取り皿・お水） =====
   const CT = { ja: ['🙋 呼び出し', '店員への呼び出し', '店員を呼ぶ', '取り皿', 'お水', '頼む', 'お店に伝えました。少々お待ちください', '閉じる', '送れませんでした。店員をお呼びください', '枚', '杯'],
