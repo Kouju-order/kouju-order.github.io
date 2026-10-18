@@ -425,26 +425,30 @@
       lastG = GYOZA.test(raw); if (lastG) gy.push([raw]); else other.push(raw);
     });
     const out = [];
+    // ドリンクは先に出す（すぐ出すものなので）
+    if (both) out.push(['drink', o.slipDrink]);
     if (gy.length) { if (other.length) out.push(['food', other.join('\n')]); gy.forEach(g => out.push(['gyoza', g.join('\n')])); }
     else out.push([both ? 'food' : null, food]);
-    if (both) out.push(['drink', o.slipDrink]);
     return out;
   }
   // 何件かの伝票を1回でまとめて印刷する
   function printSlips(list) {
     try {
-      const wmm = 48; let pdf = null;
+      const wmm = 48; let pdf = null; let lastW = 0;
       mergeByTable(list).forEach(o => {
       // 料理・餃子・ドリンクは別々の伝票にする
       const parts = splitParts(o);
       parts.forEach(([p, txt], i) => {
-        const c = slipCanvas(Object.assign({}, o, { _txt: txt }), p, i + 1, parts.length); const hmm = wmm * c.height / c.width;
+        const c = slipCanvas(Object.assign({}, o, { _txt: txt }), p, i + 1, parts.length); const hmm = wmm * c.height / c.width; lastW = c.width;
         const ori = hmm >= wmm ? 'portrait' : 'landscape';
         if (!pdf) pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm], orientation: ori });
         else pdf.addPage([wmm, hmm], ori);
         pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
       });
       });
+      // 最後のページが印刷されずに抜けることがあるので、最後に「伝票ここまで」の短い紙を足す（これが出ていれば全部出ている）
+      { const ec = document.createElement('canvas'); ec.width = lastW || 384; ec.height = Math.round(ec.width * 0.2); const x = ec.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, ec.width, ec.height); x.fillStyle = '#000'; x.font = 'bold ' + Math.round(ec.width * 0.075) + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ーー 伝票ここまで ーー', ec.width / 2, ec.height / 2);
+        const eh = wmm * ec.height / ec.width; pdf.addPage([wmm, eh], eh >= wmm ? 'portrait' : 'landscape'); pdf.addImage(ec.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, eh); }
       const b64 = pdf.output('datauristring').split(',')[1];
       // 印刷に回した注文は、その場で提供済みにして画面から消す（戻ってきたときに残っていて二重に印刷しないように）
       const nos = list.map(o => o.no);
