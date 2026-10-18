@@ -72,6 +72,39 @@
   <div class="tbl" id="tblLabel"></div>
   <div class="langs" id="langs"></div>
 </header>
+<div id="notice" hidden style="margin:10px 12px 0;padding:12px 14px;border-radius:12px;background:#fff4d6;border:2px solid #e0a100;color:#5a3d00;font-size:15px;font-weight:700;line-height:1.6"></div>
+<script>
+  // お休みのお知らせ（表示する期間を決めて、自動で出す・消す）
+  (function () {
+    var N = [
+      { from: '2026-10-19', to: '2026-11-17',
+        ja: '🥮 11/16（月）・11/17（火）は月餅づくりのため臨時休業いたします。',
+        en: '🥮 We will be closed on Mon 11/16 and Tue 11/17 to make mooncakes.',
+        zhs: '🥮 11/16（周一）・11/17（周二）因制作月饼临时休息。',
+        zht: '🥮 11/16（週一）・11/17（週二）因製作月餅臨時公休。' },
+      { from: '2026-11-18', to: '2027-01-01',
+        ja: '🎍 年末年始のお知らせ：12/29（火）・12/30（水）はおせち準備のため休業、12/31（木）はおせちの店頭受け取りのみ、1/1（金）は休業です。1/2（土）から元気に営業します。',
+        en: '🎍 Year-end hours: Closed 12/29–12/30. 12/31 is osechi pickup only. Closed 1/1. Open again from Sat 1/2.',
+        zhs: '🎍 年末年初：12/29（周二）・12/30（周三）因准备年菜休息，12/31（周四）仅限年菜取货，1/1（周五）休息。1/2（周六）起正常营业。',
+        zht: '🎍 年末年初：12/29（週二）・12/30（週三）因準備年菜公休，12/31（週四）僅限年菜取貨，1/1（週五）公休。1/2（週六）起正常營業。' }
+    ];
+    var box = document.getElementById('notice');
+    function lang() {
+      var l = (document.documentElement.lang || '').toLowerCase();
+      if (l.indexOf('hant') >= 0 || l === 'zh-tw') return 'zht';
+      if (l.indexOf('zh') === 0) return 'zhs';
+      if (l.indexOf('en') === 0) return 'en';
+      return 'ja';
+    }
+    function draw() {
+      var d = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), L = lang();
+      var s = N.filter(function (n) { return d >= n.from && d <= n.to; }).map(function (n) { return n[L] || n.ja; });
+      box.innerHTML = s.join('<br>'); box.hidden = !s.length;
+    }
+    draw();
+    try { new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] }); } catch (e) { }
+  })();
+</script>
 <nav class="tabs" id="tabs" hidden></nav>
 <main id="menu"><p class="muted center" data-t="loading">メニューを読み込み中…</p></main>
 
