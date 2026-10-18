@@ -500,6 +500,8 @@
         // 辛い料理には🌶マーク
         if (SPICY[m.name]) { const sp = document.createElement('span'); sp.textContent = '🌶'.repeat(SPICY[m.name]) + (({ en: 'Spicy', zhs: '辣', zht: '辣' })[lang] || '辛い'); sp.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#e8590c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(sp); }
         if (m.board) { const bt = document.createElement('span'); bt.textContent = ({ en: 'Chalkboard', zhs: '黑板菜单', zht: '黑板菜單' })[lang] || '黒板メニュー'; bt.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#2f3b33;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(bt); }
+        // 蒸すのに時間がかかる点心には「お時間をいただきます」の案内
+        if (STEAM_.has(m.name)) { const sm = document.createElement('div'); sm.textContent = '⏱ ' + (({ en: 'Takes some time to steam', zhs: '蒸制需要一些时间', zht: '蒸製需要一些時間' })[lang] || '蒸すのにお時間をいただきます'); sm.style.cssText = 'display:inline-block;margin:3px 0 0;padding:2px 8px;border-radius:4px;background:#fff1d6;color:#8a4b00;border:1px solid #f0b85a;font-size:12px;font-weight:700'; el.querySelector('.info').appendChild(sm); }
         { const jn = KANA((JDISP[m.name] || m.name).replace(/^【持帰】/, '')); el.querySelector('.ja').textContent = shown !== jn ? jn : ''; }
         if (SETINFO[m.name]) { const si = SETINFO[m.name], inf = el.querySelector('.info'), d = document.createElement('div'); d.style.cssText = 'font-size:12.5px;color:#6b5548;line-height:1.5;margin:3px 0'; const b = document.createElement('div'); b.style.cssText = 'font-weight:700;color:#2a1a14'; b.textContent = si.lead[lang] || si.lead.ja; d.appendChild(b); const c = document.createElement('div'); c.textContent = si.cont[lang] || si.cont.ja; d.appendChild(c); if (si.save) { const s = document.createElement('span'); s.textContent = si.save[lang] || si.save.ja; s.style.cssText = 'display:inline-block;margin-top:3px;padding:1px 7px;border-radius:4px;background:#c0281c;color:#fff;font-size:11.5px;font-weight:700'; d.appendChild(s); } inf.insertBefore(d, inf.querySelector('.price')); }
         const ii = ITEMIMG[m.name] || (ITEMRE.find(([re]) => re.test(m.name)) || [])[1];
@@ -712,6 +714,7 @@
   const CRAB_FROM = '2026-10-30', CRAB_TO = '2026-11-15', CRAB_EARLY_TO = '2026-10-27', CRAB_OFF = ['2026-10-29'];
   // 大きいサイズ(220g)は入荷に合わせた期間だけ。残りの匹数はメニューシートの「【残数】大オス10/30〜11/3」「【残数】大メス10/30〜11/3」（オス・メス別）か「【残数】大11/10〜11/15」（どちらでも）の値段欄。予約が入るとサーバーで自動で減る
   // 売り切れ：メニューシートに「【売切】品名」の行がある品は、消さずに「売り切れ」と出して注文できないようにする
+  const STEAM_ = new Set(['横浜大焼売 3個', '横浜大焼売 追加1個', '豚肉包子（豚まん）', '荷葉糯米鶏（ハスの葉包みチマキ）', '香港式ハスの葉ちまき（荷葉糯米鶏）']);
   const SOLD_ = n => menu.some(x => x.name === '【売切】' + n);
   const CRAB_BATCH = [['2026-10-30', '2026-11-03', '10/30〜11/3'], ['2026-11-10', '2026-11-15', '11/10〜11/15']];
   const crabLeft = b => { const g = n => { const x = menu.find(m => m.name === '【残数】大' + n + b[2]); return x ? Number(x.price) || 0 : null; }; const any = g(''); return any != null ? { any } : { m: g('オス') || 0, f: g('メス') || 0 }; };
