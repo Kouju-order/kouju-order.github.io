@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261019-1230'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261019-1445'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -665,7 +665,19 @@
       v = String(v || '').trim(); if (!v) { inp.focus(); return; }
       ok.disabled = true; ok.textContent = '⏳';
       call(null, { action: 'table', key: KEY, no: o.no, table: v })
-        .then(() => { markMoved_(o.no, o.table); bx.remove(); all.forEach(x => { if (x.no === o.no) x.table = v; }); if (lastD) show(lastD); load(); })
+        .then(async () => {
+          const from = String(o.table); markMoved_(o.no, o.table); bx.remove(); all.forEach(x => { if (x.no === o.no) x.table = v; });
+          // 来店前注文（【ご予約】お名前様）の同じお客様の注文が、元の番号にまだ残っていれば一緒に移す
+          const nm = (String(o.note || '').match(/【ご予約】(.+?)様/) || [])[1];
+          const sib = nm ? all.filter(x => x.no !== o.no && String(x.table) === from && String(x.note || '').indexOf('【ご予約】' + nm + '様') >= 0) : [];
+          if (sib.length && confirm('同じ ' + nm + ' 様の ' + from + '番の注文が、あと' + sib.length + '件あります（No.' + sib.map(x => x.no).join('・') + '）。\n一緒にテーブル ' + v + ' に移しますか？')) {
+            for (const x of sib) {
+              try { await call(null, { action: 'table', key: KEY, no: x.no, table: v }); markMoved_(x.no, x.table); x.table = v; }
+              catch (e) { alert('No.' + x.no + ' を移せませんでした。その注文の「席変更」をもう一度押してください'); }
+            }
+          }
+          if (lastD) show(lastD); load();
+        })
         .catch(e => { ok.disabled = false; ok.textContent = '移す'; alert((e && e.message) || '席を変えられませんでした。もう一度押してください'); });
     };
     ok.onclick = () => go(inp.value);

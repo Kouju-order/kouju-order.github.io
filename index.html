@@ -105,6 +105,7 @@
     try { new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] }); } catch (e) { }
   })();
 </script>
+<div id="movedNote" hidden style="margin:10px 12px 0;padding:12px 14px;border-radius:12px;background:#e8f6ec;border:2px solid #2e9e57;color:#174d2b;font-size:15px;font-weight:700;line-height:1.6"></div>
 <nav class="tabs" id="tabs" hidden></nav>
 <main id="menu"><p class="muted center" data-t="loading">メニューを読み込み中…</p></main>
 
@@ -380,6 +381,7 @@
       rvName = n; $('rvMsg').textContent = '';
       $('tblLabel').textContent = 'ご予約：' + rvName + ' 様';
       $('askRv').hidden = true;
+      setTimeout(refreshHist_, 0);
     };
   }
 
@@ -875,7 +877,18 @@
   }
   // 席の注文履歴はサーバーから取る（同じ席ならどのスマホからでも見られる。会計済みで区切る）。取れないときはこの端末の記録
   let srvHist = null;
-  async function fetchHist_() { if (!table || STAFF || TAKEOUT || VIEW) return null; try { srvHist = await call({ api: 'tablehist', table }); } catch (e) { srvHist = null; } return srvHist; }
+  async function fetchHist_() { if (!table || STAFF || TAKEOUT || VIEW) return null; try { if (RESV && !rvName) { srvHist = null; return null; } srvHist = await call(RESV ? { api: 'tablehist', table, name: rvName } : { api: 'tablehist', table }); showMoved_(); } catch (e) { srvHist = null; } return srvHist; }
+  // 来店前注文（8番）のお客様：お店が席に移したら、追加注文は席のQRからとお知らせ
+  function showMoved_() {
+    const box = $('movedNote'); if (!box || !RESV) return;
+    const mv = (srvHist || []).filter(o => o.tb && o.tb !== '8').map(o => o.tb);
+    if (!mv.length) { box.hidden = true; return; }
+    const tb = mv[mv.length - 1], l = (document.documentElement.lang || 'ja').toLowerCase();
+    box.textContent = l.indexOf('en') === 0 ? '🪑 Your order has been moved to table ' + tb + '. For additional orders, please scan the QR code on your table.'
+      : l.indexOf('zh') === 0 ? '🪑 您的订单已转到 ' + tb + ' 号桌。追加点餐请扫描桌上的二维码。'
+      : '🪑 お席（テーブル ' + tb + '）にご案内しました。追加のご注文は、お席のテーブルにあるQRコードを読み取ってお願いします。';
+    box.hidden = false;
+  }
   function histData_() {
     if (srvHist && srvHist.length) return srvHist.map(o => ({ no: o.no, t: o.t, total: o.total, items: (o.items || []).map(l => { const mm = String(l).match(/^(.*?)\s×\s(\d+)$/); const name = mm ? mm[1] : String(l), qty = mm ? Number(mm[2]) : 1; const x = menu.find(m => m.name === name); return { name, qty, price: x ? Number(x.price) : null }; }) }));
     return loadHist();
