@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261018-2220'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261019-1230'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -397,7 +397,9 @@
   // 餃子かどうかは、メニューの分類（焼餃子・水餃子・持帰の餃子）で決める。伝票名（金(5)など）は注文の品名と並び順で対応させて覚える
   const GYOZA_CATS = ['焼餃子', '水餃子', 'テイクアウト 餃子'];
   let gyozaNames = null; const gyozaSlips = new Set();
-  call({ api: 'menu' }).then(m => { menuIdx_ = billRank_(m || []); (m || []).forEach(x => { priceOf_[x.name] = Number(x.price); }); gyozaNames = new Set((m || []).filter(x => GYOZA_CATS.includes(x.cat)).map(x => x.name)); if (lastD) learnSlips(lastD); }).catch(() => {});
+  // 値段表：ランチ時間外に開いてもランチの品の値段がわかるように all=1 で全部もらう。10分ごとに読み直す（値段変更もすぐ反映）
+  const loadMenu_ = () => call({ api: 'menu', all: 1 }).then(m => { if (!m || !m.length) return; menuIdx_ = billRank_(m); m.forEach(x => { priceOf_[x.name] = Number(x.price); }); gyozaNames = new Set(m.filter(x => GYOZA_CATS.includes(x.cat)).map(x => x.name)); if (lastD) learnSlips(lastD); }).catch(() => {});
+  loadMenu_(); setInterval(loadMenu_, 10 * 60 * 1000);
   const keyOf = l => l.replace(/\s×\s\d+$/, '').trim();
   // 会計伝票はメニュー表の順番に並べる（伝票名→メニューの品名は、注文の品名と並び順で対応させる。「＋」の追加はその前の品と一緒に動かす）
   let menuIdx_ = null;
