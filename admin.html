@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261019-1445'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261019-1800'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -581,7 +581,7 @@
       const c = document.createElement('div');
       c.className = 'card' + (mins >= 15 ? ' late' : '') + (needAck_(o) ? ' blink' : '');
       c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
-        '<div class="foot"><span class="sum"></span><div class="btns"><button class="ghost mv">席変更</button><button class="print">オーダー印刷</button><button class="doneBtn">提供済み</button></div></div>';
+        '<div class="foot"><span class="sum"></span><div class="btns"><button class="ghost cx">取消</button><button class="ghost mv">席変更</button><button class="print">オーダー印刷</button><button class="doneBtn">提供済み</button></div></div>';
       { const tb = c.querySelector('.tbl'); tb.textContent = 'テーブル '; const b = document.createElement('b'); b.className = 'tno'; b.textContent = o.table; tb.appendChild(b); }
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
       const box = c.querySelector('.items');
@@ -610,8 +610,9 @@
       c.querySelector('.print').onclick = () => { ack_(curPend.filter(x => NOMERGE(String(o.table)) ? x.no === o.no : String(x.table) === String(o.table)).map(x => x.no).concat([o.no])); printSlip(o); };
       if (needAck_(o)) { const ab = document.createElement('button'); ab.className = 'ackBtn'; ab.textContent = '👀 確認済（点滅を止める）'; ab.onclick = () => { ack_([o.no]); show(lastD); }; c.insertBefore(ab, c.firstChild); }
       c.querySelector('.mv').onclick = () => moveTable(o);
+      c.querySelector('.cx').onclick = () => cancelItems(o);
       if (o.no === flashNo) { c.style.boxShadow = '0 0 0 5px #f5b400'; c.style.background = '#fff8dc'; }
-      if (isCall(o)) { c.classList.add('call'); c.querySelector('.mv').remove(); if (!/【予約】/.test(o.items)) c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
+      if (isCall(o)) { c.classList.add('call'); c.querySelector('.mv').remove(); c.querySelector('.cx').remove(); if (!/【予約】/.test(o.items)) c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
       p.appendChild(c);
     });
     flashScreen_(pend.some(needAck_));
@@ -640,11 +641,46 @@
       if (restoring.has(o.no)) { b.disabled = true; b.textContent = '⏳ 戻しています…'; }
       b.onclick = () => setStatus(o.no, '未対応', b);
       const mv = document.createElement('button'); mv.className = 'ghost back'; mv.textContent = '席変更'; mv.onclick = () => moveTable(o);
-      r.append(s, mv, b); dn.appendChild(r);
+      const cx = document.createElement('button'); cx.className = 'ghost back'; cx.textContent = '取消'; cx.onclick = () => cancelItems(o);
+      r.append(s, cx, mv, b); dn.appendChild(r);
     });
 
     const t = new Date();
     $('status').textContent = '最終更新 ' + t.toTimeString().slice(0, 8);
+  }
+
+
+  // ===== 取消：入った注文の品をスタッフが取り消す（数を減らす・品を消す。合計も自動で減る） =====
+  function cancelItems(o) {
+    const old = document.getElementById('mvbox'); if (old) old.remove();
+    const lines = String(o.items || '').split('\n').filter(s => s.trim());
+    const bx = document.createElement('div'); bx.id = 'mvbox';
+    bx.innerHTML = '<div class="mvin"><div class="mvt"></div><div class="cxl"></div><div class="spsum"></div><button class="mvok cxgo">選んだ品を取り消す</button><button class="ghost mvno">やめる</button></div>';
+    bx.querySelector('.mvt').textContent = 'No.' + o.no + '（テーブル ' + o.table + '）：取り消す品の数を「＋」で選んでください';
+    const want = lines.map(() => 0), go = bx.querySelector('.cxgo');
+    const upd = () => { const s = want.reduce((x, y) => x + y, 0); go.disabled = !s; bx.querySelector('.spsum').textContent = s ? '取り消す数：' + s + '品' : ''; };
+    lines.forEach((raw, i) => {
+      const m = raw.match(/^(.*?)\s×\s(\d+)$/); const name = (m ? m[1] : raw).trim(), q = m ? Number(m[2]) : 1;
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eee';
+      const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-size:17px'; nm.textContent = name + '　×' + q;
+      const mi = document.createElement('button'), n = document.createElement('b'), pl = document.createElement('button');
+      mi.type = pl.type = 'button'; mi.textContent = '−'; pl.textContent = '＋'; n.textContent = '0';
+      [mi, pl].forEach(b => { b.style.cssText = 'width:46px;height:46px;font-size:24px;border-radius:50%;border:1px solid #ccc;background:#fff;color:#231f1c;padding:0'; });
+      n.style.cssText = 'min-width:30px;text-align:center;font-size:22px;color:#c00';
+      mi.onclick = () => { want[i] = Math.max(0, want[i] - 1); n.textContent = want[i]; upd(); };
+      pl.onclick = () => { want[i] = Math.min(q, want[i] + 1); n.textContent = want[i]; upd(); };
+      row.append(nm, mi, n, pl); bx.querySelector('.cxl').appendChild(row);
+    });
+    upd();
+    go.onclick = () => {
+      const cut = want.map((q, i) => ({ i, q })).filter(x => x.q > 0); if (!cut.length) return;
+      go.disabled = true; go.textContent = '⏳ 取り消しています…';
+      call(null, { action: 'cancelItems', key: KEY, no: o.no, cut })
+        .then(() => { bx.remove(); load(); })
+        .catch(e => { go.disabled = false; go.textContent = '選んだ品を取り消す'; alert((e && e.message) || '取り消せませんでした。もう一度押してください'); });
+    };
+    bx.querySelector('.mvno').onclick = () => bx.remove();
+    document.body.appendChild(bx);
   }
 
   // ===== 席変更：来店前に別の番号（8番など）で注文したお客様が、実際に座った席へ注文を移す =====
