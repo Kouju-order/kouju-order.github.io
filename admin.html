@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261019-1800'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261020-2040'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -156,7 +156,9 @@
     load();
     setInterval(load, 8000);
     // 画面が新しくなっていたら自動で読み込み直す（再読み込みの手間をなくす）
-    const chk = () => fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.text()).then(t => {
+    // 日付が変わったら読み込み直す（点滅・印刷済みの記録は日ごとなので、前の日の記録が残ると新しい注文が点滅しなくなる）
+    const day0 = new Date().toDateString();
+    const chk = () => (new Date().toDateString() !== day0 && !document.querySelector('.leaving')) ? location.replace(location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now()) : fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' }).then(r => r.text()).then(t => {
       if (t.indexOf("const BUILD = '") > 0 && t.indexOf("const BUILD = '" + BUILD + "'") < 0 && !document.querySelector('.leaving'))
         location.replace(location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now());
     }).catch(() => {});
