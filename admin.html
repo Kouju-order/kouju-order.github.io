@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261020-2040'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261022-1305'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -335,18 +335,18 @@
   // 同じテーブルの追加注文をたどって、そのお客様の合計を出す
   // お会計が済んだら席の「会計済み」を押す → そこから先の注文は次のお客様として数え直す
   // （押し忘れに備えて、最初の注文から5時間たったら自動で区切る。持帰・予約・8番は対象外）
-  const PAIDKEY = 'kouju_paid_' + new Date().toDateString();
-  const getPaid = () => { try { return JSON.parse(localStorage.getItem(PAIDKEY) || '{}'); } catch (e) { return {}; } };
+  const PAIDKEY_ = () => 'kouju_paid_' + new Date().toDateString();
+  const getPaid = () => { try { return JSON.parse(localStorage.getItem(PAIDKEY_()) || '{}'); } catch (e) { return {}; } };
   const paidMem = {};
   // 会計済みの時刻は、このiPadの記録とサーバーの記録（どのiPadから押しても共有）の新しいほう
   const paidAt = t => Math.max(getPaid()[t] || 0, paidMem[t] || 0, Number((lastD && lastD.paid && lastD.paid[t]) || 0));
   // 「会計済み」を押す前の状態を覚えておき、間違えて押したときに取り消せるようにする
-  function paidHist_() { try { return JSON.parse(localStorage.getItem(PAIDKEY + '_hist') || '{}'); } catch (e) { return {}; } }
+  function paidHist_() { try { return JSON.parse(localStorage.getItem(PAIDKEY_() + '_hist') || '{}'); } catch (e) { return {}; } }
   function setPaid(t) {
     const prev = paidAt(t);
     paidMem[t] = Date.now();
-    try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p));
-      const h = paidHist_(); (h[t] = h[t] || []).push(prev); localStorage.setItem(PAIDKEY + '_hist', JSON.stringify(h)); } catch (e) {}
+    try { const p = getPaid(); p[t] = paidMem[t]; localStorage.setItem(PAIDKEY_(), JSON.stringify(p));
+      const h = paidHist_(); (h[t] = h[t] || []).push(prev); localStorage.setItem(PAIDKEY_() + '_hist', JSON.stringify(h)); } catch (e) {}
     call(null, { action: 'paid', key: KEY, table: t, at: paidMem[t] }).catch(() => {});
     if (lastD) { lastD.paid = Object.assign({}, lastD.paid, { [t]: paidMem[t] }); show(lastD); }
   }
@@ -364,9 +364,9 @@
   }
   function undoPaid(t) {
     let prev = 0;
-    try { const h = paidHist_(); prev = Number((h[t] || []).pop() || 0); localStorage.setItem(PAIDKEY + '_hist', JSON.stringify(h)); } catch (e) {}
+    try { const h = paidHist_(); prev = Number((h[t] || []).pop() || 0); localStorage.setItem(PAIDKEY_() + '_hist', JSON.stringify(h)); } catch (e) {}
     paidMem[t] = prev;
-    try { const p = getPaid(); if (prev) p[t] = prev; else delete p[t]; localStorage.setItem(PAIDKEY, JSON.stringify(p)); } catch (e) {}
+    try { const p = getPaid(); if (prev) p[t] = prev; else delete p[t]; localStorage.setItem(PAIDKEY_(), JSON.stringify(p)); } catch (e) {}
     call(null, { action: 'paid', key: KEY, table: t, at: prev }).catch(() => {});
     if (lastD) { lastD.paid = Object.assign({}, lastD.paid); if (prev) lastD.paid[t] = prev; else delete lastD.paid[t]; show(lastD); }
   }
@@ -537,28 +537,34 @@
   }
 
   // 印刷した注文の記録（この端末だけ・今日の分）。サーバーが提供済みになるまで隠しておく
-  const PKEY = 'kouju_printed_' + new Date().toDateString();
-  function getPrinted() { try { return JSON.parse(localStorage.getItem(PKEY) || '{}'); } catch (e) { return {}; } }
-  function savePrinted(p) { try { localStorage.setItem(PKEY, JSON.stringify(p)); } catch (e) {} }
+  const PKEY_ = () => 'kouju_printed_' + new Date().toDateString(); // 日付が変わってもその日の記録を使う（開きっぱなしでも前の日の番号とまざらない）
+  function getPrinted() { try { return JSON.parse(localStorage.getItem(PKEY_()) || '{}'); } catch (e) { return {}; } }
+  function savePrinted(p) { try { localStorage.setItem(PKEY_(), JSON.stringify(p)); } catch (e) {} }
   function markPrinted(nos) { const p = getPrinted(); nos.forEach(n => { p[n] = { at: Date.now(), sent: Date.now() }; }); savePrinted(p); }
   function unmarkPrinted(no) { const p = getPrinted(); delete p[no]; savePrinted(p); }
   let lastD = null; const forced = new Map();
   // 新しい注文は「オーダー印刷」か「確認済」を押すまで、カードと画面全体を点滅させる（押した注文はこのiPadに今日中覚えておく）
-  const ACKKEY = 'kouju_ack_' + new Date().toDateString();
-  const getAck_ = () => { try { return JSON.parse(localStorage.getItem(ACKKEY) || '{}'); } catch (e) { return {}; } };
+  const ACKKEY_ = () => 'kouju_ack_' + new Date().toDateString();
+  const getAck_ = () => { try { return JSON.parse(localStorage.getItem(ACKKEY_()) || '{}'); } catch (e) { return {}; } };
   const ackMem_ = {};
   const needAck_ = o => !ackMem_[o.no] && !getAck_()[o.no];
-  function ack_(nos) { const a = getAck_(); nos.forEach(n => { a[n] = 1; ackMem_[n] = 1; }); try { localStorage.setItem(ACKKEY, JSON.stringify(a)); } catch (e) {} }
+  function ack_(nos) { const a = getAck_(); nos.forEach(n => { a[n] = 1; ackMem_[n] = 1; }); try { localStorage.setItem(ACKKEY_(), JSON.stringify(a)); } catch (e) {} }
   function flashScreen_(on) {
     let ov = document.getElementById('flashOv');
     if (on && !ov) { ov = document.createElement('div'); ov.id = 'flashOv'; document.body.appendChild(ov); }
     if (!on && ov) ov.remove();
   }
+  // 日付が変わったら、このiPadが覚えている「確認済」「会計済」を空にする（注文番号は毎日1番から）
+  let memDay_ = new Date().toDateString();
+  function dayRoll_() { const t = new Date().toDateString(); if (t === memDay_) return; memDay_ = t; Object.keys(ackMem_).forEach(k => delete ackMem_[k]); Object.keys(paidMem).forEach(k => delete paidMem[k]); }
   function show(d) {
+    dayRoll_();
     // 「未対応に戻す」を押した注文は、サーバーの返事を待たずにすぐ上の一覧に戻して見せる
     lastD = d; learnSlips(d);
     { const pr = getPrinted(); const now = Date.now();
       Object.keys(pr).forEach(k => { const n = Number(k); if (!d.pending.some(p => p.no === n)) { delete pr[k]; return; }
+        // 印刷した時刻より後に入った同じ番号の注文は別の注文（前の日の記録など）なので、勝手に提供済みにしない
+        { const po = d.pending.find(p => p.no === n); if (po && pr[k].at && po.at > pr[k].at + 60000) { delete pr[k]; return; } }
         if (now - (pr[k].sent || 0) > 20000) { pr[k].sent = now; call(null, { action: 'status', key: KEY, no: n, status: '完了' }).catch(() => {}); } });
       savePrinted(pr);
       if (Object.keys(pr).length) d = Object.assign({}, d, { pending: d.pending.filter(p => !pr[p.no]) }); }
