@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261023-1855'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261023-1910'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -450,7 +450,13 @@
     const out = [];
     // ドリンクは先に出す（すぐ出すものなので）
     if (both) out.push(['drink', o.slipDrink]);
-    if (gy.length) { if (other.length) out.push(['food', other.join('\n')]); gy.forEach(g => out.push(['gyoza', g.join('\n')])); }
+    if (gy.length) {
+      // 餃子の伝票が抜けても気づけるように、料理（なければドリンク）の伝票の最後に「餃子は別伝票」と中身を書いておく
+      const gNote = '★餃子は別伝票（' + gy.length + '枚）：' + gy.map(g => String(g[0]).trim()).join('、');
+      if (other.length) out.push(['food', other.join('\n') + '\n' + gNote]);
+      else if (both) out[0] = ['drink', o.slipDrink + '\n' + gNote];
+      gy.forEach(g => out.push(['gyoza', g.join('\n')]));
+    }
     else out.push([both ? 'food' : null, food]);
     return out;
   }
