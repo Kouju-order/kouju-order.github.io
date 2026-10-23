@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261023-1910'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261023-1920'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -154,6 +154,7 @@
   function begin() {
     $('start').hidden = true;
     load();
+    setTimeout(askPrinted_, 1500);
     setInterval(load, 8000);
     // 画面が新しくなっていたら自動で読み込み直す（再読み込みの手間をなくす）
     // 日付が変わったら読み込み直す（点滅・印刷済みの記録は日ごとなので、前の日の記録が残ると新しい注文が点滅しなくなる）
@@ -166,7 +167,7 @@
   }
   $('go').onclick = () => { startAudio(); begin(); };
   // 印刷アプリなどから戻ってきたら、すぐ最新の一覧にする
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && $('start').hidden) load(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && $('start').hidden) { load(); setTimeout(askPrinted_, 800); } });
   if (new URLSearchParams(location.search).get('resume')) {
     // 印刷できたら、その注文を提供済みにしてから一覧を表示する
     const pn = new URLSearchParams(location.search).get('printed');
@@ -481,6 +482,8 @@
       const b64 = pdf.output('datauristring').split(',')[1];
       // 印刷に回した注文は、その場で提供済みにして画面から消す（戻ってきたときに残っていて二重に印刷しないように）
       const nos = list.map(o => o.no);
+      try { localStorage.setItem('kouju_lastprint', JSON.stringify({ at: Date.now(), list: list })); } catch (e) {}
+      setTimeout(askPrinted_, 8000);
       markPrinted(nos);
       // 印刷アプリに切り替わっても届くように、ビーコンでも「提供済み」を送る
       nos.forEach(n => { try { navigator.sendBeacon(API, JSON.stringify({ action: 'status', key: KEY, no: n, status: '完了', src: 'beacon' })); } catch (e) {} });
@@ -711,6 +714,22 @@
         .catch(e => { go.disabled = false; go.textContent = '選んだ品を取り消す'; alert((e && e.message) || '取り消せませんでした。もう一度押してください'); });
     };
     bx.querySelector('.mvno').onclick = () => bx.remove();
+    document.body.appendChild(bx);
+  }
+
+
+  // ===== 印刷の確認：「伝票ここまで」が出たかを聞いて、出ていなければボタン1つで出し直す（3枚目から先が抜けることがあるため） =====
+  function askPrinted_() {
+    let s = null; try { s = JSON.parse(localStorage.getItem('kouju_lastprint') || 'null'); } catch (e) {}
+    if (!s || !s.list || !s.list.length || Date.now() - s.at > 15 * 60 * 1000) return;
+    if (document.getElementById('pcbox')) return;
+    const bx = document.createElement('div'); bx.id = 'pcbox';
+    bx.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px';
+    bx.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px;max-width:480px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.35)"><div style="font-size:22px;font-weight:800;margin-bottom:8px">🖨 「ーー 伝票ここまで ーー」の紙は出ましたか？</div><div class="pcs" style="color:#555;font-size:16px;margin-bottom:16px"></div><button class="pcok" style="display:block;width:100%;padding:16px;margin-bottom:10px;font-size:20px;font-weight:800;border:0;border-radius:12px;background:#2e9e57;color:#fff">✅ 出た</button><button class="pcng" style="display:block;width:100%;padding:16px;font-size:20px;font-weight:800;border:0;border-radius:12px;background:#e00000;color:#fff">⚠ 出ていない → もう一度印刷</button></div>';
+    bx.querySelector('.pcs').textContent = s.list.map(o => 'No.' + o.no + '（テーブル ' + o.table + '）').join('、') + ' を印刷しました';
+    const fin = () => { try { localStorage.removeItem('kouju_lastprint'); } catch (e) {} bx.remove(); };
+    bx.querySelector('.pcok').onclick = fin;
+    bx.querySelector('.pcng').onclick = () => { fin(); printSlips(s.list); };
     document.body.appendChild(bx);
   }
 
