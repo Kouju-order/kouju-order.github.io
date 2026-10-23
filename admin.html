@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261022-1305'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261023-1845'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -170,9 +170,13 @@
   if (new URLSearchParams(location.search).get('resume')) {
     // 印刷できたら、その注文を提供済みにしてから一覧を表示する
     const pn = new URLSearchParams(location.search).get('printed');
-    if (pn) {
+    // 印刷アプリから戻ってきた直後（10分以内）だけ、印刷した注文を提供済みにする。
+    // ホーム画面のアイコンなどに古い「printed=」付きのURLが残っていると、開くたびに今日の同じ番号の注文が勝手に提供済みになるため
+    const vt = Number(new URLSearchParams(location.search).get('v') || 0);
+    if (pn && !(Date.now() - vt < 10 * 60 * 1000)) { history.replaceState(null, '', location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now()); begin(); }
+    else if (pn) {
       history.replaceState(null, '', location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now());
-      Promise.all(pn.split(',').filter(Boolean).map(x => call(null, { action: 'status', key: KEY, no: isNaN(Number(x)) ? x : Number(x), status: '完了' }).catch(() => {}))).then(begin);
+      Promise.all(pn.split(',').filter(Boolean).map(x => call(null, { action: 'status', key: KEY, no: isNaN(Number(x)) ? x : Number(x), status: '完了', src: 'print-cb' }).catch(() => {}))).then(begin);
     } else begin();
     document.addEventListener('touchstart', startAudio, { once: true });
     document.addEventListener('click', startAudio, { once: true });
@@ -473,9 +477,9 @@
       const nos = list.map(o => o.no);
       markPrinted(nos);
       // 印刷アプリに切り替わっても届くように、ビーコンでも「提供済み」を送る
-      nos.forEach(n => { try { navigator.sendBeacon(API, JSON.stringify({ action: 'status', key: KEY, no: n, status: '完了' })); } catch (e) {} });
+      nos.forEach(n => { try { navigator.sendBeacon(API, JSON.stringify({ action: 'status', key: KEY, no: n, status: '完了', src: 'beacon' })); } catch (e) {} });
       nos.forEach(n => { hiding.add(n); forced.delete(n); }); load();
-      Promise.all(nos.map(n => call(null, { action: 'status', key: KEY, no: n, status: '完了' }).catch(() => {}))).then(() => { nos.forEach(n => hiding.delete(n)); load(); });
+      Promise.all(nos.map(n => call(null, { action: 'status', key: KEY, no: n, status: '完了', src: 'print' }).catch(() => {}))).then(() => { nos.forEach(n => hiding.delete(n)); load(); });
       // ホーム画面のアイコンから開いているときは、印刷後にSafariが開かないよう戻り先を付けない
       const STANDALONE = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
       const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now();
@@ -565,7 +569,7 @@
       Object.keys(pr).forEach(k => { const n = Number(k); if (!d.pending.some(p => p.no === n)) { delete pr[k]; return; }
         // 印刷した時刻より後に入った同じ番号の注文は別の注文（前の日の記録など）なので、勝手に提供済みにしない
         { const po = d.pending.find(p => p.no === n); if (po && pr[k].at && po.at > pr[k].at + 60000) { delete pr[k]; return; } }
-        if (now - (pr[k].sent || 0) > 20000) { pr[k].sent = now; call(null, { action: 'status', key: KEY, no: n, status: '完了' }).catch(() => {}); } });
+        if (now - (pr[k].sent || 0) > 20000) { pr[k].sent = now; call(null, { action: 'status', key: KEY, no: n, status: '完了', src: 'auto' }).catch(() => {}); } });
       savePrinted(pr);
       if (Object.keys(pr).length) d = Object.assign({}, d, { pending: d.pending.filter(p => !pr[p.no]) }); }
     // 戻した注文がサーバーに反映されたら、または90秒たっても反映されなければ、仮の表示をやめる（ずっと残り続けないように）
@@ -796,7 +800,7 @@
       card.remove();
       if (!$('pending').querySelector('.card')) $('pending').innerHTML = '<div class="empty">未対応の注文はありません</div>';
     }, 480);
-    call(null, { action: 'status', key: KEY, no, status: '完了' })
+    call(null, { action: 'status', key: KEY, no, status: '完了', src: 'button' })
       .then(() => { hiding.delete(no); load(); })
       .catch(e => { hiding.delete(no); alert('No.' + no + ' を提供済みにできませんでした。もう一度押してください'); load(); });
   }
