@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261023-1845'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261023-1855'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -627,7 +627,20 @@
       if (isCall(o)) { c.classList.add('call'); c.querySelector('.mv').remove(); c.querySelector('.cx').remove(); if (!/【予約】/.test(o.items)) c.querySelector('.print').remove(); c.querySelector('.doneBtn').textContent = '対応済み'; c.querySelector('.sum').textContent = /【予約】/.test(o.items) ? '📅 予約リクエスト' : '🙋 呼び出し'; }
       p.appendChild(c);
     });
-    flashScreen_(pend.some(needAck_));
+    // 見逃し防止：このiPadで「確認済」にしていないのに提供済みになった注文は、一番上に赤く出して点滅させる（原因が何でも見逃さないように）
+    const miss = (d.done || []).filter(o => needAck_(o) && !isCall(o));
+    miss.slice().reverse().forEach(o => {
+      const w = document.createElement('div'); w.className = 'card blink';
+      w.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div><div class="foot"><span class="sum"></span><div class="btns"><button class="ghost back">未対応に戻す</button><button class="ackm">👀 確認済</button></div></div>';
+      w.querySelector('.tbl').textContent = '⚠ 見逃し注意　テーブル ' + o.table;
+      w.querySelector('.meta').textContent = 'No.' + o.no + '　' + o.time + '　この画面で確認する前に「提供済み」になっていました';
+      w.querySelector('.items').textContent = String(o.slip || o.items || '').split('\n').filter(Boolean).join(' / ');
+      w.querySelector('.sum').textContent = yen(o.total);
+      w.querySelector('.back').onclick = e => { setStatus(o.no, '未対応', e.currentTarget); };
+      w.querySelector('.ackm').onclick = () => { ack_([o.no]); show(lastD); };
+      p.insertBefore(w, p.firstChild);
+    });
+    flashScreen_(pend.some(needAck_) || miss.length > 0);
 
     // 席ごとの今のお客様の合計（会計のときに見る）。最初の注文から5時間以内で、会計済みを押していない席を出す
     { const tw = $('tables'); tw.innerHTML = ''; const latest = {};
