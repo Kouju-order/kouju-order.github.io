@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261024-1135'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261024-1205'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -472,43 +472,58 @@
   // 何件かの伝票を1回でまとめて印刷する
   function printSlips(list) {
     try {
-      const wmm = 48; let pdf = null; let lastW = 0;
+      const wmm = 48; const pages = []; let lastW = 0;
       mergeByTable(list).forEach(o => {
-      // 料理・餃子・ドリンクは別々の伝票にする
-      const parts = splitParts(o);
-      parts.forEach(([p, txt], i) => {
-        const c = slipCanvas(Object.assign({}, o, { _txt: txt }), p, i + 1, parts.length); const hmm = wmm * c.height / c.width; lastW = c.width;
-        const ori = hmm >= wmm ? 'portrait' : 'landscape';
-        if (!pdf) pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, hmm], orientation: ori });
-        else pdf.addPage([wmm, hmm], ori);
-        pdf.addImage(c.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, hmm);
+        // 料理・餃子・ドリンクは別々の伝票にする
+        const parts = splitParts(o);
+        parts.forEach(([p, txt], i) => {
+          const c = slipCanvas(Object.assign({}, o, { _txt: txt }), p, i + 1, parts.length); lastW = c.width;
+          pages.push({ d: c.toDataURL('image/jpeg', 0.85), h: wmm * c.height / c.width });
+        });
       });
-      });
-      // 最後のページが印刷されずに抜けることがあるので、最後に「伝票ここまで」の短い紙を足す（これが出ていれば全部出ている）
+      // 最後に「伝票ここまで」の短い紙を足す（これが出ていれば全部出ている）
       { const ec = document.createElement('canvas'); ec.width = lastW || 384; ec.height = Math.round(ec.width * 0.2); const x = ec.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, ec.width, ec.height); x.fillStyle = '#000'; x.font = 'bold ' + Math.round(ec.width * 0.075) + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ーー 伝票ここまで ーー', ec.width / 2, ec.height / 2);
-        const eh = wmm * ec.height / ec.width; pdf.addPage([wmm, eh], eh >= wmm ? 'portrait' : 'landscape'); pdf.addImage(ec.toDataURL('image/jpeg', 0.85), 'JPEG', 0, 0, wmm, eh); }
-      const b64 = pdf.output('datauristring').split(',')[1];
+        pages.push({ d: ec.toDataURL('image/jpeg', 0.85), h: wmm * ec.height / ec.width }); }
+      // プリンターは1回に2枚までしか確実に出ないので、2枚ずつに分けて順番に送る（残りは注文一覧に戻ったら自動で続きを送る）
+      const jobs = []; for (let k = 0; k < pages.length; k += 2) jobs.push(pages.slice(k, k + 2));
       // 印刷に回した注文は、その場で提供済みにして画面から消す（戻ってきたときに残っていて二重に印刷しないように）
       const nos = list.map(o => o.no);
       try { localStorage.setItem('kouju_lastprint', JSON.stringify({ at: Date.now(), list: list })); } catch (e) {}
+      try { if (jobs.length > 1) localStorage.setItem('kouju_printq', JSON.stringify({ at: Date.now(), nos: nos, jobs: jobs.slice(1), total: jobs.length })); else localStorage.removeItem('kouju_printq'); } catch (e) {}
       setTimeout(askPrinted_, 8000);
       markPrinted(nos);
       // 印刷アプリに切り替わっても届くように、ビーコンでも「提供済み」を送る
       nos.forEach(n => { try { navigator.sendBeacon(API, JSON.stringify({ action: 'status', key: KEY, no: n, status: '完了', src: 'beacon' })); } catch (e) {} });
       nos.forEach(n => { hiding.add(n); forced.delete(n); }); load();
       Promise.all(nos.map(n => call(null, { action: 'status', key: KEY, no: n, status: '完了', src: 'print' }).catch(() => {}))).then(() => { nos.forEach(n => hiding.delete(n)); load(); });
-      // ホーム画面のアイコンから開いているときは、印刷後にSafariが開かないよう戻り先を付けない
-      const STANDALONE = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-      const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now();
-      location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
-        + (STANDALONE ? '' : '&CallbackSuccess=' + encodeURIComponent(back + '&printed=' + encodeURIComponent(nos.join(','))) + '&CallbackFail=' + encodeURIComponent(back))
-        + '&Data=' + encodeURIComponent(b64);
+      sendJob_(jobs[0], nos, true);
     } catch (e) {
       alert('伝票を作れませんでした：' + e.message);
     }
   }
-
-  // 会計用の伝票：その席の今のお客様の注文（追加分も全部）を1枚にまとめて印刷する。注文の状態は変えない
+  // 印刷アプリに1回分（2枚まで）を送る
+  function sendJob_(job, nos, first) {
+    const wmm = 48; let pdf = null;
+    job.forEach(pg => { const ori = pg.h >= wmm ? 'portrait' : 'landscape'; if (!pdf) pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, pg.h], orientation: ori }); else pdf.addPage([wmm, pg.h], ori); pdf.addImage(pg.d, 'JPEG', 0, 0, wmm, pg.h); });
+    const b64 = pdf.output('datauristring').split(',')[1];
+    // ホーム画面のアイコンから開いているときは、印刷後にSafariが開かないよう戻り先を付けない
+    const STANDALONE = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now();
+    location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
+      + (STANDALONE ? '' : '&CallbackSuccess=' + encodeURIComponent(back + (first ? '&printed=' + encodeURIComponent(nos.join(',')) : '')) + '&CallbackFail=' + encodeURIComponent(back))
+      + '&Data=' + encodeURIComponent(b64);
+  }
+  // 印刷の続き：注文一覧に戻ってきたら、残りの伝票（2枚ずつ）を自動で送る
+  function contPrint_() {
+    let q = null; try { q = JSON.parse(localStorage.getItem('kouju_printq') || 'null'); } catch (e) {}
+    if (!q || !q.jobs || !q.jobs.length) return false;
+    if (Date.now() - q.at > 10 * 60 * 1000) { try { localStorage.removeItem('kouju_printq'); } catch (e) {} return false; }
+    if (document.hidden) return true;
+    const job = q.jobs.shift();
+    try { if (q.jobs.length) localStorage.setItem('kouju_printq', JSON.stringify(q)); else localStorage.removeItem('kouju_printq'); } catch (e) {}
+    try { sendJob_(job, q.nos, false); } catch (e) { alert('続きの伝票を送れませんでした：' + e.message); }
+    return true;
+  }
   function printBill(t, r) {
     try {
       const run = r.run.slice().sort((a, b) => atOf(a) - atOf(b));
@@ -729,6 +744,7 @@
 
   // ===== 印刷の確認：「伝票ここまで」が出たかを聞いて、出ていなければボタン1つで出し直す（3枚目から先が抜けることがあるため） =====
   function askPrinted_() {
+    if (contPrint_()) return; // 印刷の続きが残っていれば、先にそれを送る
     let s = null; try { s = JSON.parse(localStorage.getItem('kouju_lastprint') || 'null'); } catch (e) {}
     if (!s || !s.list || !s.list.length || Date.now() - s.at > 15 * 60 * 1000) return;
     if (document.getElementById('pcbox')) return;
