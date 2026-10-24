@@ -141,14 +141,14 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261023-1920'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261024-1135'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
   let actx = null, lastMax = 0, loaded = false, busy = false;
 
   function startAudio() {
-    if (actx) return;
+    if (actx) { try { if (actx.state !== 'running') actx.resume(); } catch (e) {} return; }
     try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
   }
   function begin() {
@@ -166,6 +166,14 @@
     chk(); setInterval(chk, 60000);
   }
   $('go').onclick = () => { startAudio(); begin(); };
+  // 音の見張り：iPadは読み込み直しやスリープのあと、画面にさわるまで注文の音が出ない。出ない状態なら下に赤い帯で知らせる
+  ['touchstart', 'click'].forEach(ev => document.addEventListener(ev, () => { startAudio(); setTimeout(sndBar_, 300); }, true));
+  function sndBar_() {
+    let b = document.getElementById('sndbar'); const ok = actx && actx.state === 'running';
+    if (ok || !$('start').hidden) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('div'); b.id = 'sndbar'; b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:10002;background:#e00000;color:#fff;font-size:20px;font-weight:800;text-align:center;padding:16px'; b.textContent = '🔇 注文の音が出ない状態です。画面のどこかを1回タップしてください'; document.body.appendChild(b); }
+  }
+  setInterval(sndBar_, 3000);
   // 印刷アプリなどから戻ってきたら、すぐ最新の一覧にする
   document.addEventListener('visibilitychange', () => { if (!document.hidden && $('start').hidden) { load(); setTimeout(askPrinted_, 800); } });
   if (new URLSearchParams(location.search).get('resume')) {
@@ -524,6 +532,7 @@
   }
   function beep() {
     if (!actx) return;
+    try { if (actx.state !== 'running') actx.resume(); } catch (e) {}
     [0, 0.25, 0.5].forEach((t, i) => {
       const o = actx.createOscillator(), g = actx.createGain();
       o.frequency.value = i === 1 ? 1175 : 880;
