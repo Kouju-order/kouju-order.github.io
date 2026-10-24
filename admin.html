@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261024-1220'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261024-1300'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -393,6 +393,21 @@
   const minsOf = o => { if (o.at) { const d = new Date(atOf(o)); return d.getHours() * 60 + d.getMinutes(); } const m = String(o.time || '').match(/(\d+):(\d+)/); return m ? Number(m[1]) * 60 + Number(m[2]) : -1; };
   // 席からのお持ち帰り注文（メモに「店内A番テーブル」）は、その席の会計に入れる
   const seatOf_ = x => String(x.table) === '持帰' ? ((String(x.note || '').match(/店内(.+?)番テーブル/) || [])[1] || '') : '';
+
+  // ===== 会計の前に確認：同じ席で30分以上あいて入った注文があれば「前のお客様の分では？」と聞く（会計済みの押し忘れ対策） =====
+  const cutGap_ = r => { for (let k = 1; k < r.run.length; k++) if (minsOf(r.run[k]) - minsOf(r.run[k - 1]) > 30) return k; return -1; };
+  function gapCheck_(t, r, go) {
+    const k = cutGap_(r); if (k < 0) return go(r);
+    const prev = r.run.slice(0, k), nxt = r.run[k];
+    const ps = prev.reduce((s, x) => s + Number(x.total || 0), 0);
+    const msg = 'テーブル ' + t + '\n' + prev.map(x => x.time + ' No.' + x.no).join('・') + '（' + yen(ps) + '）のあと、' + Math.round(minsOf(nxt) - minsOf(prev[prev.length - 1])) + '分あいて ' + nxt.time + ' No.' + nxt.no + ' が入っています。\n\n前の分は「前のお客様」ですか？\n\nOK：前のお客様（前の分は会計済みにして、今のお客様の分だけで会計）\nキャンセル：同じお客様（全部まとめて会計）';
+    if (!confirm(msg)) return go(r);
+    const at = atOf(nxt) - 1000;
+    paidMem[t] = at; try { const p = getPaid(); p[t] = at; localStorage.setItem(PAIDKEY_(), JSON.stringify(p)); } catch (e) {}
+    if (lastD) lastD.paid = Object.assign({}, lastD.paid || {}, { [t]: at });
+    call(null, { action: 'paid', key: KEY, table: t, at: at }).catch(() => {});
+    const r2 = tableRun(nxt, 1); if (lastD) show(lastD); if (r2) go(r2);
+  }
   function tableRun(o, min) {
     const t = String(o.table);
     if (NOMERGE(t) || t === '予約' || !lastD) return null;
@@ -686,8 +701,9 @@
         ch.innerHTML = '<b class="t"></b><span class="s"></span><span class="n"></span><button class="bill">🖨 会計伝票</button><button class="split">✂ 分ける</button><button class="paid">会計済み</button>';
         ch.querySelector('.t').textContent = t; ch.querySelector('.s').textContent = yen(r.sum); ch.querySelector('.n').textContent = '（' + r.n + '回分）';
         ch.querySelector('.paid').onclick = () => setPaid(t);
-        ch.querySelector('.bill').onclick = () => printBill(t, r);
-        ch.querySelector('.split').onclick = () => splitBill(t, r);
+        ch.querySelector('.bill').onclick = () => gapCheck_(t, r, rr => printBill(t, rr));
+        ch.querySelector('.split').onclick = () => gapCheck_(t, r, rr => splitBill(t, rr));
+        if (cutGap_(r) >= 0) { const w = document.createElement('span'); w.textContent = '⚠ 30分以上あいた注文あり（前のお客様の分？）'; w.style.cssText = 'color:#c00;font-weight:800;margin-left:6px'; ch.querySelector('.n').after(w); }
         tw.appendChild(ch); }); }
     const dn = $('done'); dn.innerHTML = '';
     // 会計の計算には今日の完了分を全部使うが、画面の「完了」一覧は直近10件だけ出す
