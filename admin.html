@@ -133,7 +133,9 @@
     const url = body ? API : API + '?' + new URLSearchParams(params).toString();
     let r, err;
     for (let i = 0; i < (body ? 1 : 3); i++) {
-      try { r = await fetch(url, opt); break; } catch (e) { err = e; await new Promise(s => setTimeout(s, 1500)); }
+      // 通信が止まったままにならないように20秒で打ち切る（止まっていると新しい注文が出なくなるため）
+      const ac = window.AbortController ? new AbortController() : null; const tm = ac ? setTimeout(() => ac.abort(), 20000) : 0;
+      try { r = await fetch(url, ac ? Object.assign({}, opt, { signal: ac.signal }) : opt); clearTimeout(tm); break; } catch (e) { clearTimeout(tm); err = e; await new Promise(s => setTimeout(s, 1500)); }
     }
     if (!r) throw err;
     let j;
@@ -141,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261025-1410'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261025-1520'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -403,6 +405,8 @@
     const msg = 'テーブル ' + t + '\n' + prev.map(x => x.time + ' No.' + x.no).join('・') + '（' + yen(ps) + '）のあと、' + Math.round(minsOf(nxt) - minsOf(prev[prev.length - 1])) + '分あいて ' + nxt.time + ' No.' + nxt.no + ' が入っています。\n\n前の分は「前のお客様」ですか？\n\nOK：前のお客様（前の分は会計済みにして、今のお客様の分だけで会計）\nキャンセル：同じお客様（全部まとめて会計）';
     if (!confirm(msg)) return go(r);
     const at = atOf(nxt) - 1000;
+    // 「会計済み」ボタンと同じく、前の区切りを取り消し用に覚えておく（間違えて押したとき、ひとつ前の状態に戻せるように）
+    try { const h = paidHist_(); (h[t] = h[t] || []).push(paidAt(t) || 0); localStorage.setItem(PAIDKEY_() + '_hist', JSON.stringify(h)); } catch (e) {}
     paidMem[t] = at; try { const p = getPaid(); p[t] = at; localStorage.setItem(PAIDKEY_(), JSON.stringify(p)); } catch (e) {}
     if (lastD) lastD.paid = Object.assign({}, lastD.paid || {}, { [t]: at });
     call(null, { action: 'paid', key: KEY, table: t, at: at }).catch(() => {});
@@ -431,7 +435,9 @@
   let gyozaNames = null; const gyozaSlips = new Set();
   // 値段表：ランチ時間外に開いてもランチの品の値段がわかるように all=1 で全部もらう。10分ごとに読み直す（値段変更もすぐ反映）
   const loadMenu_ = () => call({ api: 'menu', all: 1 }).then(m => { if (!m || !m.length) return; menuIdx_ = billRank_(m); m.forEach(x => { priceOf_[x.name] = Number(x.price); }); gyozaNames = new Set(m.filter(x => GYOZA_CATS.includes(x.cat)).map(x => x.name)); if (lastD) learnSlips(lastD); }).catch(() => {});
-  loadMenu_(); setInterval(loadMenu_, 10 * 60 * 1000);
+  // 読み込めなかったときは20秒後にもう一度（値段表が空のままだと別々会計の値段がずれるため）
+  const menuRetry_ = () => loadMenu_().then(() => { if (!Object.keys(priceOf_).length) setTimeout(menuRetry_, 20000); });
+  menuRetry_(); setInterval(loadMenu_, 10 * 60 * 1000);
   const keyOf = l => l.replace(/\s×\s\d+$/, '').trim();
   // 会計伝票はメニュー表の順番に並べる（伝票名→メニューの品名は、注文の品名と並び順で対応させる。「＋」の追加はその前の品と一緒に動かす）
   let menuIdx_ = null;
@@ -506,7 +512,8 @@
       // 印刷に回した注文は、その場で提供済みにして画面から消す（戻ってきたときに残っていて二重に印刷しないように）
       const nos = list.map(o => o.no);
       try { localStorage.setItem('kouju_lastprint', JSON.stringify({ at: Date.now(), list: list })); } catch (e) {}
-      try { if (jobs.length > 1) localStorage.setItem('kouju_printq', JSON.stringify({ at: Date.now(), nos: nos, jobs: jobs.slice(1), total: jobs.length })); else localStorage.removeItem('kouju_printq'); } catch (e) {}
+      try { if (jobs.length > 1) localStorage.setItem('kouju_printq', JSON.stringify({ at: Date.now(), nos: nos, jobs: jobs.slice(1), total: jobs.length })); else localStorage.removeItem('kouju_printq'); }
+      catch (e) { alert('伝票が多すぎて、続きを覚えておけませんでした。最初の2枚だけ出ます。残りは1件ずつ「オーダー印刷」してください'); }
       setTimeout(askPrinted_, 8000);
       markPrinted(nos);
       // 印刷アプリに切り替わっても届くように、ビーコンでも「提供済み」を送る
@@ -520,6 +527,7 @@
   }
   // 印刷アプリに1回分（2枚まで）を送る
   function sendJob_(job, nos, first) {
+    window.__jobAt = Date.now();
     const wmm = 48; let pdf = null;
     job.forEach(pg => { const ori = pg.h >= wmm ? 'portrait' : 'landscape'; if (!pdf) pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, pg.h], orientation: ori }); else pdf.addPage([wmm, pg.h], ori); pdf.addImage(pg.d, 'JPEG', 0, 0, wmm, pg.h); });
     const b64 = pdf.output('datauristring').split(',')[1];
@@ -536,6 +544,8 @@
     if (!q || !q.jobs || !q.jobs.length) return false;
     if (Date.now() - q.at > 10 * 60 * 1000) { try { localStorage.removeItem('kouju_printq'); } catch (e) {} return false; }
     if (document.hidden) return true;
+    // 直前に送ったばかりなら送らない（戻ったときに2か所から同時に動いて、1回分が抜けるのを防ぐ）
+    if (Date.now() - (window.__jobAt || 0) < 6000) return true;
     const job = q.jobs.shift();
     try { if (q.jobs.length) localStorage.setItem('kouju_printq', JSON.stringify(q)); else localStorage.removeItem('kouju_printq'); } catch (e) {}
     try { sendJob_(job, q.nos, false); } catch (e) { alert('続きの伝票を送れませんでした：' + e.message); }
@@ -828,17 +838,24 @@
       const parsed = full.map((raw, i) => {
         const m = raw.match(/^(.*?)\s×\s(\d+)$/); const name = (m ? m[1] : raw).trim(); const q = m ? Number(m[2]) : 1;
         const sm = (sl[i] || '').match(/^(.*?)\s×\s(\d+)$/);
-        return { name, q, label: sm ? sm[1].trim() : (sl[i] || name), price: priceOf_[name] };
+        // 伝票名は、注文の行数と伝票の行数が同じときだけ使う（ずれていると別の品の名前になるため）
+        return { name, q, label: sl.length === full.length ? (sm ? sm[1].trim() : (sl[i] || name)) : name, price: priceOf_[name] };
       });
       // 値段がわからない品は、その注文の合計の残りを割り振る
       const known = parsed.reduce((a, p) => a + (p.price != null ? p.price * p.q : 0), 0);
       const unk = parsed.filter(p => p.price == null); const unkQ = unk.reduce((a, p) => a + p.q, 0);
-      unk.forEach(p => { p.price = unkQ ? Math.round(Math.max(0, Number(o.total || 0) - known) / unkQ) : 0; });
-      parsed.forEach((p, i) => { for (let k = 0; k < p.q; k++) units.push({ id: o.no + '-' + i + '-' + k, label: p.label, price: p.price }); });
+      const rest = Math.max(0, Number(o.total || 0) - known), base = unkQ ? Math.floor(rest / unkQ) : 0;
+      unk.forEach(p => { p.price = base; });
+      let lastU = null;
+      parsed.forEach((p, i) => { for (let k = 0; k < p.q; k++) { const u = { id: o.no + '-' + i + '-' + k, label: p.label, price: p.price }; units.push(u); if (unk.includes(p)) lastU = u; } });
+      if (lastU) lastU.price += rest - base * unkQ; // 割り切れない端数は最後の1品に足して、合計を注文の合計と合わせる
     });
     return units;
   }
   function splitBill(t, r) {
+    // 値段表がまだ読めていなければ、先に読んでから開く（値段がずれないように）
+    if (!Object.keys(priceOf_).length && !splitBill._w) { splitBill._w = 1; loadMenu_().then(() => splitBill(t, r)); return; }
+    splitBill._w = 0;
     const old = document.getElementById('mvbox'); if (old) old.remove();
     const done = splitDone_(t), units = splitUnits_(r);
     const bx = document.createElement('div'); bx.id = 'mvbox';
