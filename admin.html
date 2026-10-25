@@ -141,7 +141,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261024-1300'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261025-1410'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -489,18 +489,18 @@
   // 何件かの伝票を1回でまとめて印刷する
   function printSlips(list) {
     try {
-      const wmm = 48; const pages = []; let lastW = 0;
+      const wmm = 48; const pages = []; let lastW = 0; let lastC = null;
       mergeByTable(list).forEach(o => {
         // 料理・餃子・ドリンクは別々の伝票にする
         const parts = splitParts(o);
         parts.forEach(([p, txt], i) => {
-          const c = slipCanvas(Object.assign({}, o, { _txt: txt }), p, i + 1, parts.length); lastW = c.width;
+          const c = slipCanvas(Object.assign({}, o, { _txt: txt }), p, i + 1, parts.length); lastW = c.width; lastC = c;
           pages.push({ d: c.toDataURL('image/jpeg', 0.85), h: wmm * c.height / c.width });
         });
       });
-      // 最後に「伝票ここまで」の短い紙を足す（これが出ていれば全部出ている）
-      { const ec = document.createElement('canvas'); ec.width = lastW || 384; ec.height = Math.round(ec.width * 0.2); const x = ec.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, ec.width, ec.height); x.fillStyle = '#000'; x.font = 'bold ' + Math.round(ec.width * 0.075) + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ーー 伝票ここまで ーー', ec.width / 2, ec.height / 2);
-        pages.push({ d: ec.toDataURL('image/jpeg', 0.85), h: wmm * ec.height / ec.width }); }
+      // 最後の伝票の下に「伝票ここまで（全N枚）」を書き足す（別の紙にすると枚数が増えて抜けやすいので、最後の紙にのせる）
+      if (lastC) { const ew = lastC.width, eh = Math.round(ew * 0.2); const ec = document.createElement('canvas'); ec.width = ew; ec.height = lastC.height + eh; const x = ec.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, ec.width, ec.height); x.drawImage(lastC, 0, 0); x.fillStyle = '#000'; x.font = 'bold ' + Math.round(ew * 0.07) + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ーー 伝票ここまで（全' + pages.length + '枚）ーー', ew / 2, lastC.height + eh / 2);
+        pages[pages.length - 1] = { d: ec.toDataURL('image/jpeg', 0.85), h: wmm * ec.height / ec.width }; }
       // プリンターは1回に2枚までしか確実に出ないので、2枚ずつに分けて順番に送る（残りは注文一覧に戻ったら自動で続きを送る）
       const jobs = []; for (let k = 0; k < pages.length; k += 2) jobs.push(pages.slice(k, k + 2));
       // 印刷に回した注文は、その場で提供済みにして画面から消す（戻ってきたときに残っていて二重に印刷しないように）
