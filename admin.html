@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261025-1520'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261026-1950'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -493,7 +493,18 @@
     return out;
   }
   // 何件かの伝票を1回でまとめて印刷する
-  function printSlips(list) {
+  function printSlips(list, force) {
+    // 同じ注文を2回印刷しない：このiPadで今日すでに印刷した注文、またはもう提供済みの注文は外す
+    // （まとめ印刷のすぐあとに、まだ画面に残っていたカードの「オーダー印刷」を押したときなど）
+    if (!force) {
+      const sp = getSlipped_(); const dn = new Set(((lastD && lastD.done) || []).map(x => String(x.no)));
+      const dup = list.filter(o => sp[o.no] || dn.has(String(o.no)));
+      if (dup.length) {
+        const rest = list.filter(o => dup.indexOf(o) < 0);
+        if (rest.length) list = rest;
+        else if (!confirm('No.' + dup.map(o => o.no).join('・') + ' の伝票は、もう印刷しています。\nもう一度印刷しますか？')) { dup.forEach(o => hiding.add(o.no)); try { show(lastD); } catch (e) {} load(); return; }
+      }
+    }
     try {
       const wmm = 48; const pages = []; let lastW = 0; let lastC = null;
       mergeByTable(list).forEach(o => {
@@ -515,10 +526,13 @@
       try { if (jobs.length > 1) localStorage.setItem('kouju_printq', JSON.stringify({ at: Date.now(), nos: nos, jobs: jobs.slice(1), total: jobs.length })); else localStorage.removeItem('kouju_printq'); }
       catch (e) { alert('伝票が多すぎて、続きを覚えておけませんでした。最初の2枚だけ出ます。残りは1件ずつ「オーダー印刷」してください'); }
       setTimeout(askPrinted_, 8000);
-      markPrinted(nos);
+      markPrinted(nos); addSlipped_(nos);
       // 印刷アプリに切り替わっても届くように、ビーコンでも「提供済み」を送る
       nos.forEach(n => { try { navigator.sendBeacon(API, JSON.stringify({ action: 'status', key: KEY, no: n, status: '完了', src: 'beacon' })); } catch (e) {} });
-      nos.forEach(n => { hiding.add(n); forced.delete(n); }); load();
+      nos.forEach(n => { hiding.add(n); forced.delete(n); });
+      // 印刷した注文のカードは、サーバーの返事を待たずにすぐ画面から消す（残っていると、もう一度押して二重に印刷してしまうため）
+      try { if (lastD) show(lastD); } catch (e) {}
+      load();
       Promise.all(nos.map(n => call(null, { action: 'status', key: KEY, no: n, status: '完了', src: 'print' }).catch(() => {}))).then(() => { nos.forEach(n => hiding.delete(n)); load(); });
       sendJob_(jobs[0], nos, true);
     } catch (e) {
@@ -605,7 +619,12 @@
   function getPrinted() { try { return JSON.parse(localStorage.getItem(PKEY_()) || '{}'); } catch (e) { return {}; } }
   function savePrinted(p) { try { localStorage.setItem(PKEY_(), JSON.stringify(p)); } catch (e) {} }
   function markPrinted(nos) { const p = getPrinted(); nos.forEach(n => { p[n] = { at: Date.now(), sent: Date.now() }; }); savePrinted(p); }
-  function unmarkPrinted(no) { const p = getPrinted(); delete p[no]; savePrinted(p); }
+  function unmarkPrinted(no) { const p = getPrinted(); delete p[no]; savePrinted(p); const s = getSlipped_(); delete s[no]; try { localStorage.setItem(SLIPKEY_(), JSON.stringify(s)); } catch (e) {} }
+  // 今日このiPadで伝票を印刷した注文番号（提供済みになっても消さない。二重印刷を防ぐため）
+  const SLIPKEY_ = () => 'kouju_slipped_' + new Date().toDateString();
+  function getSlipped_() { try { return JSON.parse(localStorage.getItem(SLIPKEY_()) || '{}'); } catch (e) { return {}; } }
+  function addSlipped_(nos) { const s = getSlipped_(); nos.forEach(n => { s[n] = Date.now(); });
+    try { Object.keys(localStorage).forEach(k => { if (k.indexOf('kouju_slipped_') === 0 && k !== SLIPKEY_()) localStorage.removeItem(k); }); localStorage.setItem(SLIPKEY_(), JSON.stringify(s)); } catch (e) {} }
   let lastD = null; const forced = new Map();
   // 新しい注文は「オーダー印刷」か「確認済」を押すまで、カードと画面全体を点滅させる（押した注文はこのiPadに今日中覚えておく）
   const ACKKEY_ = () => 'kouju_ack_' + new Date().toDateString();
@@ -782,7 +801,7 @@
     bx.querySelector('.pcs').textContent = s.list.map(o => 'No.' + o.no + '（テーブル ' + o.table + '）').join('、') + ' を印刷しました';
     const fin = () => { try { localStorage.removeItem('kouju_lastprint'); } catch (e) {} bx.remove(); };
     bx.querySelector('.pcok').onclick = fin;
-    bx.querySelector('.pcng').onclick = () => { fin(); printSlips(s.list); };
+    bx.querySelector('.pcng').onclick = () => { fin(); printSlips(s.list, true); };
     document.body.appendChild(bx);
   }
 
