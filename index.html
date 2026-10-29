@@ -783,17 +783,19 @@
       F.ppl = row(RS('ppl'), sel(['', ...nums(1, 12)])); F.ppl.options[0].textContent = '選んでください'; F.ppl.value = '';
       const hd = (t, sub) => { const h = document.createElement('p'); h.style.cssText = 'margin:14px 0 0;font-weight:700;font-size:15px;border-top:1px solid #ddd;padding-top:10px'; h.textContent = t; if (sub) { const sp = document.createElement('span'); sp.style.cssText = 'display:block;font-weight:400;font-size:13px;color:#7a5a2a'; sp.textContent = sub; h.appendChild(sp); } f.appendChild(h); };
       hd('🦀 大きいサイズ（約220g）', '数量限定・水曜はお休み');
-      // 大きいサイズは入荷数が限られるので、目立つ「残りわずか」の案内を出す
+      // 今年の大きいサイズは全部ご予約でいっぱい。通常サイズはまだ受け付けていることを案内する（日にちごとの「売り切れ」はそのまま出す）
       { if (!document.getElementById('crabPulseCss')) { const st = document.createElement('style'); st.id = 'crabPulseCss'; st.textContent = '@keyframes crabPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}'; document.head.appendChild(st); }
-        const w = document.createElement('div'); w.style.cssText = 'background:#c0281c;color:#fff;border-radius:12px;padding:10px 12px;margin:6px 0 10px;text-align:center;box-shadow:0 2px 8px rgba(192,40,28,.35);animation:crabPulse 1.4s ease-in-out infinite';
-        const t1 = document.createElement('div'); t1.style.cssText = 'font-size:19px;font-weight:900;letter-spacing:.05em'; t1.textContent = '🔥 残りわずか！ 🔥';
-        const t2 = document.createElement('div'); t2.style.cssText = 'font-size:13px;font-weight:700;margin-top:2px'; t2.textContent = '入荷に合わせて、ご予約できる日にちが限られています';
+        const w = document.createElement('div'); w.style.cssText = 'background:#c0281c;color:#fff;border-radius:12px;padding:10px 12px;margin:6px 0 10px;text-align:center;box-shadow:0 2px 8px rgba(192,40,28,.35)';
+        const t1 = document.createElement('div'); t1.style.cssText = 'font-size:19px;font-weight:900;letter-spacing:.05em'; t1.textContent = '今年の大きいサイズは、ご予約でいっぱいになりました';
+        const t2 = document.createElement('div'); t2.style.cssText = 'font-size:13px;font-weight:700;margin-top:2px'; t2.textContent = 'ありがとうございます。通常サイズは、まだご予約いただけます（下からお選びください）';
         const t3 = document.createElement('div'); t3.style.cssText = 'background:#fff7d6;color:#7a3a00;border-radius:8px;margin-top:8px;padding:6px 8px;font-size:15px;font-weight:800;line-height:1.6';
         // 初めて開いた人はメニューの読み込みが後から終わるので、読み込めたら残り数を出し直す
         const fill = () => { t3.textContent = ''; CRAB_BATCH.forEach(bt => { const l = document.createElement('div'); l.textContent = '📅 ' + bt[2] + '　' + (menu.length ? crabLeftTxt(bt) : '確認中…'); t3.appendChild(l); }); };
         fill(); if (!menu.length) { let n = 0; const iv = setInterval(() => { if (menu.length || ++n > 40) { clearInterval(iv); fill(); } }, 500); }
         w.append(t1, t2, t3); f.appendChild(w); }
       F.male = row('オス 220g　¥4,800', sel(nums(0, 20))); F.female = row('メス 220g　¥5,400', sel(nums(0, 20)));
+      // 大きいサイズは売り切れなので、数は選べないようにして「売り切れ」と出す
+      [F.male, F.female].forEach(s => { s.innerHTML = ''; const o = document.createElement('option'); o.value = '0'; o.textContent = '売り切れ'; s.appendChild(o); s.value = '0'; s.disabled = true; });
       hd('🦀 通常サイズ', '10/15〜12/25（水曜定休・11/16〜17は臨時休業）');
       F.nor = CRAB_NOR.map(([k, pr]) => row(k.replace(/(\d+g)/, ' $1') + '　¥' + pr.toLocaleString(), sel(nums(0, 20))));
       const ctot = document.createElement('p'); ctot.style.cssText = 'font-weight:700;font-size:17px;text-align:right;margin:8px 0 0'; f.appendChild(ctot);
