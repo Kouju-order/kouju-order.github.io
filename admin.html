@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261026-1950'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261030-2100'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -314,15 +314,22 @@
   function sumLines(arr) {
     const s = arr.filter(Boolean).join('\n');
     if (!s) return arr[0];
-    const ord = [], q = {};
+    // 「＋」で始まる行（麺のトッピング・グラスなど）は、すぐ上の品とひとまとまりで数える
+    // （別の麺に付けたトッピングを1つにまとめてしまわないように）
+    const qn = raw => { const m = raw.match(/^(.*?)\s×\s(\d+)$/); return m ? [m[1], Number(m[2]), true] : [raw, 0, false]; };
+    const groups = [];
     s.split('\n').forEach(raw => {
       if (!raw.trim()) return;
-      const m = raw.match(/^(.*?)\s×\s(\d+)$/);
-      const k = m ? m[1] : raw;
-      if (!(k in q)) { ord.push(k); q[k] = 0; }
-      q[k] += m ? Number(m[2]) : 0;
+      if (/^\s*＋/.test(raw) && groups.length) groups[groups.length - 1].subs.push(raw); else groups.push({ head: raw, subs: [] });
     });
-    return ord.map(k => q[k] ? k + ' × ' + q[k] : k).join('\n');
+    const ord = [], acc = {};
+    groups.forEach(g => {
+      const [hn, hq] = qn(g.head); const subs = g.subs.map(qn);
+      const k = hn + '\u0001' + subs.map(x => x[0]).join('\u0002');
+      if (!(k in acc)) { ord.push(k); acc[k] = { hn, hq: 0, subs: subs.map(x => [x[0], 0, x[2]]) }; }
+      acc[k].hq += hq; subs.forEach((x, i) => { acc[k].subs[i][1] += x[1]; });
+    });
+    return ord.map(k => { const g = acc[k]; return [g.hq ? g.hn + ' × ' + g.hq : g.hn].concat(g.subs.map(([n, c, has]) => has && c ? n + ' × ' + c : n)).join('\n'); }).join('\n');
   }
   function mergeByTable(list) {
     const out = [], map = {};

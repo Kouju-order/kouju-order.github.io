@@ -253,6 +253,14 @@
   let menu = [];
   let rid = null;
   const cart = {};
+  // ===== 麺のトッピング（ワンタン追加・大盛りなど）は、その麺の下で選ぶ（伝票で、どの麺の分かがわかるように） =====
+  // addon[麺の名前][トッピングの名前] = 数。トッピングだけの行はメニューに出さない
+  const addon = {};
+  const ADDON_ = m => /^【麺に追加】/.test(m.name);
+  const ADDON_PARENT_ = m => !/^【/.test(m.name) && ['麺類', '焼きそば', 'ランチ', 'ランチ サイド', '黒板メニュー'].includes(m.cat) && /麺|ラーメン|焼きそば|焼きソバ/.test(m.name);
+  const addonsOf_ = () => menu.filter(m => ADDON_(m) && !SOLD_(m.name));
+  const fixAddon_ = p => { const a = addon[p]; if (!a) return; const max = cart[p] || 0; Object.keys(a).forEach(k => { a[k] = Math.min(a[k], max); if (!a[k]) delete a[k]; }); if (!Object.keys(a).length) delete addon[p]; };
+  const ADN_ = name => N(name).replace(/^【麺に追加】\s*/, '').replace(/^\[[^\]]*\]\s*/, '').replace(/^（[^）]*）\s*/, '');
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
 
@@ -272,6 +280,8 @@
     return 'en';
   }
   let lang = detectLang();
+  // 麺の大盛り・ワンタン追加は、麺を選ぶとその下にボタンが出る（以前は麺類のいちばん下にあった）
+  I.ui.noodleBig = { ja: '🍜 大盛り（+¥230）・ワンタン追加・辛み増しは、麺を選ぶとその麺のすぐ下にボタンが出ます。必要な方だけ押してください。', en: '🍜 Large portion (+¥230), extra wontons and extra spicy: after you add a noodle dish, buttons appear right under it. Tap only if you want them.', zhs: '🍜 加大（+230日元）、加馄饨、加辣：选好面之后，按钮会出现在那碗面的下面。需要时再点。', zht: '🍜 加大（+230日圓）、加餛飩、加辣：選好麵之後，按鈕會出現在那碗麵的下面。需要時再點。' };
   const T = (k, v) => {
     const e = I.ui[k];
     let s = e ? (e[lang] !== undefined ? e[lang] : e.ja) : k;
@@ -524,7 +534,7 @@
       if (CATNOTE[cat] && cat !== '健康ドリンク') { const p = document.createElement('p'); p.className = 'deal'; p.textContent = T(CATNOTE[cat]); wrap.appendChild(p); }
       if (cat === 'テイクアウト 冷凍') { const im = document.createElement('img'); im.src = 'c_sets.webp?v=1'; im.alt = T('frozenSets'); im.loading = 'lazy'; im.style.cssText = 'display:block;width:100%;max-width:640px;margin:8px auto;border-radius:8px'; wrap.appendChild(im); const dt = document.createElement('details'); dt.style.cssText = 'margin:6px 0 10px;font-size:13px;background:#fff8ee;border:1px solid #ecd9bd;border-radius:8px;padding:8px 10px'; const sm = document.createElement('summary'); sm.textContent = '🍳 ' + T('frozenHowT'); sm.style.cssText = 'font-weight:700;cursor:pointer'; dt.appendChild(sm); const pr = document.createElement('div'); pr.style.cssText = 'white-space:pre-line;margin-top:6px;line-height:1.6'; pr.textContent = T('frozenHow'); dt.appendChild(pr); wrap.appendChild(dt); }
       let toNote = false, curSub = null;
-      mm.filter(m => m.cat === cat).forEach(m => {
+      mm.filter(m => m.cat === cat && !ADDON_(m)).forEach(m => {
         if (cat === 'テイクアウト 冷凍') { const g = FZG.find(x => x[0].test(m.name)); if (g && g[1].ja !== curSub) { curSub = g[1].ja; const h = document.createElement('div'); h.textContent = g[1][lang] || g[1].ja; h.style.cssText = 'display:block;margin:16px 0 4px;padding:4px 12px;border-radius:5px;color:#fff;font-weight:700;font-size:15px;background:#b5262b'; wrap.appendChild(h); } }
         if (cat === '焼きそば' && /刀削麺/.test(m.name) && curSub !== 'tosho') { curSub = 'tosho'; const h = document.createElement('h2'); h.textContent = ({ en: 'Stir-fried Knife-cut Noodles', zhs: '炒刀削面', zht: '炒刀削麵' })[lang] || '焼き刀削麺'; const im = document.createElement('img'); im.src = 'i_tosho.webp?v=1'; im.alt = ''; im.loading = 'lazy'; im.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:10px'; h.prepend(im); wrap.appendChild(h); }
         if (cat === '麺類') { const sb = nsubOf(m); if (sb !== curSub) { curSub = sb; const L = NSUBL[sb]; if (L) { const h = document.createElement('div'); h.textContent = L[({ en: 1, zhs: 2, zht: 3 })[lang] || 0]; h.style.cssText = 'display:inline-block;margin:16px 0 4px;padding:3px 12px;border-radius:5px;color:#fff;font-weight:700;font-size:15px;background:' + L[4]; wrap.appendChild(h); } } }
@@ -549,11 +559,23 @@
         const pe = el.querySelector('.price'); pe.textContent = m.price > 0 ? yen(m.price) : T('askPrice');
         if (REGP[m.name] && m.price > 0 && REGP[m.name] > m.price) { pe.textContent = ''; const s = document.createElement('s'); s.textContent = yen(REGP[m.name]); const b = document.createElement('b'); b.className = 'dealp'; b.textContent = yen(m.price); pe.append(s, ' → ', b); }
         const q = el.querySelector('.q'), minus = el.querySelector('.minus');
-        const sync = () => { const n = cart[m.name] || 0; q.textContent = n; q.hidden = minus.hidden = n === 0; updateBar(); };
+        const sync = () => { const n = cart[m.name] || 0; q.textContent = n; q.hidden = minus.hidden = n === 0;
+          // 麺を1つ以上選んだら、その下に「トッピング追加（必要な方だけ）」のボタンを出す
+          if (ADDON_PARENT_(m)) { let box = el.querySelector('.addons');
+            if (!box) { box = document.createElement('div'); box.className = 'addons'; box.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center'; el.querySelector('.info').appendChild(box); }
+            box.innerHTML = ''; box.hidden = !n;
+            if (n) { const lb = document.createElement('span'); lb.style.cssText = 'font-size:12px;color:#7a5a2a;width:100%'; lb.textContent = ({ en: 'Add toppings to this noodle (optional)', zhs: '给这碗面加料（可选）', zht: '給這碗麵加料（可選）' })[lang] || 'この麺にトッピング（必要な方だけ）'; box.appendChild(lb);
+              addonsOf_().forEach(ad => { const c = (addon[m.name] || {})[ad.name] || 0; const b = document.createElement('button'); b.type = 'button';
+                b.style.cssText = 'padding:6px 10px;border-radius:999px;font-size:13px;line-height:1.2;border:1px solid ' + (c ? '#c0281c' : '#ccc') + ';background:' + (c ? '#fdecea' : '#fff') + ';color:#2a1a14;font-weight:' + (c ? '800' : '500');
+                b.textContent = (c ? '✓ ' : '＋') + ADN_(ad.name) + (c > 1 || (c && n > 1) ? ' ×' + c : '') + '　' + yen(ad.price);
+                // 押すたびに 1→2→…→麺の数→0（なし）と変わる
+                b.onclick = e => { e.stopPropagation(); const a = addon[m.name] = addon[m.name] || {}; a[ad.name] = c >= n ? 0 : c + 1; fixAddon_(m.name); all(); };
+                box.appendChild(b); }); } }
+          updateBar(); };
         (window._SY[m.name] = window._SY[m.name] || []).push(sync);
         const all = () => window._SY[m.name].forEach(fn => fn());
         el.querySelector('.plus').onclick = () => { cart[m.name] = Math.min(50, (cart[m.name] || 0) + 1); all(); };
-        minus.onclick = () => { cart[m.name] = Math.max(0, (cart[m.name] || 0) - 1); if (!cart[m.name]) delete cart[m.name]; all(); };
+        minus.onclick = () => { cart[m.name] = Math.max(0, (cart[m.name] || 0) - 1); if (!cart[m.name]) delete cart[m.name]; fixAddon_(m.name); all(); };
         sync();
         if (SOLD_(m.name)) { el.classList.add('sold'); el.style.opacity = '.55'; const st = el.querySelector('.step'); st.innerHTML = ''; const sb = document.createElement('span'); sb.textContent = ({ en: 'Sold out', zhs: '售罄', zht: '售罄' })[lang] || '売り切れ'; sb.style.cssText = 'display:inline-block;padding:6px 12px;border-radius:8px;background:#555;color:#fff;font-weight:800;font-size:14px;white-space:nowrap'; st.appendChild(sb); if (cart[m.name]) { delete cart[m.name]; updateBar(); } }
         wrap.appendChild(el);
@@ -606,10 +628,14 @@
   }, { passive: true });
 
   function cartItems() {
-    return Object.keys(cart).map(name => {
+    const out = [];
+    Object.keys(cart).forEach(name => {
       const m = menu.find(x => x.name === name);
-      return { name, qty: cart[name], price: m ? m.price : 0 };
+      out.push({ name, qty: cart[name], price: m ? m.price : 0 });
+      // その麺のトッピングは、麺のすぐ後ろに入れる（伝票でその麺の下に出る）
+      const a = addon[name]; if (a) Object.keys(a).forEach(k => { if (!(a[k] > 0)) return; const am = menu.find(x => x.name === k); out.push({ name: k, qty: a[k], price: am ? am.price : 0, sub: true }); });
     });
+    return out;
   }
 
   function updateBar() {
@@ -628,8 +654,8 @@
     cartItems().forEach(i => {
       total += i.qty * i.price;
       const r = document.createElement('div'); r.className = 'row';
-      const a = document.createElement('span'); a.textContent = `${N(i.name)} × ${i.qty}`;
-      if (N(i.name) !== i.name) { const j = document.createElement('span'); j.className = 'ja'; j.lang = 'ja'; j.textContent = i.name; a.appendChild(j); }
+      const a = document.createElement('span'); a.textContent = i.sub ? '　└ ＋' + ADN_(i.name) + ' × ' + i.qty : `${N(i.name)} × ${i.qty}`;
+      if (!i.sub && N(i.name) !== i.name) { const j = document.createElement('span'); j.className = 'ja'; j.lang = 'ja'; j.textContent = i.name; a.appendChild(j); }
       const b = document.createElement('span'); b.textContent = i.price > 0 ? yen(i.qty * i.price) : '—';
       r.append(a, b); list.appendChild(r);
     });
@@ -658,7 +684,7 @@
       .then(r => {
         rid = null;
         saveHist(r.no, sent); glassQty = null;
-        Object.keys(cart).forEach(k => delete cart[k]);
+        Object.keys(cart).forEach(k => delete cart[k]); Object.keys(addon).forEach(k => delete addon[k]);
         renderMenu();
         $('confirm').hidden = true;
         $('orderNo').textContent = T('orderNo', { n: r.no });
