@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261031-1430'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261031-1715'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -239,7 +239,8 @@
     lines.push(['—', 14, false]);
     let prevBox_ = false;
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
-    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
+    // 「(大)」（チャーハン(大)・ライス(大)など）は、大きい字で白抜きにして見落とさないようにする
+    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|\(大\)|（大）|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
     (o._txt != null ? o._txt : part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
       // 「＋雲呑3」など麺への追加と、セットの中身（□）は、前の料理にくっつけて1皿に見せる
@@ -259,12 +260,13 @@
       const add = (t, hl, w) => { const r = rows[rows.length - 1]; const last = r[r.length - 1]; if (!hl && last && !last.hl) last.t += t; else r.push({ t, hl }); wsum += w; };
       const nl = () => { rows.push([]); wsum = 0; };
       segs.forEach(sg => {
-        if (sg.hl) { const w = g.measureText(sg.t).width + 24; if (wsum + w > lim() && rows[rows.length - 1].length) nl(); add(sg.t, true, w); }
+        if (sg.hl) { const big = /大\)|大）/.test(sg.t); if (big) g.font = font(px + 14, true); const w = g.measureText(sg.t).width + (big ? 40 : 24); if (big) g.font = font(px, true); if (wsum + w > lim() && rows[rows.length - 1].length) nl(); add(sg.t, true, w); }
         else for (const ch of sg.t) { const w = g.measureText(ch).width; if (wsum + w > lim()) nl(); add(ch, false, w); }
       });
       if (q) { g.font = font(q >= 2 ? px + 4 : px, true); const qw = g.measureText('×' + q).width + (q >= 2 ? 24 : 10); g.font = font(px, true); if (wsum + qw > lim()) nl(); }
       // 同じ商品の折り返しは行間を詰め、商品と商品の間は広く空ける
-      rows.forEach((r, i) => lines.push(['@', px, true, i ? ind : 0, i === rows.length - 1 ? q : 0, r, i < rows.length - 1 ? 1.08 : (part === 'bill' ? 1.25 : 1.35)]));
+      // 大きい「(大)」がある行は、上下に少し余白を足して前後の行と重ならないようにする
+      rows.forEach((r, i) => { const big = r.some(s => s.hl && /大\)|大）/.test(s.t)); if (big) lines.push(['', 10, false]); lines.push(['@', px, true, i ? ind : 0, i === rows.length - 1 ? q : 0, r, (i < rows.length - 1 ? 1.08 : (part === 'bill' ? 1.25 : 1.35)) + (big ? 12 / px : 0)]); });
       lines.push(['', part === 'bill' ? 2 : 34, false]);
     });
     // 上海蟹の予約は、名前・日時・数を見やすく並べ、匹数は白抜きにする（グラム数と見間違えないように）
@@ -296,7 +298,7 @@
       if (t === '—') { g.fillRect(pad, y + px / 2, W - pad * 2, 2); }
       else {
         let x = pad + (ind || 0);
-        if (segs) segs.forEach(sg => { if (sg.hl) x += box(sg.t, x + 5, y, px) + 10; else { g.fillText(sg.t, x, y); x += g.measureText(sg.t).width; } });
+        if (segs) segs.forEach(sg => { if (sg.hl) { const big = /大\)|大）/.test(sg.t); if (big) { g.font = font(px + 14, bold); x += box(sg.t, x + 5, y - 7, px + 14) + 14; g.font = font(px, bold); } else x += box(sg.t, x + 5, y, px) + 10; } else { g.fillText(sg.t, x, y); x += g.measureText(sg.t).width; } });
         else { g.fillText(t, x, y); x += g.measureText(t).width; }
         if (q) {
           const qx = x + 10;
@@ -709,7 +711,7 @@
         if (!raw.trim()) return;
         const m = raw.match(/^(.*?)\s×\s(\d+)$/);
         const row = document.createElement('div'); row.className = 'it';
-        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
+        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|\(大\)|（大）|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
         row.appendChild(document.createTextNode('・'));
         (m ? m[1] : raw).trim().replace(/^持\)/, '持 ').split(HL).forEach((t, i) => {
           if (!t) return;
