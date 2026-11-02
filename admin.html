@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261031-1715'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261102-1240'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -240,7 +240,8 @@
     let prevBox_ = false;
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
     // 「(大)」（チャーハン(大)・ライス(大)など）は、大きい字で白抜きにして見落とさないようにする
-    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|\(大\)|（大）|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
+    // 「焼きそば」（A-2 サンマー焼きそば）も白抜きにして、A-1 サンマー麺と取り違えないようにする
+    const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|\(大\)|（大）|焼きそば|焼そば|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
     (o._txt != null ? o._txt : part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
       // 「＋雲呑3」など麺への追加と、セットの中身（□）は、前の料理にくっつけて1皿に見せる
@@ -711,7 +712,7 @@
         if (!raw.trim()) return;
         const m = raw.match(/^(.*?)\s×\s(\d+)$/);
         const row = document.createElement('div'); row.className = 'it';
-        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|\(大\)|（大）|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
+        const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|\(大\)|（大）|焼きそば|焼そば|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
         row.appendChild(document.createTextNode('・'));
         (m ? m[1] : raw).trim().replace(/^持\)/, '持 ').split(HL).forEach((t, i) => {
           if (!t) return;
