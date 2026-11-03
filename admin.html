@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261102-1240'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261103-1310'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -526,6 +526,8 @@
   }
   // 何件かの伝票を1回でまとめて印刷する
   function printSlips(list, force) {
+    // もう一度印刷するときは、何枚目を出すか選べる（3枚目だけ出し直したいときなど）
+    let pick = !!force;
     // 同じ注文を2回印刷しない：このiPadで今日すでに印刷した注文、またはもう提供済みの注文は外す
     // （まとめ印刷のすぐあとに、まだ画面に残っていたカードの「オーダー印刷」を押したときなど）
     if (!force) {
@@ -534,7 +536,7 @@
       if (dup.length) {
         const rest = list.filter(o => dup.indexOf(o) < 0);
         if (rest.length) list = rest;
-        else if (!confirm('No.' + dup.map(o => o.no).join('・') + ' の伝票は、もう印刷しています。\nもう一度印刷しますか？')) { dup.forEach(o => hiding.add(o.no)); try { show(lastD); } catch (e) {} load(); return; }
+        else { if (!confirm('No.' + dup.map(o => o.no).join('・') + ' の伝票は、もう印刷しています。\nもう一度印刷しますか？')) { dup.forEach(o => hiding.add(o.no)); try { show(lastD); } catch (e) {} load(); return; } pick = true; }
       }
     }
     try {
@@ -550,14 +552,23 @@
       // 最後の伝票の下に「伝票ここまで（全N枚）」を書き足す（別の紙にすると枚数が増えて抜けやすいので、最後の紙にのせる）
       if (lastC) { const ew = lastC.width, eh = Math.round(ew * 0.2); const ec = document.createElement('canvas'); ec.width = ew; ec.height = lastC.height + eh; const x = ec.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, ec.width, ec.height); x.drawImage(lastC, 0, 0); x.fillStyle = '#000'; x.font = 'bold ' + Math.round(ew * 0.07) + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('ーー 伝票ここまで（全' + pages.length + '枚）ーー', ew / 2, lastC.height + eh / 2);
         pages[pages.length - 1] = { d: ec.toDataURL('image/jpeg', 0.85), h: wmm * ec.height / ec.width }; }
+      let only = null;
+      if (pick && pages.length > 1) {
+        const a = prompt('何枚目を印刷しますか？（全' + pages.length + '枚）\n例：3だけなら「3」、2枚目と3枚目なら「2,3」\n全部なら空のままOK', '');
+        if (a === null) return;
+        const ns = String(a).replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0)).match(/\d+/g);
+        if (ns) { only = [...new Set(ns.map(Number))].filter(n => n >= 1 && n <= pages.length).sort((x, y) => x - y); if (!only.length) { alert('その番号の伝票はありません（全' + pages.length + '枚）'); return; } }
+      }
+      if (only) { const sel = only.map(n => pages[n - 1]); pages.length = 0; sel.forEach(pg => pages.push(pg)); }
       // プリンターは1回に2枚までしか確実に出ないので、2枚ずつに分けて順番に送る（残りは注文一覧に戻ったら自動で続きを送る）
       const jobs = []; for (let k = 0; k < pages.length; k += 2) jobs.push(pages.slice(k, k + 2));
       // 印刷に回した注文は、その場で提供済みにして画面から消す（戻ってきたときに残っていて二重に印刷しないように）
       const nos = list.map(o => o.no);
-      try { localStorage.setItem('kouju_lastprint', JSON.stringify({ at: Date.now(), list: list })); } catch (e) {}
+      // 選んだ伝票だけ出すときは「伝票ここまで出ましたか？」は聞かない
+      if (!only) try { localStorage.setItem('kouju_lastprint', JSON.stringify({ at: Date.now(), list: list })); } catch (e) {}
       try { if (jobs.length > 1) localStorage.setItem('kouju_printq', JSON.stringify({ at: Date.now(), nos: nos, jobs: jobs.slice(1), total: jobs.length })); else localStorage.removeItem('kouju_printq'); }
       catch (e) { alert('伝票が多すぎて、続きを覚えておけませんでした。最初の2枚だけ出ます。残りは1件ずつ「オーダー印刷」してください'); }
-      setTimeout(askPrinted_, 8000);
+      if (!only) setTimeout(askPrinted_, 8000);
       markPrinted(nos); addSlipped_(nos);
       // 印刷アプリに切り替わっても届くように、ビーコンでも「提供済み」を送る
       nos.forEach(n => { try { navigator.sendBeacon(API, JSON.stringify({ action: 'status', key: KEY, no: n, status: '完了', src: 'beacon' })); } catch (e) {} });
