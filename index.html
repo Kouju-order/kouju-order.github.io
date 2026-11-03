@@ -850,7 +850,8 @@
       const n = F.name.value.trim(), tel = F.tel.value.replace(/[^0-9０-９+\-－]/g, ''), d = kind === 'crab' ? F.date.value : '2026-12-31';
       if (!n || tel.replace(/[^0-9０-９]/g, '').length < 10 || !d) { $('rsvMsg').textContent = RS('need'); return; }
       const dt = new Date(d + 'T12:00:00'); if (dt.getDay() === 3) { $('rsvMsg').textContent = RS('wed'); return; }
-      if (KYUGYO.includes(d)) { $('rsvMsg').textContent = 'この日は臨時休業です。別の日をお選びください。'; return; }
+      // おせちは12/31（お店はお休みだが、おせちの受け渡し・お届けの日）なので、臨時休業のチェックは上海蟹だけ
+      if (kind === 'crab' && KYUGYO.includes(d)) { $('rsvMsg').textContent = 'この日は臨時休業です。別の日をお選びください。'; return; }
       if (kind !== 'crab' && DELI && !F.addr.value.trim()) { $('rsvMsg').textContent = RS('dNeed'); return; }
       if (kind === 'crab' && !F.ppl.value) { $('rsvMsg').textContent = 'ご来店の人数を選んでください。'; return; }
       if (kind === 'crab') {
