@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261103-1310'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261105-2140'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -554,9 +554,11 @@
         pages[pages.length - 1] = { d: ec.toDataURL('image/jpeg', 0.85), h: wmm * ec.height / ec.width }; }
       let only = null;
       if (pick && pages.length > 1) {
-        const a = prompt('何枚目を印刷しますか？（全' + pages.length + '枚）\n例：3だけなら「3」、2枚目と3枚目なら「2,3」\n全部なら空のままOK', '');
+        const a = prompt('何枚目を印刷しますか？（全' + pages.length + '枚）\n例：3枚目だけなら「3」、2枚目と3枚目なら「23」\n全部なら空のままOK', '');
         if (a === null) return;
-        const ns = String(a).replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0)).match(/\d+/g);
+        const a2 = String(a).replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+        // 数字だけで「23」と打ったら2枚目と3枚目（テンキーでカンマが打ちにくいため）。9枚以下のときは1けたずつ読む
+        const ns = pages.length <= 9 ? a2.match(/\d/g) : a2.match(/\d+/g);
         if (ns) { only = [...new Set(ns.map(Number))].filter(n => n >= 1 && n <= pages.length).sort((x, y) => x - y); if (!only.length) { alert('その番号の伝票はありません（全' + pages.length + '枚）'); return; } }
       }
       if (only) { const sel = only.map(n => pages[n - 1]); pages.length = 0; sel.forEach(pg => pages.push(pg)); }
@@ -596,18 +598,33 @@
       + '&Data=' + encodeURIComponent(b64);
   }
   // 印刷の続き：注文一覧に戻ってきたら、残りの伝票（2枚ずつ）を自動で送る
-  function contPrint_() {
+  function contPrint_(manual) {
     let q = null; try { q = JSON.parse(localStorage.getItem('kouju_printq') || 'null'); } catch (e) {}
     if (!q || !q.jobs || !q.jobs.length) return false;
     if (Date.now() - q.at > 10 * 60 * 1000) { try { localStorage.removeItem('kouju_printq'); } catch (e) {} return false; }
     if (document.hidden) return true;
     // 直前に送ったばかりなら送らない（戻ったときに2か所から同時に動いて、1回分が抜けるのを防ぐ）
-    if (Date.now() - (window.__jobAt || 0) < 6000) return true;
+    // ただし、あとでもう一度試す（以前はここで止まったままになり、3枚目が出ないことがあった）
+    const since = Date.now() - (window.__jobAt || 0);
+    if (!manual && since < 6000) { clearTimeout(window.__cpT); window.__cpT = setTimeout(askPrinted_, 6500 - since); return true; }
     const job = q.jobs.shift();
     try { if (q.jobs.length) localStorage.setItem('kouju_printq', JSON.stringify(q)); else localStorage.removeItem('kouju_printq'); } catch (e) {}
     try { sendJob_(job, q.nos, false); } catch (e) { alert('続きの伝票を送れませんでした：' + e.message); }
     return true;
   }
+  // 続きの伝票が残っているあいだは、画面の上に大きなボタンを出す（自動で送れなかったときに押せば出る）
+  function restBar_() {
+    let q = null; try { q = JSON.parse(localStorage.getItem('kouju_printq') || 'null'); } catch (e) {}
+    let b = document.getElementById('restbar');
+    const n = q && q.jobs && Date.now() - q.at <= 10 * 60 * 1000 ? q.jobs.reduce((a, j) => a + j.length, 0) : 0;
+    if (!n || document.hidden) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('button'); b.id = 'restbar'; b.type = 'button';
+      b.style.cssText = 'position:fixed;left:12px;right:12px;top:12px;z-index:10003;background:#e65c00;color:#fff;font-size:24px;font-weight:800;padding:18px;border:0;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)';
+      b.onclick = () => { b.remove(); contPrint_(true); };
+      document.body.appendChild(b); }
+    b.textContent = '🖨 残りの伝票 ' + n + '枚を印刷する（ここを押す）';
+  }
+  setInterval(restBar_, 2000);
   function printBill(t, r) {
     try {
       const run = r.run.slice().sort((a, b) => atOf(a) - atOf(b));
