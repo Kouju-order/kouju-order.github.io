@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261105-2140'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261106-2140'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -244,6 +244,8 @@
     const HL = /(ストレート|水割り|ロック|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|燗|常温|濃いめ|大盛り|大盛|\(大\)|（大）|焼きそば|焼そば|辛み増し|ボトル|赤(?=麻婆)|緑(?=麻婆)|サワー|ウーロンハイ|緑茶ハイ|持(?= ))/;
     (o._txt != null ? o._txt : part === 'drink' ? o.slipDrink : part === 'food' ? o.slipFood : (o.slip || shortItems(o.items))).split('\n').forEach(raw => {
       if (!raw.trim()) return;
+      // 「★餃子は別伝票…」のお知らせは、料理の半分の大きさで書く（料理と見間違えないように・紙を減らす）
+      if (/^\s*★/.test(raw)) { wrap(raw.trim().replace('：', '：\n'), part === 'bill' ? 14 : 21, true); lines.push(['', 10, false]); return; }
       // 「＋雲呑3」など麺への追加と、セットの中身（□）は、前の料理にくっつけて1皿に見せる
       const isAdd = /^\s*[＋□]/.test(raw);
       if (isAdd && lines.length && lines[lines.length - 1][0] === '' && lines[lines.length - 1][1] === 34) {
