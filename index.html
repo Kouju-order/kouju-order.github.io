@@ -260,7 +260,9 @@
   const ADDON_PARENT_ = m => !/^【/.test(m.name) && ['麺類', '焼きそば', 'ランチ', 'ランチ サイド', '黒板メニュー'].includes(m.cat) && /麺|ラーメン|焼きそば|焼きソバ/.test(m.name);
   // 焼きそば・刀削麺は大盛りにできないので、「麺大盛り」のボタンを出さない
   const NOBIG_ = p => !!p && (p.cat === '焼きそば' || /焼きそば|焼きソバ|刀削麺/.test(p.name));
-  const addonsOf_ = p => menu.filter(m => ADDON_(m) && !SOLD_(m.name) && !(NOBIG_(p) && /大盛/.test(m.name)));
+  // 「ランチ限定」の追加（無料小ライスなど）は、ランチの時間（メニューにランチが出ているとき）の店内注文だけ出す
+  const LUNCHONLY_OK_ = m => !/ランチ限定/.test(m.name) || (!TAKEOUT && menu.some(x => x.cat === 'ランチ'));
+  const addonsOf_ = p => menu.filter(m => ADDON_(m) && !SOLD_(m.name) && LUNCHONLY_OK_(m) && !(NOBIG_(p) && /大盛/.test(m.name)));
   const fixAddon_ = p => { const a = addon[p]; if (!a) return; const max = cart[p] || 0; Object.keys(a).forEach(k => { a[k] = Math.min(a[k], max); if (!a[k]) delete a[k]; }); if (!Object.keys(a).length) delete addon[p]; };
   const ADN_ = name => N(name).replace(/^【麺に追加】\s*/, '').replace(/^\[[^\]]*\]\s*/, '').replace(/^（[^）]*）\s*/, '');
   const $ = id => document.getElementById(id);
