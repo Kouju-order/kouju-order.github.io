@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261106-2140'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261109-1500'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -178,6 +178,19 @@
   setInterval(sndBar_, 3000);
   // 印刷アプリなどから戻ってきたら、すぐ最新の一覧にする
   document.addEventListener('visibilitychange', () => { if (!document.hidden && $('start').hidden) { load(); setTimeout(askPrinted_, 800); } });
+  // 印刷アプリが「印刷できなかった」で戻ってきたとき：その回の伝票を「残りの伝票」の先頭に戻し、赤いボタンで押すだけで出し直せるようにする（自動では送らない）
+  if (new URLSearchParams(location.search).get('pfail')) {
+    try {
+      const lj = JSON.parse(localStorage.getItem('kouju_lastjob') || 'null');
+      if (lj && lj.job && Date.now() - lj.at < 10 * 60 * 1000) {
+        let q = null; try { q = JSON.parse(localStorage.getItem('kouju_printq') || 'null'); } catch (e) {}
+        if (!q || !q.jobs || Date.now() - q.at > 10 * 60 * 1000) q = { nos: lj.nos, jobs: [], total: 1 };
+        q.jobs.unshift(lj.job); q.at = Date.now(); q.fail = true;
+        localStorage.setItem('kouju_printq', JSON.stringify(q)); localStorage.removeItem('kouju_lastjob');
+      }
+    } catch (e) {}
+    history.replaceState(null, '', location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now());
+  }
   if (new URLSearchParams(location.search).get('resume')) {
     // 印刷できたら、その注文を提供済みにしてから一覧を表示する
     const pn = new URLSearchParams(location.search).get('printed');
@@ -589,6 +602,8 @@
   // 印刷アプリに1回分（2枚まで）を送る
   function sendJob_(job, nos, first) {
     window.__jobAt = Date.now();
+    // 送った伝票を覚えておく（出なかったときに「もう一度」で同じものを出し直すため）
+    try { localStorage.setItem('kouju_lastjob', JSON.stringify({ at: Date.now(), job: job, nos: nos })); } catch (e) {}
     const wmm = 48; let pdf = null;
     job.forEach(pg => { const ori = pg.h >= wmm ? 'portrait' : 'landscape'; if (!pdf) pdf = new window.jspdf.jsPDF({ unit: 'mm', format: [wmm, pg.h], orientation: ori }); else pdf.addPage([wmm, pg.h], ori); pdf.addImage(pg.d, 'JPEG', 0, 0, wmm, pg.h); });
     const b64 = pdf.output('datauristring').split(',')[1];
@@ -596,7 +611,7 @@
     const STANDALONE = window.navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     const back = location.origin + location.pathname + '?key=' + encodeURIComponent(KEY) + '&resume=1&v=' + Date.now();
     location.href = 'siiprintagent://1.0/print?Format=pdf&PaperWidth=58&FitToWidth=yes&CutType=partial&BtKeepConnect=always&ErrorDialog=yes'
-      + (STANDALONE ? '' : '&CallbackSuccess=' + encodeURIComponent(back + (first ? '&printed=' + encodeURIComponent(nos.join(',')) : '')) + '&CallbackFail=' + encodeURIComponent(back))
+      + (STANDALONE ? '' : '&CallbackSuccess=' + encodeURIComponent(back + (first ? '&printed=' + encodeURIComponent(nos.join(',')) : '')) + '&CallbackFail=' + encodeURIComponent(back + '&pfail=1'))
       + '&Data=' + encodeURIComponent(b64);
   }
   // 印刷の続き：注文一覧に戻ってきたら、残りの伝票（2枚ずつ）を自動で送る
@@ -607,6 +622,8 @@
     if (document.hidden) return true;
     // 直前に送ったばかりなら送らない（戻ったときに2か所から同時に動いて、1回分が抜けるのを防ぐ）
     // ただし、あとでもう一度試す（以前はここで止まったままになり、3枚目が出ないことがあった）
+    if (q.fail && !manual) return true; // 印刷できなかった伝票は、赤いボタンを押したときだけ送る
+    delete q.fail;
     const since = Date.now() - (window.__jobAt || 0);
     if (!manual && since < 6000) { clearTimeout(window.__cpT); window.__cpT = setTimeout(askPrinted_, 6500 - since); return true; }
     const job = q.jobs.shift();
@@ -619,12 +636,23 @@
     let q = null; try { q = JSON.parse(localStorage.getItem('kouju_printq') || 'null'); } catch (e) {}
     let b = document.getElementById('restbar');
     const n = q && q.jobs && Date.now() - q.at <= 10 * 60 * 1000 ? q.jobs.reduce((a, j) => a + j.length, 0) : 0;
-    if (!n || document.hidden) { if (b) b.remove(); return; }
+    // 続きがないときも、送ってから3分間は「出なかったらもう一度」の小さいボタンを出す（1枚目から出なかったとき用）
+    let lj = null; if (!n) { try { lj = JSON.parse(localStorage.getItem('kouju_lastjob') || 'null'); } catch (e) {} if (lj && !(Date.now() - lj.at < 3 * 60 * 1000)) lj = null; }
+    if ((!n && !lj) || document.hidden || document.getElementById('pcbox')) { if (b) b.remove(); return; }
     if (!b) { b = document.createElement('button'); b.id = 'restbar'; b.type = 'button';
-      b.style.cssText = 'position:fixed;left:12px;right:12px;top:12px;z-index:10003;background:#e65c00;color:#fff;font-size:24px;font-weight:800;padding:18px;border:0;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)';
-      b.onclick = () => { b.remove(); contPrint_(true); };
+      b.onclick = () => {
+        b.remove();
+        if (b.dataset.k === 'again') { try { const l = JSON.parse(localStorage.getItem('kouju_lastjob') || 'null'); if (l && l.job) { localStorage.setItem('kouju_printq', JSON.stringify({ at: Date.now(), nos: l.nos, jobs: [l.job], total: 1 })); window.__jobAt = 0; } } catch (e) {} }
+        contPrint_(true);
+      };
       document.body.appendChild(b); }
-    b.textContent = '🖨 残りの伝票 ' + n + '枚を印刷する（ここを押す）';
+    const fail = !!(n && q.fail);
+    b.dataset.k = n ? 'rest' : 'again';
+    b.style.cssText = n
+      ? 'position:fixed;left:12px;right:12px;top:12px;z-index:10003;background:' + (fail ? '#c62828' : '#e65c00') + ';color:#fff;font-size:24px;font-weight:800;padding:18px;border:0;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)'
+      : 'position:fixed;right:12px;top:12px;z-index:10003;background:#555;color:#fff;font-size:17px;font-weight:700;padding:10px 14px;border:0;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:.92';
+    b.textContent = fail ? '⚠️ 印刷できなかった伝票があります（' + n + '枚）ここを押してもう一度'
+      : n ? '🖨 残りの伝票 ' + n + '枚を印刷する（ここを押す）' : '🖨 出なかったら：さっきの伝票をもう一度';
   }
   setInterval(restBar_, 2000);
   function printBill(t, r) {
