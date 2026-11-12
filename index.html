@@ -520,6 +520,7 @@
     if (!mm.length) { root.innerHTML = '<p class="center muted">' + T('empty') + '</p>'; return; }
     const cats = [];
     mm.forEach(m => { if (!cats.includes(m.cat)) cats.push(m.cat); });
+    { const ci = cats.indexOf('上海蟹（特別入荷）'); if (ci > 0) { cats.splice(ci, 1); cats.unshift('上海蟹（特別入荷）'); } } // 上海蟹の特別入荷はいちばん上に
     const usedGroups = [];
     let curGroup = null, wrap = null;
     cats.forEach(cat => {
