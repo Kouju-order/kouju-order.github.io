@@ -203,6 +203,7 @@
     <input id="tblInput" hidden inputmode="numeric" maxlength="10" placeholder="例：3" data-tp="tablePh">
     <div class="tblq"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button><button type="button">6</button><button type="button">7</button><button type="button">A</button><button type="button">B</button><button type="button">C</button><button type="button">D</button></div>
     <button class="btn" id="tblOk" hidden style="margin-top:12px" data-t="ok">決定</button>
+    <button class="btn sub" id="tblTo" type="button" hidden style="margin-top:10px">🥡 テイクアウト（お持ち帰り）の注文を入れる</button>
   </div>
 </div>
 
@@ -347,6 +348,8 @@
 
   function setTable(t) { table = t; $('tblLabel').textContent = T('table', { t }) + (STAFF ? '（タップで変更）' : ''); }
   if (STAFF) $('tblLabel').onclick = () => { $('tblInput').value = ''; $('askTable').hidden = false; };
+  // スタッフ入力からもテイクアウトの注文を入れられるように（電話・店頭の注文用。電話番号はなくてもよい）
+  if (STAFF) { $('tblTo').hidden = false; $('tblTo').onclick = () => { location.href = location.pathname + '?takeout=1&bystaff=1'; }; }
   applyLang();
   if (VIEW) {} else if (table) setTable(table); else $('askTable').hidden = false;
   $('tblOk').onclick = () => {
@@ -379,8 +382,9 @@
     })();
     $('toOk').onclick = () => {
       const n = $('toName').value.trim(), tm = $('toTime').value, tel = $('toTel').value.replace(/[^0-9０-９+\-－]/g, '');
-      if (!n || !tm || tel.replace(/[^0-9０-９]/g, '').length < 10) { $('toMsg').textContent = T('toNeed'); return; }
-      toTel = tel;
+      const byStaff = new URLSearchParams(location.search).get('bystaff') === '1';
+      if (!n || !tm || (!byStaff && tel.replace(/[^0-9０-９]/g, '').length < 10)) { $('toMsg').textContent = T('toNeed'); return; }
+      toTel = tel || 'なし';
       toInfo = n + '様 ' + (window.TODAY || '') + ' ' + tm; $('toMsg').textContent = '';
       $('tblLabel').textContent = T('toLabel', { t: toInfo });
       $('askTo').hidden = true;
