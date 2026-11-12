@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261109-1500'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261110-2200'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -449,8 +449,9 @@
     all.sort((a, b) => minsOf(a) - minsOf(b));
     const idx = all.map((x, i) => mine.has(String(x.no)) ? i : -1).filter(i => i >= 0);
     if (!idx.length) return null;
-    // 最初の注文から5時間までを同じお客様とみなす（5時間を過ぎた注文からは次のお客様）
-    const groups = []; all.forEach(x => { const g = groups[groups.length - 1]; if (g && minsOf(x) - g.start <= 300) g.list.push(x); else groups.push({ start: minsOf(x), list: [x] }); });
+    // 「会計済み」を押すまでは、その日の同じ席の注文を全部ひとつの会計にまとめる（時間で勝手に区切らない。夜12時に日付が変わると空になる）
+    // 押し忘れて前のお客様の分が混ざったときは、会計伝票を出すときの「前のお客様の分では？」の確認で分けられる
+    const groups = all.length ? [{ start: minsOf(all[0]), list: all }] : [];
     const grp = groups.find(g => g.list.some(x => mine.has(String(x.no))));
     const run = grp.list;
     if (run.length < (min || 2)) return null;
@@ -815,7 +816,7 @@
     { const tw = $('tables'); tw.innerHTML = ''; const latest = {};
       (lastD.pending || []).concat(lastD.done || []).forEach(x => { const t = String(x.table); if (NOMERGE(t) || t === '予約' || isCall(x)) return; if (!latest[t] || atOf(x) > atOf(latest[t])) latest[t] = x; });
       const nowM = minsOf({ at: Date.now() });
-      Object.keys(latest).sort().forEach(t => { const r = tableRun(latest[t], 1); if (!r || nowM - r.start > 300) return;
+      Object.keys(latest).sort().forEach(t => { const r = tableRun(latest[t], 1); if (!r) return; // 会計済みを押すまでは、その日のうちは一覧から消さない
         const ch = document.createElement('div'); ch.className = 'tchip';
         ch.innerHTML = '<b class="t"></b><span class="s"></span><span class="n"></span><button class="bill">🖨 会計伝票</button><button class="split">✂ 分ける</button><button class="paid">会計済み</button>';
         ch.querySelector('.t').textContent = t; ch.querySelector('.s').textContent = yen(r.sum); ch.querySelector('.n').textContent = '（' + r.n + '回分）';
