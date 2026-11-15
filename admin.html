@@ -108,6 +108,7 @@
   <h1>注文一覧</h1>
   <button id="rsvBtn" class="rsvBtn" type="button">📞 予約を入力</button>
   <button id="toBtn" class="rsvBtn" type="button" style="margin-left:8px">🛵 デリバリー・持帰を入力</button>
+  <button id="odBtn" class="rsvBtn" type="button" style="margin-left:8px">🧾 注文入力</button>
   <span id="status">読み込み中…</span>
 </header>
 <main>
@@ -144,7 +145,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261115-1910'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261115-1945'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -1066,6 +1067,8 @@
     const dlg = document.getElementById('rsvDlg'), F = document.getElementById('rsvF'), msg = document.getElementById('rsvMsg');
     // デリバリー（Uber Eats・出前館・ロケットナウ）・電話のテイクアウトを入れる画面を別のタブで開く（この注文一覧は開いたまま）
     document.getElementById('toBtn').onclick = () => { const w = window.open('index.html?takeout=1&bystaff=1', 'kouju_to'); if (!w) location.href = 'index.html?takeout=1&bystaff=1'; };
+    // お店の人がテーブルの注文を入れる画面（スタッフ用）も別のタブで開く
+    document.getElementById('odBtn').onclick = () => { const w = window.open('index.html?staff=1', 'kouju_staff'); if (!w) location.href = 'index.html?staff=1'; };
     document.getElementById('rsvBtn').onclick = () => {
       F.reset(); msg.textContent = '';
       F.date.value = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
