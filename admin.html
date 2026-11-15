@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261115-1200'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261115-1300'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -243,7 +243,9 @@
       });
     };
     if (part === 'bill') { wrap('■ お会計', 48, true); lines.push(['', 6, false]); }
-    lines.push(['@', 48, true, 0, 0, [{ t: 'テーブル', hl: false }, { t: String(o.table), hl: true }]]);
+    const dlv = dlvOf_(o);
+    if (dlv) { lines.push(['@', 48, true, 0, 0, [{ t: dlv.svc, hl: true }]]); lines.push(['', 8, false]); lines.push(['@', 56, true, 0, 0, [{ t: '#' + dlv.no, hl: false }]]); }
+    else lines.push(['@', 48, true, 0, 0, [{ t: 'テーブル', hl: false }, { t: String(o.table), hl: true }]]);
     lines.push(['', 6, false]);
     wrap('No.' + o.no + '　' + o.time, 20, false);
     if (part === 'drink') wrap('■ ドリンク', 34, true);
@@ -296,7 +298,8 @@
       lines.push(['', 6, false]);
       wrap('合計 ' + cm[7] + '（税込）', 26, false);
       if (cm[8]) wrap('ご要望：' + cm[8], 26, true);
-    } else if (o.note && part !== 'drink' && part !== 'bill') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
+    } else if (dlv) { if (dlv.rest && part !== 'drink') { lines.push(['', 8, false]); wrap(dlv.rest, 26, true); } }
+    else if (o.note && part !== 'drink' && part !== 'bill') { lines.push(['', 8, false]); wrap('備考：' + o.note, 26, true); }
     lines.push(['—', 14, false]);
     // 伝票が何枚かに分かれるときは、どの伝票にも「何枚目か」と注文全体の合計を出す
     // 台所の伝票には金額を出さない（金額は会計伝票で見る）。何枚かに分かれるときは何枚目かだけ出す
@@ -764,7 +767,7 @@
       c.className = 'card' + (mins >= 15 ? ' late' : '') + (needAck_(o) ? ' blink' : '');
       c.innerHTML = '<div class="tbl"></div><div class="meta"></div><div class="items"></div>' +
         '<div class="foot"><span class="sum"></span><div class="btns"><button class="ghost cx">取消</button><button class="ghost mv">席変更</button><button class="print">オーダー印刷</button><button class="doneBtn">提供済み</button></div></div>';
-      { const tb = c.querySelector('.tbl'); tb.textContent = 'テーブル '; const b = document.createElement('b'); b.className = 'tno'; b.textContent = o.table; tb.appendChild(b); }
+      { const tb = c.querySelector('.tbl'), dv = dlvOf_(o); tb.textContent = dv ? dv.svc + ' ' : 'テーブル '; const b = document.createElement('b'); b.className = 'tno'; b.textContent = dv ? '#' + dv.no : o.table; tb.appendChild(b); }
       c.querySelector('.meta').textContent = `No.${o.no}　${o.time}　${mins < 1 ? 'たった今' : mins + '分前'}`;
       const box = c.querySelector('.items');
       (o.slip || shortItems(o.items)).split('\n').forEach(raw => {
@@ -798,6 +801,8 @@
       p.appendChild(c);
     });
     // 見逃し防止：このiPadで「確認済」にしていないのに提供済みになった注文は、一番上に赤く出して点滅させる（原因が何でも見逃さないように）
+    // 画面を開き直したとき（印刷アプリから戻ったときの読み込み直しなど）は、その時点で提供済みの注文はもう対応済みとみなす。開いている間に提供済みになったものだけ見逃し注意に出す
+    if (!window.__missSeeded) { window.__missSeeded = true; ack_((d.done || []).map(o => o.no)); }
     const miss = (d.done || []).filter(o => needAck_(o) && !isCall(o));
     miss.slice().reverse().forEach(o => {
       const w = document.createElement('div'); w.className = 'card blink';
@@ -879,6 +884,12 @@
     document.body.appendChild(bx);
   }
 
+
+  // デリバリー（Uber Eats・出前館・ロケットナウ）の注文：備考の先頭「【Uber Eats】注文番号 A1B2C …」から、サービス名と番号を取り出す
+  function dlvOf_(o) {
+    const m = String(o.note || '').match(/^【(Uber Eats|出前館|ロケットナウ)】注文番号 (\S+)\s*([\s\S]*)$/);
+    return m ? { svc: m[1], no: m[2], rest: m[3].trim() } : null;
+  }
 
   // ===== 印刷の続き：残りの伝票があれば送る（「出た？」の確認画面は、伝票が安定して出るようになったので 2026-11-15 に廃止） =====
   function askPrinted_() {
