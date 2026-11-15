@@ -423,9 +423,9 @@
         $('askTo').hidden = true; return;
       }
       toDlv = '';
-      if (!n || !tm || (!byStaff && tel.replace(/[^0-9０-９]/g, '').length < 10)) { $('toMsg').textContent = T('toNeed'); return; }
+      if (!n || (!tm && !byStaff) || (!byStaff && tel.replace(/[^0-9０-９]/g, '').length < 10)) { $('toMsg').textContent = T('toNeed'); return; }
       toTel = tel || 'なし';
-      toInfo = n + '様 ' + (window.TODAY || '') + ' ' + tm; $('toMsg').textContent = '';
+      toInfo = n + '様 ' + (tm ? (window.TODAY || '') + ' ' + tm : 'すぐ'); $('toMsg').textContent = '';
       $('tblLabel').textContent = T('toLabel', { t: toInfo });
       $('askTo').hidden = true;
     };
@@ -632,8 +632,9 @@
       });
     });
     // ===== 最後に「ご予約（上海蟹・おせち）」と、店内用だけ「テイクアウト」 =====
-    if (!STAFF && !VIEW) {
-      const extra = [['季節料理のご予約', 'rsv']]; if (!TAKEOUT) extra.push(['テイクアウト', 'to']);
+    if (!VIEW && !(STAFF && TAKEOUT)) {
+      // スタッフ入力では「テイクアウト」だけ出す（今いるお客様の持ち帰りを入れる用）
+      const extra = STAFF ? [['テイクアウト', 'to']] : [['季節料理のご予約', 'rsv']]; if (!STAFF && !TAKEOUT) extra.push(['テイクアウト', 'to']);
       extra.forEach(([gname, kind]) => {
         const sec = document.createElement('section'); sec.className = 'group'; sec.id = 'g' + usedGroups.length; sec.dataset.group = gname;
         const hd = document.createElement('div'); hd.className = 'ghd'; const tx = document.createElement('div'); tx.className = 'tx';
@@ -641,6 +642,7 @@
         const note = s => { const p = document.createElement('p'); p.className = 'deal'; p.textContent = s; sec.appendChild(p); };
         const mk = (label, fn) => { const b = document.createElement('button'); b.className = 'btn'; b.style.margin = '8px 0'; b.textContent = label; b.onclick = fn; sec.appendChild(b); };
         if (kind === 'rsv') { note(RS('intro')); sec.appendChild(window.RSVMEDIA('crab')); mk('🦀 ' + RS('crab'), () => openRsv('crab')); sec.appendChild(window.RSVMEDIA('osechi')); mk('🎍 ' + RS('osechi'), () => openRsv('osechi')); }
+        else if (STAFF) { note('今選んでいるテーブルのお客様のお持ち帰りを入れます。伝票に「店内○番テーブル お帰りの際にお渡し」と出ます。'); mk('🥡 このテーブルのお持ち帰りを入れる', () => { if (!table) { $('askTable').hidden = false; return; } location.href = location.pathname + '?takeout=1&bystaff=1&seat=' + encodeURIComponent(table); }); }
         else { note(RS('toIntro')); mk('🥡 ' + RS('toBtn'), () => { window.open(location.pathname + '?takeout=1' + (table && !RESV ? '&seat=' + encodeURIComponent(table) : ''), '_blank'); }); }
         root.appendChild(sec); usedGroups.push(gname);
       });
