@@ -354,7 +354,10 @@
   function setTable(t) { table = t; $('tblLabel').textContent = T('table', { t }) + (STAFF ? '（タップで変更）' : ''); }
   if (STAFF) $('tblLabel').onclick = () => { $('tblInput').value = ''; $('askTable').hidden = false; };
   // スタッフ入力からもテイクアウトの注文を入れられるように（電話・店頭の注文用。電話番号はなくてもよい）
-  if (STAFF) { $('tblTo').hidden = false; $('tblTo').onclick = () => { location.href = location.pathname + '?takeout=1&bystaff=1'; }; }
+  if (STAFF) { $('tblTo').hidden = false; $('tblTo').onclick = () => { location.href = location.pathname + '?takeout=1&bystaff=1'; };
+    // 注文一覧（iPad）から開いたときは、テーブルを選ぶ画面から注文一覧に戻れる
+    const bk = document.createElement('button'); bk.type = 'button'; bk.className = 'btn sub'; bk.textContent = '← 注文一覧に戻る'; bk.style.marginTop = '10px';
+    bk.onclick = () => { if (window.opener) window.close(); else history.back(); }; $('tblTo').after(bk); }
   applyLang();
   if (VIEW) {} else if (table) setTable(table); else $('askTable').hidden = false;
   $('tblOk').onclick = () => {
