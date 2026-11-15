@@ -389,6 +389,9 @@
     const byStaff0 = new URLSearchParams(location.search).get('bystaff') === '1';
     if (byStaff0 && !SEAT) {
       $('dlWrap').hidden = false;
+      // 注文一覧（iPad）から開いたときは、ここから注文一覧に戻れる
+      { const bk = document.createElement('button'); bk.type = 'button'; bk.textContent = '← 注文一覧に戻る'; bk.style.cssText = 'display:block;margin:0 0 10px;padding:8px 12px;font-size:15px;font-weight:700;border:1px solid #ccc;border-radius:8px;background:#fff;color:#231f1c';
+        bk.onclick = () => { if (window.opener) window.close(); else history.back(); }; $('dlWrap').insertBefore(bk, $('dlWrap').firstChild); }
       const okWas = $('toOk').disabled;
       [['', '🥡 店のテイクアウト'], ['Uber Eats', 'Uber Eats'], ['出前館', '出前館'], ['ロケットナウ', 'ロケットナウ']].forEach(([v, lb]) => {
         const b = document.createElement('button'); b.type = 'button'; b.textContent = lb; b.dataset.v = v;
@@ -1047,7 +1050,14 @@
   };
   $('callClose').onclick = () => { $('callSheet').hidden = true; };
   setTimeout(showCallBtn, 0); setInterval(showCallBtn, 3000);
-  $('again').onclick = () => { $('thanks').hidden = true; window.scrollTo(0, 0); if (STAFF) { $('tblInput').value = ''; $('askTable').hidden = false; } };
+  $('again').onclick = () => { $('thanks').hidden = true; window.scrollTo(0, 0); if (STAFF) { $('tblInput').value = ''; $('askTable').hidden = false; }
+    // お店の人がデリバリー・テイクアウトを続けて入れるときは、毎回「どこからの注文？」から選び直す
+    if (TAKEOUT && new URLSearchParams(location.search).get('bystaff') === '1' && !SEAT) {
+      toInfo = ''; toDlv = ''; ['dlNo', 'toName', 'toTel'].forEach(id => { if ($(id)) $(id).value = ''; });
+      if ($('dlBtns') && $('dlBtns').children[0]) $('dlBtns').children[0].onclick();
+      $('tblLabel').textContent = T('toLabel', { t: '—' }); $('askTo').hidden = false;
+    }
+  };
 </script>
 </body>
 </html>
