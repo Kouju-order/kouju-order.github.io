@@ -145,7 +145,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261115-1945'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261115-2000'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -674,7 +674,7 @@
     b.dataset.k = n ? 'rest' : 'again';
     b.style.cssText = n
       ? 'position:fixed;left:12px;right:12px;top:12px;z-index:10003;background:' + (fail ? '#c62828' : '#e65c00') + ';color:#fff;font-size:24px;font-weight:800;padding:18px;border:0;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)'
-      : 'position:fixed;right:12px;top:12px;z-index:10003;background:#555;color:#fff;font-size:17px;font-weight:700;padding:10px 14px;border:0;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:.92';
+      : 'position:fixed;right:12px;bottom:12px;z-index:10003;background:#555;color:#fff;font-size:17px;font-weight:700;padding:10px 14px;border:0;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.3);opacity:.92';
     b.textContent = fail ? '⚠️ 印刷できなかった伝票があります（' + n + '枚）ここを押してもう一度'
       : n ? '🖨 残りの伝票 ' + n + '枚を印刷する（ここを押す）' : '🖨 出なかったら：さっきの伝票をもう一度';
   }
