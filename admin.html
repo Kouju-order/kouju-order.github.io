@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261115-1330'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261115-1400'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -265,6 +265,7 @@
     if (part === 'drink') wrap('■ ' + (hd_ || 'ドリンク'), 34, true);
     if (part === 'food') wrap('■ ' + (hd_ || '料理'), 34, true);
     if (part === 'gyoza') wrap('■ 餃子', 34, true);
+    if (part === 'bag') wrap('■ 配達員用（袋に貼る）', 30, true);
     lines.push(['—', 14, false]);
     let prevBox_ = false;
     // 注意が必要な言葉（飲み方・濃いめ・大盛など）は白抜きにする
@@ -318,8 +319,9 @@
     // 伝票が何枚かに分かれるときは、どの伝票にも「何枚目か」と注文全体の合計を出す
     // 台所の伝票には金額を出さない（金額は会計伝票で見る）。何枚かに分かれるときは何枚目かだけ出す
     if (part === 'bill') wrap('合計 ' + yen(o.total), 40, true);
+    if (part === 'bag') { const n = String(o._txt || '').split('\n').reduce((a, r) => { const m = r.match(/\s×\s(\d+)$/); return a + (m && !/^\s*[＋□]/.test(r) ? Number(m[1]) : 0); }, 0); wrap('計 ' + n + '点　入れ忘れ確認 □', 26, true); }
     else if (pn > 1) wrap('伝票 ' + pg + '/' + pn + '枚', 22, false);
-    const TOPM = part === 'bill' ? 40 : (part === 'gyoza' || part === 'drink') ? 24 : 120; // 伝票ホルダーに挟むための上の余白（約15mm。会計伝票は約5mm）
+    const TOPM = part === 'bill' ? 40 : (part === 'gyoza' || part === 'drink' || part === 'bag') ? 24 : 120; // 伝票ホルダーに挟むための上の余白（約15mm。会計伝票は約5mm）
     const H = TOPM + pad * 2 + lines.reduce((a, l) => a + l[1] * (l[6] || 1.35), 0);
     c.width = W; c.height = Math.ceil(H);
     g.fillStyle = '#fff'; g.fillRect(0, 0, W, c.height);
@@ -555,6 +557,8 @@
       gy.forEach(g => out.push(['gyoza', g.join('\n')]));
     }
     else out.push([both ? 'food' : null, food]);
+    // デリバリーの注文は、配達員さんに渡す袋に貼る1枚（全部の品を1枚に）を最後に足す
+    if (dlvOf_(o)) out.push(['bag', o.slip || shortItems(o.items)]);
     return out;
   }
   // 何件かの伝票を1回でまとめて印刷する
