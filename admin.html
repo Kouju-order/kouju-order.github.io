@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261115-1300'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261115-1330'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -248,8 +248,22 @@
     else lines.push(['@', 48, true, 0, 0, [{ t: 'テーブル', hl: false }, { t: String(o.table), hl: true }]]);
     lines.push(['', 6, false]);
     wrap('No.' + o.no + '　' + o.time, 20, false);
-    if (part === 'drink') wrap('■ ドリンク', 34, true);
-    if (part === 'food') wrap('■ 料理', 34, true);
+    // 伝票の見出し：中身が全部テイクアウト（持)〜）なら「テイクアウト」、全部冷凍の物販なら「冷凍物販」にする（ドリンク・料理と間違えないように）
+    const hd_ = (() => {
+      if (part !== 'drink' && part !== 'food') return '';
+      const ls = String((o._txt != null ? o._txt : part === 'drink' ? o.slipDrink : o.slipFood) || '').split('\n').map(x => x.trim()).filter(Boolean).filter(x => !/^★/.test(x));
+      const frz = x => /冷凍|^特選[ABC]セット|^超お得セット|^点心バラエティー|^保冷バッグ/.test(x);
+      const to = x => /^＋?持\)/.test(x) && !frz(x);
+      const add = x => /^[＋□]/.test(x);
+      if (!ls.length) return '';
+      const main = ls.filter(x => !add(x));
+      if (main.length && main.every(to)) return 'テイクアウト';
+      if (main.length && main.every(frz)) return '冷凍物販';
+      if (main.length && main.every(x => to(x) || frz(x))) return 'テイクアウト・冷凍物販';
+      return '';
+    })();
+    if (part === 'drink') wrap('■ ' + (hd_ || 'ドリンク'), 34, true);
+    if (part === 'food') wrap('■ ' + (hd_ || '料理'), 34, true);
     if (part === 'gyoza') wrap('■ 餃子', 34, true);
     lines.push(['—', 14, false]);
     let prevBox_ = false;
