@@ -143,7 +143,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261110-2200'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261115-1200'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -880,20 +880,9 @@
   }
 
 
-  // ===== 印刷の確認：「伝票ここまで」が出たかを聞いて、出ていなければボタン1つで出し直す（3枚目から先が抜けることがあるため） =====
+  // ===== 印刷の続き：残りの伝票があれば送る（「出た？」の確認画面は、伝票が安定して出るようになったので 2026-11-15 に廃止） =====
   function askPrinted_() {
-    if (contPrint_()) return; // 印刷の続きが残っていれば、先にそれを送る
-    let s = null; try { s = JSON.parse(localStorage.getItem('kouju_lastprint') || 'null'); } catch (e) {}
-    if (!s || !s.list || !s.list.length || Date.now() - s.at > 15 * 60 * 1000) return;
-    if (document.getElementById('pcbox')) return;
-    const bx = document.createElement('div'); bx.id = 'pcbox';
-    bx.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px';
-    bx.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px;max-width:480px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.35)"><div style="font-size:22px;font-weight:800;margin-bottom:8px">🖨 「ーー 伝票ここまで ーー」の紙は出ましたか？</div><div class="pcs" style="color:#555;font-size:16px;margin-bottom:16px"></div><button class="pcok" style="display:block;width:100%;padding:16px;margin-bottom:10px;font-size:20px;font-weight:800;border:0;border-radius:12px;background:#2e9e57;color:#fff">✅ 出た</button><button class="pcng" style="display:block;width:100%;padding:16px;font-size:20px;font-weight:800;border:0;border-radius:12px;background:#e00000;color:#fff">⚠ 出ていない → もう一度印刷</button></div>';
-    bx.querySelector('.pcs').textContent = s.list.map(o => 'No.' + o.no + '（テーブル ' + o.table + '）').join('、') + ' を印刷しました';
-    const fin = () => { try { localStorage.removeItem('kouju_lastprint'); } catch (e) {} bx.remove(); };
-    bx.querySelector('.pcok').onclick = fin;
-    bx.querySelector('.pcng').onclick = () => { fin(); printSlips(s.list, true); };
-    document.body.appendChild(bx);
+    contPrint_();
   }
 
   // ===== 席変更：来店前に別の番号（8番など）で注文したお客様が、実際に座った席へ注文を移す =====
