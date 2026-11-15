@@ -175,6 +175,11 @@
 <div class="overlay" id="askTo" hidden>
   <div class="sheet">
     <h3 data-t="toTitle">お持ち帰りのご注文</h3>
+    <div id="dlWrap" hidden style="margin:0 0 12px">
+      <p class="muted" style="margin:0 0 6px">どこからの注文？</p>
+      <div id="dlBtns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+      <input id="dlNo" maxlength="20" placeholder="注文番号（必ず入れる）" autocapitalize="characters" autocomplete="off" hidden style="margin-top:10px;font-size:20px;font-weight:700">
+    </div>
     <input id="toName" maxlength="20" autocomplete="name" placeholder="お名前" data-tp="toNamePh">
     <input id="toTel" type="tel" inputmode="tel" maxlength="15" autocomplete="tel" placeholder="電話番号" data-tp="toTelPh" style="margin-top:10px">
     <p class="muted" style="margin:12px 0 4px" data-t="toTimeNote">受け取り時間</p>
@@ -244,7 +249,7 @@
   if (VIEW) document.body.classList.add('view');
   const VTX = { label: { ja: 'メニュー（閲覧用）', en: 'Menu (view only)', zhs: '菜单（仅供浏览）', zht: '菜單（僅供瀏覽）' }, note: { ja: 'こちらは閲覧用のメニューです（価格は税込）。ご注文はご来店時に、テーブルのQRコードからどうぞ。お持ち帰り・ご予約はお電話（045-298-9091）でも承ります。', en: 'This menu is for viewing only (prices include tax). Please order at the restaurant using the QR code on your table. For takeout or reservations, please call 045-298-9091.', zhs: '本菜单仅供浏览（价格含税）。请到店后扫描桌上的二维码点餐。外带或预约也可致电 045-298-9091。', zht: '本菜單僅供瀏覽（價格含稅）。請到店後掃描桌上的QR碼點餐。外帶或預約也可致電 045-298-9091。' } };
   const VT = k => VTX[k][lang] || VTX[k].ja;
-  let toInfo = '', toTel = '';
+  let toInfo = '', toTel = '', toDlv = '';
   // 店内のお客様が店内メニューからテイクアウトを開いた場合（seat=卓番号）：名前・電話・時間は聞かない
   const SEAT = TAKEOUT ? (new URLSearchParams(location.search).get('seat') || '').slice(0, 6) : '';
   // 予約のお客様の事前注文（table=8）：お名前だけ入れてもらう
@@ -380,9 +385,38 @@
       if (!opts.length) { sel.innerHTML = '<option value="">本日の受付は終了しました</option>'; sel.disabled = true; $('toOk').disabled = true; msg.textContent = '本日の受付は終了しました。またのご利用をお待ちしております。'; return; }
       sel.innerHTML = '<option value="">本日（' + (jst.getMonth() + 1) + '/' + jst.getDate() + '）の受け取り時間を選んでください</option>' + opts.map(m => { const t = String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); return '<option value="' + t + '">' + t + '</option>'; }).join('');
     })();
+    // デリバリー（Uber Eats・出前館・ロケットナウ）の注文は、お店の人が選んで注文番号を入れる。伝票の一番上に大きく出る
+    const byStaff0 = new URLSearchParams(location.search).get('bystaff') === '1';
+    if (byStaff0 && !SEAT) {
+      $('dlWrap').hidden = false;
+      const okWas = $('toOk').disabled;
+      [['', '🥡 店のテイクアウト'], ['Uber Eats', 'Uber Eats'], ['出前館', '出前館'], ['ロケットナウ', 'ロケットナウ']].forEach(([v, lb]) => {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = lb; b.dataset.v = v;
+        b.style.cssText = 'padding:12px 6px;font-size:16px;font-weight:700;border:2px solid #ccc;border-radius:10px;background:#fff;color:#231f1c';
+        b.onclick = () => {
+          window.DLV = v;
+          [...$('dlBtns').children].forEach(x => { const on = x === b; x.style.background = on ? '#231f1c' : '#fff'; x.style.color = on ? '#fff' : '#231f1c'; x.style.borderColor = on ? '#231f1c' : '#ccc'; });
+          $('dlNo').hidden = !v; $('toTel').hidden = !!v;
+          $('toName').placeholder = v ? 'お名前（なくてもOK）' : T('toNamePh');
+          $('toOk').disabled = v ? false : okWas;
+          if (v) setTimeout(() => $('dlNo').focus(), 50);
+        };
+        $('dlBtns').appendChild(b);
+      });
+      window.DLV = ''; $('dlBtns').children[0].onclick();
+    }
     $('toOk').onclick = () => {
       const n = $('toName').value.trim(), tm = $('toTime').value, tel = $('toTel').value.replace(/[^0-9０-９+\-－]/g, '');
       const byStaff = new URLSearchParams(location.search).get('bystaff') === '1';
+      if (byStaff && window.DLV) {
+        const no = $('dlNo').value.trim().replace(/\s+/g, '').toUpperCase();
+        if (!no) { $('toMsg').textContent = '注文番号を入れてください'; $('dlNo').focus(); return; }
+        toDlv = '【' + window.DLV + '】注文番号 ' + no + (n ? ' ' + n + '様' : '') + (tm ? ' ' + tm + '受取' : '');
+        toInfo = window.DLV + ' #' + no; $('toMsg').textContent = '';
+        $('tblLabel').textContent = T('toLabel', { t: toInfo });
+        $('askTo').hidden = true; return;
+      }
+      toDlv = '';
       if (!n || !tm || (!byStaff && tel.replace(/[^0-9０-９]/g, '').length < 10)) { $('toMsg').textContent = T('toNeed'); return; }
       toTel = tel || 'なし';
       toInfo = n + '様 ' + (window.TODAY || '') + ' ' + tm; $('toMsg').textContent = '';
@@ -688,7 +722,7 @@
     rid = rid || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
     // お店側（iPad・メール）には日本語の商品名で届く。外国語のお客様は備考の先頭に言語を付ける
     const tag = T('noteTag');
-    const note = (TAKEOUT ? (SEAT ? '【お持ち帰り】店内' + SEAT + '番テーブル お帰りの際にお渡し' : '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel) : '') + (RESV ? '【ご予約】' + rvName + '様' : '') + (tag ? '【' + tag + '】' : '');
+    const note = (TAKEOUT ? (toDlv ? toDlv : SEAT ? '【お持ち帰り】店内' + SEAT + '番テーブル お帰りの際にお渡し' : '【お持ち帰り】' + toInfo + ' 受取 TEL ' + toTel) : '') + (RESV ? '【ご予約】' + rvName + '様' : '') + (tag ? '【' + tag + '】' : '');
     const sent = cartItems();
     call(null, { action: 'order', rid, table, items: withGlass(cartItems().map(i => ({ name: i.name, qty: i.qty }))), note })
       .then(r => {
