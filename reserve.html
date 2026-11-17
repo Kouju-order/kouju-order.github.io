@@ -177,7 +177,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
   applyLang();
   (async function load() {
     for (let i = 0; i < 3; i++) {
-      try { const r = await fetch(API + '?api=rsvconf', { credentials: 'omit' }).then(r => r.json()); if (r.ok) { conf = r.data; fillDates(); return; } } catch (e) {}
+      try { const r = await fetch(API + '?api=rsvconf', { credentials: 'omit' }).then(r => r.json()); if (r.ok) { conf = r.data; /* 休業の予定だったが営業することになった日（2026-11-17 麗珠さんから） */ const OPEN_ = ['2026-11-17']; conf.closed = (conf.closed || []).filter(d => !OPEN_.includes(d)); fillDates(); return; } } catch (e) {}
       await new Promise(s => setTimeout(s, 1500));
     }
     $('err').textContent = T('fail');
