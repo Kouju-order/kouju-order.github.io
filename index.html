@@ -219,6 +219,7 @@
     <div class="big" id="orderNo"></div>
     <p data-t="wait">お料理ができるまで少々お待ちください。</p>
     <button class="btn" id="again" data-t="again">追加で注文する</button>
+    <button class="btn sub" id="backList" type="button" hidden style="margin-top:10px">← 注文一覧に戻る</button>
   </div>
 </div>
 
@@ -1055,6 +1056,8 @@
   };
   $('callClose').onclick = () => { $('callSheet').hidden = true; };
   setTimeout(showCallBtn, 0); setInterval(showCallBtn, 3000);
+  // お店の人が入れたとき（スタッフ用・デリバリー入力）は、送ったあとすぐ注文一覧に戻れるボタンを出す
+  if (STAFF || new URLSearchParams(location.search).get('bystaff') === '1') { $('backList').hidden = false; $('backList').onclick = () => { if (window.opener) window.close(); else history.back(); }; }
   $('again').onclick = () => { $('thanks').hidden = true; window.scrollTo(0, 0); if (STAFF) { $('tblInput').value = ''; $('askTable').hidden = false; }
     // お店の人がデリバリー・テイクアウトを続けて入れるときは、毎回「どこからの注文？」から選び直す
     if (TAKEOUT && new URLSearchParams(location.search).get('bystaff') === '1' && !SEAT) {
