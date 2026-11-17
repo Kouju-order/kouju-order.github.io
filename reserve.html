@@ -109,6 +109,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
   }
   function timesFor(ds, s) {
     let list = s === 'lunch' ? LUNCH : DINNER;
+    if (ds === '2026-11-17' && s !== 'lunch') list = list.filter(t => t >= '18:00'); /* 11/17は夜18:00から（麗珠さんから・この日だけ） */
     const now = jstNow();
     if (ds === ymd(now)) { const lim = now.getHours() * 60 + now.getMinutes() + 30; /* 当日は30分後から予約できる（2026-11-15 1時間→30分） */ list = list.filter(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m >= lim; }); }
     return list;
