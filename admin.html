@@ -145,7 +145,7 @@
     if (!j.ok) throw new Error(j.error || '通信エラー');
     return j.data;
   }
-  const BUILD = '20261115-2000'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
+  const BUILD = '20261120-1830'; // 画面を直したら必ず変える（iPadが自動で読み込み直す）
   const KEY = new URLSearchParams(location.search).get('key') || '';
   const $ = id => document.getElementById(id);
   const yen = n => '¥' + Number(n).toLocaleString();
@@ -444,14 +444,15 @@
   // 席からのお持ち帰り注文（メモに「店内A番テーブル」）は、その席の会計に入れる
   const seatOf_ = x => String(x.table) === '持帰' ? ((String(x.note || '').match(/店内(.+?)番テーブル/) || [])[1] || '') : '';
 
-  // ===== 会計の前に確認：同じ席で30分以上あいて入った注文があれば「前のお客様の分では？」と聞く（会計済みの押し忘れ対策） =====
-  const cutGap_ = r => { for (let k = 1; k < r.run.length; k++) if (minsOf(r.run[k]) - minsOf(r.run[k - 1]) > 30) return k; return -1; };
+  // ===== 会計の前に確認：同じ席で90分以上あいて入った注文があれば「前のお客様の分では？」と聞く（会計済みの押し忘れ対策） =====
+  const cutGap_ = r => { for (let k = 1; k < r.run.length; k++) if (minsOf(r.run[k]) - minsOf(r.run[k - 1]) > 90) return k; /* 90分以上あいたら確認（夜は2時間いるお客様が多いので 2026-11-20 30→90分） */ return -1; };
   function gapCheck_(t, r, go) {
     const k = cutGap_(r); if (k < 0) return go(r);
     const prev = r.run.slice(0, k), nxt = r.run[k];
     const ps = prev.reduce((s, x) => s + Number(x.total || 0), 0);
-    const msg = 'テーブル ' + t + '\n' + prev.map(x => x.time + ' No.' + x.no).join('・') + '（' + yen(ps) + '）のあと、' + Math.round(minsOf(nxt) - minsOf(prev[prev.length - 1])) + '分あいて ' + nxt.time + ' No.' + nxt.no + ' が入っています。\n\n前の分は「前のお客様」ですか？\n\nOK：前のお客様（前の分は会計済みにして、今のお客様の分だけで会計）\nキャンセル：同じお客様（全部まとめて会計）';
-    if (!confirm(msg)) return go(r);
+    const msg_ = 'テーブル ' + t + '\n' + prev.map(x => x.time + ' No.' + x.no).join('・') + '（' + yen(ps) + '）のあと、' + Math.round(minsOf(nxt) - minsOf(prev[prev.length - 1])) + '分あいて ' + nxt.time + ' No.' + nxt.no + ' が入っています。\n\n前の分は「前のお客様」ですか？\n\nOK：前のお客様（前の分は会計済みにして、今のお客様の分だけで会計）\nキャンセル：同じお客様（全部まとめて会計）';
+    // 分かりやすい2つの大きいボタンで選ぶ（OK／キャンセルだとどっちか迷うので）
+    const cut_ = () => {
     const at = atOf(nxt) - 1000;
     // 「会計済み」ボタンと同じく、前の区切りを取り消し用に覚えておく（間違えて押したとき、ひとつ前の状態に戻せるように）
     try { const h = paidHist_(); (h[t] = h[t] || []).push(paidAt(t) || 0); localStorage.setItem(PAIDKEY_() + '_hist', JSON.stringify(h)); } catch (e) {}
@@ -459,6 +460,26 @@
     if (lastD) lastD.paid = Object.assign({}, lastD.paid || {}, { [t]: at });
     call(null, { action: 'paid', key: KEY, table: t, at: at }).catch(() => {});
     const r2 = tableRun(nxt, 1); if (lastD) show(lastD); if (r2) go(r2);
+    };
+    const gap_ = Math.round(minsOf(nxt) - minsOf(prev[prev.length - 1]));
+    const bx = document.createElement('div');
+    bx.style.cssText = 'position:fixed;inset:0;z-index:10010;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:16px;max-width:560px;width:100%;padding:22px;font-size:18px;line-height:1.6;color:#231f1c';
+    const h = document.createElement('div'); h.style.cssText = 'font-size:22px;font-weight:800;margin-bottom:6px';
+    h.textContent = 'テーブル ' + t + '：今いるのは同じお客様？';
+    const p = document.createElement('div'); p.style.cssText = 'margin-bottom:16px;color:#555';
+    p.textContent = prev.map(x => x.time).join('・') + ' の注文（' + yen(ps) + '）のあと、' + gap_ + '分あいて ' + nxt.time + ' に注文が入りました。';
+    const mk = (txt, sub, bg, fn) => { const b = document.createElement('button'); b.type = 'button';
+      b.style.cssText = 'display:block;width:100%;margin-top:10px;padding:16px;border:0;border-radius:12px;font-size:20px;font-weight:800;color:#fff;background:' + bg;
+      b.innerHTML = ''; const t1 = document.createElement('div'); t1.textContent = txt; const t2 = document.createElement('div'); t2.style.cssText = 'font-size:14px;font-weight:600;opacity:.9'; t2.textContent = sub;
+      b.appendChild(t1); b.appendChild(t2); b.onclick = () => { bx.remove(); fn(); }; return b; };
+    card.appendChild(h); card.appendChild(p);
+    card.appendChild(mk('👥 同じお客様（ずっといる）', '全部まとめて ' + yen(ps + r.run.slice(k).reduce((s2, x) => s2 + Number(x.total || 0), 0)) + ' で会計', '#2e7d32', () => go(r)));
+    card.appendChild(mk('🔄 別のお客様（入れ替わった）', nxt.time + ' からの分だけで会計（前の分は会計済みにする）', '#1565c0', cut_));
+    const cx = document.createElement('button'); cx.type = 'button'; cx.textContent = 'やめる'; cx.style.cssText = 'display:block;margin:14px auto 0;padding:8px 20px;border:1px solid #bbb;border-radius:8px;background:#fff;font-size:16px';
+    cx.onclick = () => bx.remove(); card.appendChild(cx);
+    bx.appendChild(card); document.body.appendChild(bx);
   }
   function tableRun(o, min) {
     const t = String(o.table);
@@ -848,7 +869,7 @@
         ch.querySelector('.paid').onclick = () => setPaid(t);
         ch.querySelector('.bill').onclick = () => gapCheck_(t, r, rr => printBill(t, rr));
         ch.querySelector('.split').onclick = () => gapCheck_(t, r, rr => splitBill(t, rr));
-        if (cutGap_(r) >= 0) { const w = document.createElement('span'); w.textContent = '⚠ 30分以上あいた注文あり（前のお客様の分？）'; w.style.cssText = 'color:#c00;font-weight:800;margin-left:6px'; ch.querySelector('.n').after(w); }
+        if (cutGap_(r) >= 0) { const w = document.createElement('span'); w.textContent = '⚠ 90分以上あいた注文あり（前のお客様の分？）'; w.style.cssText = 'color:#c00;font-weight:800;margin-left:6px'; ch.querySelector('.n').after(w); }
         tw.appendChild(ch); }); }
     const dn = $('done'); dn.innerHTML = '';
     // 会計の計算には今日の完了分を全部使うが、画面の「完了」一覧は直近10件だけ出す
@@ -877,19 +898,20 @@
     const lines = String(o.items || '').split('\n').filter(s => s.trim());
     const bx = document.createElement('div'); bx.id = 'mvbox';
     bx.innerHTML = '<div class="mvin"><div class="mvt"></div><div class="cxl"></div><div class="spsum"></div><button class="mvok cxgo">選んだ品を取り消す</button><button class="ghost mvno">やめる</button></div>';
-    bx.querySelector('.mvt').textContent = 'No.' + o.no + '（テーブル ' + o.table + '）：取り消す品の数を「＋」で選んでください';
+    bx.querySelector('.mvt').textContent = 'No.' + o.no + '（テーブル ' + o.table + '）：残す数にしてください（取り消す品は「−」で減らす）';
     const want = lines.map(() => 0), go = bx.querySelector('.cxgo');
-    const upd = () => { const s = want.reduce((x, y) => x + y, 0); go.disabled = !s; bx.querySelector('.spsum').textContent = s ? '取り消す数：' + s + '品' : ''; };
+    const upd = () => { const s = want.reduce((x, y) => x + y, 0); go.disabled = !s; bx.querySelector('.spsum').textContent = s ? '取り消す数：' + s + '品' : '「−」を押して、取り消す品の数を減らしてください'; };
     lines.forEach((raw, i) => {
       const m = raw.match(/^(.*?)\s×\s(\d+)$/); const name = (m ? m[1] : raw).trim(), q = m ? Number(m[2]) : 1;
       const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eee';
-      const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-size:17px'; nm.textContent = name + '　×' + q;
+      const nm = document.createElement('span'); nm.style.cssText = 'flex:1;font-size:17px'; nm.textContent = name; /* 数は右の数字に今の数を出して、「−」で減らす（2026-11-20 麗珠さんから） */
       const mi = document.createElement('button'), n = document.createElement('b'), pl = document.createElement('button');
-      mi.type = pl.type = 'button'; mi.textContent = '−'; pl.textContent = '＋'; n.textContent = '0';
+      mi.type = pl.type = 'button'; mi.textContent = '−'; pl.textContent = '＋'; n.textContent = String(q);
       [mi, pl].forEach(b => { b.style.cssText = 'width:46px;height:46px;font-size:24px;border-radius:50%;border:1px solid #ccc;background:#fff;color:#231f1c;padding:0'; });
-      n.style.cssText = 'min-width:30px;text-align:center;font-size:22px;color:#c00';
-      mi.onclick = () => { want[i] = Math.max(0, want[i] - 1); n.textContent = want[i]; upd(); };
-      pl.onclick = () => { want[i] = Math.min(q, want[i] + 1); n.textContent = want[i]; upd(); };
+      n.style.cssText = 'min-width:30px;text-align:center;font-size:22px;color:#231f1c';
+      const shw = () => { n.textContent = String(q - want[i]); n.style.color = want[i] ? '#c00' : '#231f1c'; nm.style.textDecoration = want[i] === q ? 'line-through' : ''; nm.style.color = want[i] ? '#c00' : ''; };
+      mi.onclick = () => { want[i] = Math.min(q, want[i] + 1); shw(); upd(); };
+      pl.onclick = () => { want[i] = Math.max(0, want[i] - 1); shw(); upd(); };
       row.append(nm, mi, n, pl); bx.querySelector('.cxl').appendChild(row);
     });
     upd();
