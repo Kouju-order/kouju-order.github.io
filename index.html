@@ -717,13 +717,14 @@
   };
   $('back').onclick = () => { $('confirm').hidden = true; };
 
-  $('send').onclick = () => {
+  $('send').onclick = async () => {
     if (VIEW) return;
     if (TAKEOUT && !toInfo) { $('confirm').hidden = true; $('askTo').hidden = false; return; }
     if (RESV && !rvName) { $('confirm').hidden = true; $('askRv').hidden = false; return; }
     if (cartItems().some(i => BOTTLE.test(i.name))) {
       glassQty = glassQty || {};
-      pendingTypes().forEach(([t]) => { if (glassAsked(t)) glassQty[t] = 0; });
+      if (pendingTypes().length && !glassSrv_) { $('send').disabled = true; glassSrv_ = await srvBottles_(); $('send').disabled = false; }
+      pendingTypes().forEach(([t]) => { if (glassAsked(t) || (glassSrv_ && glassSrv_.has(t))) glassQty[t] = 0; });
       const p = pendingTypes(); if (p.length) { askGlass(p[0][0]); return; }
     }
     const btn = $('send');
@@ -736,7 +737,7 @@
     call(null, { action: 'order', rid, table, items: withGlass(cartItems().map(i => ({ name: i.name, qty: i.qty }))), note })
       .then(r => {
         rid = null;
-        saveHist(r.no, sent); glassQty = null;
+        saveHist(r.no, sent); glassQty = null; glassSrv_ = null;
         Object.keys(cart).forEach(k => delete cart[k]); Object.keys(addon).forEach(k => delete addon[k]);
         renderMenu();
         $('confirm').hidden = true;
@@ -778,6 +779,16 @@
   const glassKey = t => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate() + '|' + table + '|' + t; };
   function glassAsked(t) { try { return (localStorage.getItem('kouju_glass') || '').split(',').includes(glassKey(t)); } catch (e) { return false; } }
   function markGlass(t) { try { const today = glassKey('').slice(0, glassKey('').indexOf('|')); const a = (localStorage.getItem('kouju_glass') || '').split(',').filter(x => x && x.indexOf(today + '|') === 0); a.push(glassKey(t)); localStorage.setItem('kouju_glass', a.join(',')); } catch (e) {} }
+  // この席で今日（会計済みのあと）もう同じボトルを頼んでいたら、グラスは聞かない（どのスマホ・iPadから頼んでも同じ。2026-11-22 麗珠さんから）
+  let glassSrv_ = null;
+  async function srvBottles_() {
+    const had = new Set(); if (!table || TAKEOUT || VIEW || RESV) return had;
+    try {
+      const h = await Promise.race([call({ api: 'tablehist', table }), new Promise((_, ng) => setTimeout(() => ng(new Error('timeout')), 4000))]);
+      (h || []).forEach(o => (o.items || []).forEach(l => { const nm = String(l).replace(/\s×\s\d+$/, ''); GTYPES.forEach(([t, re]) => { if (re.test(nm)) had.add(t); }); }));
+    } catch (e) {}
+    return had;
+  }
   function pendingTypes() { const its = cartItems(); return GTYPES.filter(([t, re]) => its.some(i => re.test(i.name)) && !(glassQty && t in glassQty)); }
   function askGlass(type) {
     // グラスは最初から1個にしておく（瓶ビールも紹興酒も）
@@ -796,7 +807,7 @@
     ins.sort((x, y) => y[0] - x[0]).forEach(([at, q]) => out.splice(at + 1, 0, { name: '【グラス】グラス', qty: q }));
     return out;
   }
-  $('back').addEventListener('click', () => { glassQty = null; });
+  $('back').addEventListener('click', () => { glassQty = null; glassSrv_ = null; });
 
   // ===== ご予約リクエスト（上海蟹・おせち）：お店のiPadに黄色いカードで届く。いっぱいの時だけお店から電話 =====
   const RT = {
