@@ -206,7 +206,7 @@
   <div class="sheet">
     <h3 data-t="askTable">テーブル番号を入力してください</h3>
     <input id="tblInput" hidden inputmode="numeric" maxlength="10" placeholder="例：3" data-tp="tablePh">
-    <div class="tblq"><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button><button type="button">6</button><button type="button">7</button><button type="button">A</button><button type="button">B</button><button type="button">C</button><button type="button">D</button></div>
+    <div class="tblq"><button type="button">A</button><button type="button">B</button><button type="button">C</button><button type="button">D</button><button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button><button type="button">6</button><button type="button">7</button></div>
     <button class="btn" id="tblOk" hidden style="margin-top:12px" data-t="ok">決定</button>
     <button class="btn sub" id="tblTo" type="button" hidden style="margin-top:10px">🥡 テイクアウト（お持ち帰り）の注文を入れる</button>
   </div>
@@ -256,7 +256,7 @@
   // 予約のお客様の事前注文（table=8）：お名前だけ入れてもらう
   const RESV = !TAKEOUT && !STAFF && !VIEW && (new URLSearchParams(location.search).get('table') || '') === '8';
   let rvName = '';
-  let table = TAKEOUT ? '持帰' : VIEW ? '閲覧' : STAFF ? '' : (new URLSearchParams(location.search).get('table') || '').slice(0, 10);
+  let table = TAKEOUT ? '持帰' : VIEW ? '閲覧' : STAFF ? (new URLSearchParams(location.search).get('table') || '').slice(0, 10) /* 注文一覧の「ほかの品を足す」から来たときはそのテーブルで開く */ : (new URLSearchParams(location.search).get('table') || '').slice(0, 10);
   let menu = [];
   let rid = null;
   const cart = {};
