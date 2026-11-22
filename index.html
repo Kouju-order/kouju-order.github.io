@@ -655,7 +655,7 @@
         const gh = document.createElement('h3'); gh.className = 'grp'; gh.textContent = C(gname); tx.appendChild(gh); hd.appendChild(tx); sec.appendChild(hd);
         const note = s => { const p = document.createElement('p'); p.className = 'deal'; p.textContent = s; sec.appendChild(p); };
         const mk = (label, fn) => { const b = document.createElement('button'); b.className = 'btn'; b.style.margin = '8px 0'; b.textContent = label; b.onclick = fn; sec.appendChild(b); };
-        if (kind === 'rsv') { note(RS('intro')); sec.appendChild(window.RSVMEDIA('crab')); mk('🦀 ' + RS('crab'), () => openRsv('crab')); sec.appendChild(window.RSVMEDIA('osechi')); mk('🎍 ' + RS('osechi'), () => openRsv('osechi')); }
+        if (kind === 'rsv') { if (CRAB_DONE) { note(RS('intro2')); const cd = document.createElement('p'); cd.className = 'deal'; cd.style.cssText = 'white-space:pre-line;line-height:1.7'; cd.textContent = RS('crabDone'); sec.appendChild(cd); sec.appendChild(window.RSVMEDIA('crab')); mk('🦀 ' + RS('crabBtn'), () => openRsv('crab')); } else { note(RS('intro')); sec.appendChild(window.RSVMEDIA('crab')); mk('🦀 ' + RS('crab'), () => openRsv('crab')); } sec.appendChild(window.RSVMEDIA('osechi')); mk('🎍 ' + RS('osechi'), () => openRsv('osechi')); }
         else if (STAFF) { note('今選んでいるテーブルのお客様のお持ち帰りを入れます。伝票に「店内○番テーブル お帰りの際にお渡し」と出ます。'); mk('🥡 このテーブルのお持ち帰りを入れる', () => { if (!table) { $('askTable').hidden = false; return; } location.href = location.pathname + '?takeout=1&bystaff=1&seat=' + encodeURIComponent(table); }); }
         else { note(RS('toIntro')); mk('🥡 ' + RS('toBtn'), () => { window.open(location.pathname + '?takeout=1' + (table && !RESV ? '&seat=' + encodeURIComponent(table) : ''), '_blank'); }); }
         root.appendChild(sec); usedGroups.push(gname);
@@ -929,6 +929,16 @@
     en: { intro: 'We take reservations for Shanghai crab and New Year osechi. Your reservation is complete once sent. We will call you only if we are fully booked.', crab: 'Shanghai crab reservation', osechi: 'Osechi reservation', toIntro: 'For takeout orders, please use our takeout page.', toBtn: 'Open the takeout page', name: 'Name', tel: 'Phone', date: 'Date', rdate: 'Pickup date', time: 'Time', ppl: 'People', male: 'Male crabs', female: 'Female crabs', qty: 'Quantity', memo: 'Requests (optional)', send: 'Send reservation request', close: 'Close', need: 'Please enter your name, phone and date', ok: 'Reservation received. We look forward to seeing you. (We will call you only if we are fully booked.)', fail: 'Could not send. Please call 045-298-9091', wed: 'Closed on Wednesdays' },
     zhs: { intro: '接受大闸蟹・年菜预约。提交即完成预约，仅在预约已满时店家会致电联系。', crab: '大闸蟹预约', osechi: '年菜预约', toIntro: '外带请使用外带专用页面。', toBtn: '打开外带页面', name: '姓名', tel: '电话', date: '希望日期', rdate: '取货日期', time: '希望时间', ppl: '人数', male: '公蟹（只）', female: '母蟹（只）', qty: '数量', memo: '要求（可不填）', send: '提交预约', close: '关闭', need: '请填写姓名・电话・日期', ok: '已收到预约，期待您的光临。（仅在预约已满时店家会致电联系）', fail: '发送失败，请致电 045-298-9091', wed: '周三休息' },
     zht: { intro: '接受大閘蟹・年菜預約。提交即完成預約，僅在預約已滿時店家會致電聯繫。', crab: '大閘蟹預約', osechi: '年菜預約', toIntro: '外帶請使用外帶專用頁面。', toBtn: '打開外帶頁面', name: '姓名', tel: '電話', date: '希望日期', rdate: '取貨日期', time: '希望時間', ppl: '人數', male: '公蟹（隻）', female: '母蟹（隻）', qty: '數量', memo: '要求（可不填）', send: '提交預約', close: '關閉', need: '請填寫姓名・電話・日期', ok: '已收到預約，期待您的光臨。（僅在預約已滿時店家會致電聯繫）', fail: '發送失敗，請致電 045-298-9091', wed: '週三休息' } };
+  // 2026年の上海蟹は終了。入荷のご案内を希望する方を「上海蟹ご案内リスト」に登録する（2026-11-23 麗珠さんから）
+  const CRAB_DONE = true;
+  Object.assign(RT.ja, { intro2: '中華おせち（12/31店頭受取）のご予約を承ります。送っていただいた内容でご予約完了です。ご予約がいっぱいの場合のみ、お店からお電話いたします。', crabList: '上海蟹ご案内リスト', crabBtn: '入荷のご案内を希望する', crabSend: '上海蟹ご案内リストに登録する', crabOk: 'ご登録ありがとうございます。入荷が決まり次第、ご案内いたします。', crabNeed: 'お名前・電話番号と、オス・メスのご希望の数を入れてください', male: 'オス（匹）', female: 'メス（匹）',
+    crabDone: '🦀 上海蟹　2026年の販売は終了いたしました\n本年も多くのご注文を賜り、誠にありがとうございました。\n次回の入荷は、2027年10月下旬頃を予定しております。\n\n上海蟹は、1年のうち約20日間しかご提供できない季節限定の食材です。近年、「入荷が決まったら知らせてほしい」とのお声を多くいただくようになりました。\n\nそこで、ご希望のお客様を「上海蟹ご案内リスト」にご登録いただけるようにいたしました。入荷が決まり次第、その年の大きさ・価格・販売期間をご案内いたします。\n\nご登録の際は、オス・メスそれぞれのご希望の数もあわせてお知らせください。（ご登録後の変更も承ります）' });
+  Object.assign(RT.en, { intro2: 'We take reservations for New Year osechi (pickup on Dec 31). Your reservation is complete once sent. We will call you only if we are fully booked.', crabList: 'Shanghai Crab Notification List', crabBtn: 'Notify me when crabs arrive', crabSend: 'Join the notification list', crabOk: 'Thank you for registering. We will contact you as soon as the arrival is confirmed.', crabNeed: 'Please enter your name, phone, and how many male / female crabs you would like', male: 'Male crabs', female: 'Female crabs',
+    crabDone: '🦀 Shanghai crab season 2026 has ended\nThank you very much for your many orders this year.\nThe next arrival is expected around late October 2027.\n\nShanghai crab is a seasonal delicacy we can serve for only about 20 days a year, and more and more guests ask us to let them know when it arrives.\n\nIf you would like to be notified, please join our Shanghai Crab Notification List. Once the arrival is confirmed, we will let you know that year\'s sizes, prices and sales period.\n\nWhen registering, please also tell us how many male and female crabs you would like. (You can change this later.)' });
+  Object.assign(RT.zhs, { intro2: '接受年菜预约（12/31到店取货）。提交即完成预约，仅在预约已满时店家会致电联系。', crabList: '大闸蟹到货通知名单', crabBtn: '希望收到到货通知', crabSend: '登记到货通知名单', crabOk: '感谢您的登记。到货确定后我们会第一时间通知您。', crabNeed: '请填写姓名、电话，以及希望的公蟹・母蟹数量', male: '公蟹（只）', female: '母蟹（只）',
+    crabDone: '🦀 2026年大闸蟹已售罄结束\n衷心感谢今年众多顾客的订购。\n下次到货预计在2027年10月下旬左右。\n\n大闸蟹是一年中仅能供应约20天的季节限定食材。近年来，希望「到货时通知」的顾客越来越多。\n\n因此，我们设立了「大闸蟹到货通知名单」。到货确定后，我们将告知当年的大小、价格及销售期间。\n\n登记时，请一并告知公蟹・母蟹各需要几只。（登记后也可更改）' });
+  Object.assign(RT.zht, { intro2: '接受年菜預約（12/31到店取貨）。提交即完成預約，僅在預約已滿時店家會致電聯繫。', crabList: '大閘蟹到貨通知名單', crabBtn: '希望收到到貨通知', crabSend: '登記到貨通知名單', crabOk: '感謝您的登記。到貨確定後我們會第一時間通知您。', crabNeed: '請填寫姓名、電話，以及希望的公蟹・母蟹數量', male: '公蟹（隻）', female: '母蟹（隻）',
+    crabDone: '🦀 2026年大閘蟹已售罄結束\n衷心感謝今年眾多顧客的訂購。\n下次到貨預計在2027年10月下旬左右。\n\n大閘蟹是一年中僅能供應約20天的季節限定食材。近年來，希望「到貨時通知」的顧客越來越多。\n\n因此，我們設立了「大閘蟹到貨通知名單」。到貨確定後，我們將告知當年的大小、價格及銷售期間。\n\n登記時，請一併告知公蟹・母蟹各需要幾隻。（登記後也可更改）' });
   function RS(k) { const t = (RT[lang] || RT.ja); return t[k] !== undefined ? t[k] : RT.ja[k]; }
   // 予約の写真・動画（上海蟹：動画＋写真、おせち：写真）
   window.RSVMEDIA = kind => {
@@ -994,6 +1004,22 @@
     F.name = row(RS('name'), inp('text')); F.name.maxLength = 20;
     F.tel = row(RS('tel'), inp('tel')); F.tel.inputMode = 'tel'; F.tel.maxLength = 15;
     if (window._oseKeep) { [F.name.value, F.tel.value] = window._oseKeep; window._oseKeep = null; }
+    if (kind === 'crab' && CRAB_DONE) {
+      const cd = document.createElement('p'); cd.className = 'deal'; cd.style.cssText = 'margin:8px 0;white-space:pre-line;line-height:1.7'; cd.textContent = RS('crabDone'); f.insertBefore(cd, f.firstChild);
+      F.male = row(RS('male'), sel(nums(0, 20))); F.female = row(RS('female'), sel(nums(0, 20)));
+      F.memo = row(RS('memo'), inp('text')); F.memo.maxLength = 60;
+      $('rsvTitle').textContent = '🦀 ' + RS('crabList'); $('rsvSend').textContent = RS('crabSend'); $('rsvSend').disabled = false; $('rsvClose').textContent = RS('close'); $('rsvMsg').style.color = '';
+      $('rsvSend').onclick = () => {
+        const n = F.name.value.trim(), tel = F.tel.value.replace(/[^0-9０-９+\-－]/g, ''), nm = Number(F.male.value), nf = Number(F.female.value);
+        if (!n || tel.replace(/[^0-9０-９]/g, '').length < 10 || !(nm + nf)) { $('rsvMsg').textContent = RS('crabNeed'); return; }
+        const note = '【上海蟹ご案内リスト】' + n + '様 TEL ' + tel + ' オス×' + nm + ' メス×' + nf + (F.memo.value.trim() ? ' / ' + F.memo.value.trim() : '') + (lang !== 'ja' ? ' 【' + lang + '】' : '');
+        $('rsvSend').disabled = true;
+        call(null, { action: 'order', rid: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), table: '予約', items: [{ name: '【予約】上海蟹', qty: 1 }], note: note.slice(0, 200) })
+          .then(() => { $('rsvMsg').style.color = '#1a7a3a'; $('rsvMsg').textContent = RS('crabOk'); })
+          .catch(() => { $('rsvMsg').style.color = '#c0281c'; $('rsvMsg').textContent = RS('fail'); $('rsvSend').disabled = false; });
+      };
+      $('rsvSheet').hidden = false; return;
+    }
     if (kind === 'crab') { F.date = row(RS('date'), inp('date')); F.date.min = CRAB_ALL_FROM; F.date.max = CRAB_ALL_TO; }
     if (kind === 'crab') {
       { const ci = document.createElement('p'); ci.className = 'deal'; ci.style.margin = '8px 0'; ci.textContent = RS('cInfo'); f.insertBefore(ci, f.firstChild); }
