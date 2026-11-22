@@ -299,7 +299,7 @@
     Object.entries(v || {}).forEach(([a, b]) => { s = s.split('{' + a + '}').join(b); });
     return s;
   };
-  const JDISP = { 'ライス 小碗': 'ライス小', 'ライス 御碗': 'ライス中', 'ライス 大盛': 'ライス大', '超スペシャル麺（海老ワンタンとチャーシュー）': '超スペシャル麺（エビワンタン＆チャーシュー）',
+  const JDISP = { '烏龍ハイ': 'ウーロンハイ', 'ライス 小碗': 'ライス小', 'ライス 御碗': 'ライス中', 'ライス 大盛': 'ライス大', '超スペシャル麺（海老ワンタンとチャーシュー）': '超スペシャル麺（エビワンタン＆チャーシュー）',
     // お客様には「雲呑」は読みにくいので、カタカナの「ワンタン」で出す（伝票・注文の記録は元の名前のまま）
     '公珠鶏肉雲呑 9個': '公珠鶏肉ワンタン 9個', '公珠鶏肉雲呑 小5個': '公珠鶏肉ワンタン 小5個',
     '酸辣雲呑 9個': '酸辣鶏肉ワンタン 9個', '酸辣雲呑 小5個': '酸辣鶏肉ワンタン 小5個',
@@ -529,6 +529,8 @@
       let at = -1; mm.forEach((x, i) => { if (x.cat === BOARD_DUP[m.name] && !/^【/.test(x.name)) at = i; });
       if (at >= 0) mm.splice(at + 1, 0, Object.assign({}, m, { cat: BOARD_DUP[m.name], board: true }));
     });
+    // ウーロンハイ・緑茶ハイはサワーの一番上にも出す（焼酎の中にもそのまま。2026-11-22 麗珠さんから）
+    { const at = mm.findIndex(x => x.cat === 'サワー'); if (at >= 0) ['緑茶ハイ', '烏龍ハイ'].forEach(n => { const x = mm.find(y => y.name === n && y.cat !== 'サワー'); if (x) mm.splice(at, 0, Object.assign({}, x, { cat: 'サワー' })); }); }
     // 人気No.1：印を付けて、そのカテゴリーの一番上に出す
     const POP = new Set(['金ギョーザ（にんにく有り） 5個', '金ギョーザ（にんにく有り） 6個', '桜えび雲呑 9個', '桜えび雲呑 小5個', 'スペシャル麺（雲呑＆チャーシュー麺）', '牛バラあんかけご飯（牛腩燴飯）', '香港焼きソバ', '赤麻婆豆腐（赤唐辛子・山椒・花椒）', '正宗小籠包 3個', '正宗小籠包 4個', '口水鶏（ヨダレ鶏）', '芒果布丁（マンゴープリン）', '生ビール 中ジョッキ 360ml', '生レモンサワー', '十年紹興酒 250ml 燗', '十年紹興酒 250ml 常温', '十年紹興酒 250ml ロック', '十年紹興酒 500ml 燗', '十年紹興酒 500ml 常温', '十年紹興酒 500ml ロック', '生レモンスカッシュ']);
     if (!TAKEOUT) mm.filter(x => POP.has(x.name) && !x.board).reverse().forEach(p => {
@@ -587,8 +589,8 @@
       let toNote = false, curSub = null;
       // お酒の「大きさ・飲み方だけ違う品」は1枚のカードにまとめ、＋で選んでもらう（2026-11-22 麗珠さんから。案C）
       const famOf_ = {}, famDone_ = {};
-      if (lang === 'ja' && !TAKEOUT && !VIEW) { const fs = {};
-        mm.filter(m => m.cat === cat && !ADDON_(m) && !m.board).forEach(m => { const p = famParse_(N(m.name)); if (!p) return; const k = p.fam; (fs[k] = fs[k] || []).push(Object.assign({ m }, p)); });
+      if (!TAKEOUT && !VIEW) { const fs = {};
+        mm.filter(m => m.cat === cat && !ADDON_(m) && !m.board).forEach(m => { const p = famParse_(KANA((JDISP[m.name] || m.name).replace(/^【持帰】/, ''))); if (!p) return; const k = p.fam; (fs[k] = fs[k] || []).push(Object.assign({ m }, p)); });
         Object.keys(fs).forEach(k => { if (fs[k].length >= 2) fs[k].forEach(x => { famOf_[x.m.name] = fs[k]; }); }); }
       mm.filter(m => m.cat === cat && !ADDON_(m)).forEach(m => {
         if (famOf_[m.name] && !m.board) { const f = famOf_[m.name]; if (!famDone_[f[0].fam]) { famDone_[f[0].fam] = 1; wrap.appendChild(famCard_(f)); } return; }
@@ -662,24 +664,39 @@
   const SZ_ = /ml$|^グラス$|^ボトル|^濃いめ$/;
   function famParse_(shown) { const t = String(shown).trim().split(/\s+/); if (t.length < 2 || !STY_.test(t[t.length - 1])) return null;
     const sty = t.pop(); const size = t.filter(x => SZ_.test(x)).join(' '); const fam = t.filter(x => !SZ_.test(x)).join(' '); return fam ? { fam, size, sty } : null; }
+  // 英語・中国語でも同じ形にする（大きさ・飲み方の言葉と、画面の言葉）
+  const FSTY_ = { '燗': ['Warm', '温热', '溫熱'], '常温': ['Room temp', '常温', '常溫'], 'ロック': ['On the rocks', '加冰', '加冰'], 'ストレート': ['Straight', '纯饮', '純飲'], '水割り': ['With water', '兑水', '兌水'],
+    '炭酸割り': ['With soda', '兑苏打', '兌蘇打'], 'ソーダ割り': ['With soda', '兑苏打', '兌蘇打'], '烏龍割り': ['With oolong tea', '兑乌龙茶', '兌烏龍茶'], '緑茶割り': ['With green tea', '兑绿茶', '兌綠茶'], 'お湯割り': ['With hot water', '兑热水', '兌熱水'] };
+  const FSZ_ = { 'グラス': ['Glass', '杯', '杯'], 'ボトル640ml': ['Bottle 640ml', '瓶装640ml', '瓶裝640ml'], '濃いめ': ['Double', '双份', '雙份'], 'ふつう': ['Regular', '普通', '普通'] };
+  const FUI_ = { q: ['Which one?', '请选择', '請選擇'], cancel: ['Cancel', '取消', '取消'], sold: ['Sold out', '售罄', '售罄'], inCart: ['In cart', '已选', '已選'], pop: ['No.1 Popular', '人气第一', '人氣第一'], rec: ['Recommended', '推荐', '推薦'] };
+  const fL_ = (d, k, ja) => { const i = ({ en: 0, zhs: 1, zht: 2 })[lang]; return i === undefined ? ja : ((d[k] || [])[i] || ja); };
+  const fSty_ = j => fL_(FSTY_, j, j), fSz_ = j => fL_(FSZ_, j, j), fUi_ = (k, ja) => fL_(FUI_, k, ja);
+  function famLabel_(f) {
+    if (lang === 'ja') return f[0].fam;
+    const tr = (typeof I !== 'undefined' && I.items && I.items[f[0].m.name] && I.items[f[0].m.name][lang]) || ''; if (!tr) return f[0].fam;
+    let out;
+    if (lang === 'en') out = String(tr).split(',')[0].replace(/\s+(with .*|on the rocks|straight|neat|warm|room temp.*)$/i, '').trim();
+    else { const drop = new Set(); f.forEach(x => { drop.add(fSty_(x.sty)); x.size.split(' ').forEach(z => z && drop.add(fSz_(z))); }); out = String(tr).split(/\s+/).filter(z => !drop.has(z)).join(' '); }
+    return out || f[0].fam;
+  }
   const famHist_ = {};
   function famCard_(f) {
     const names = f.map(x => x.m.name), key = f[0].fam;
     const el = document.createElement('div'); el.className = 'item';
     el.innerHTML = '<div class="info"><div class="name"></div><div class="fsel" style="font-size:13px;color:#a8231c;font-weight:700;margin-top:2px"></div><div class="price"></div></div>' +
       '<div class="step"><button class="minus">−</button><span class="q"></span><button class="plus">＋</button></div>';
-    el.querySelector('.name').textContent = key;
-    if (f.some(x => x.m.pop)) { const pb = document.createElement('span'); pb.textContent = '👑人気No.1'; pb.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#c0281c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(pb); }
+    el.querySelector('.name').textContent = famLabel_(f);
+    if (f.some(x => x.m.pop)) { const pb = document.createElement('span'); pb.textContent = '👑' + fUi_('pop', '人気No.1'); pb.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#c0281c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(pb); }
     const n0 = names[0], ii = ITEMIMG[n0] || (ITEMRE.find(([re]) => re.test(n0)) || [])[1];
     if (ii) { const im = document.createElement('img'); im.className = 'thumb'; im.src = ii + '.webp?v=2'; im.alt = ''; im.loading = 'lazy'; el.prepend(im); }
     const ps = f.map(x => Number(x.m.price) || 0).filter(p => p > 0), lo = Math.min(...ps), hi = Math.max(...ps);
     el.querySelector('.price').textContent = ps.length ? yen(lo) + (hi > lo ? '〜' : '') : T('askPrice');
     const q = el.querySelector('.q'), minus = el.querySelector('.minus');
     const sync = () => { const tot = names.reduce((a, nm) => a + (cart[nm] || 0), 0); q.textContent = tot; q.hidden = minus.hidden = tot === 0;
-      el.querySelector('.fsel').textContent = f.filter(x => cart[x.m.name]).map(x => '✓ ' + (x.size ? x.size + ' ' : '') + x.sty + ' ×' + cart[x.m.name]).join('　'); updateBar(); };
+      el.querySelector('.fsel').textContent = f.filter(x => cart[x.m.name]).map(x => '✓ ' + (x.size ? x.size.split(' ').map(fSz_).join(' ') + ' ' : '') + fSty_(x.sty) + ' ×' + cart[x.m.name]).join('　'); updateBar(); };
     names.forEach(nm => (window._SY[nm] = window._SY[nm] || []).push(sync));
     const allOf = nm => (window._SY[nm] || []).forEach(fn => fn());
-    if (f.every(x => SOLD_(x.m.name))) { el.style.opacity = '.55'; const st = el.querySelector('.step'); st.innerHTML = '<span style="display:inline-block;padding:6px 12px;border-radius:8px;background:#555;color:#fff;font-weight:800;font-size:14px;white-space:nowrap">売り切れ</span>'; return el; }
+    if (f.every(x => SOLD_(x.m.name))) { el.style.opacity = '.55'; const st = el.querySelector('.step'); st.innerHTML = '<span style="display:inline-block;padding:6px 12px;border-radius:8px;background:#555;color:#fff;font-weight:800;font-size:14px;white-space:nowrap">' + fUi_('sold', '売り切れ') + '</span>'; return el; }
     // −：最後に入れたものから1つ減らす
     minus.onclick = () => { const h = famHist_[key] || []; let nm = null; while (h.length && !cart[nm = h.pop()]) nm = null; if (!nm) nm = names.find(x => cart[x]); if (!nm) return;
       cart[nm] = Math.max(0, cart[nm] - 1); if (!cart[nm]) delete cart[nm]; allOf(nm); };
@@ -691,23 +708,25 @@
     const bx = document.createElement('div'); bx.id = 'famSheet';
     bx.style.cssText = 'position:fixed;inset:0;z-index:10040;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
     const sh = document.createElement('div'); sh.style.cssText = 'background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:18px 16px calc(16px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto';
-    const h = document.createElement('div'); h.style.cssText = 'font-weight:900;font-size:19px;color:#231f1c;margin-bottom:4px'; h.textContent = key + '　どれにしますか？'; sh.appendChild(h);
+    const h = document.createElement('div'); h.style.cssText = 'font-weight:900;font-size:19px;color:#231f1c;margin-bottom:4px'; h.textContent = famLabel_(f) + '　' + fUi_('q', 'どれにしますか？'); sh.appendChild(h);
     const sizes = []; f.forEach(x => { if (!sizes.includes(x.size)) sizes.push(x.size); });
     sizes.forEach(sz => {
       const its = f.filter(x => x.size === sz), pr = [...new Set(its.map(x => Number(x.m.price) || 0))];
       const lb = document.createElement('div'); lb.style.cssText = 'font-weight:800;font-size:16px;color:#231f1c;margin:12px 0 6px';
-      lb.textContent = (sz || (sizes.length > 1 ? 'ふつう' : '')) + (pr.length === 1 && pr[0] > 0 ? '　' + yen(pr[0]) : ''); if (lb.textContent.trim()) sh.appendChild(lb);
+      lb.textContent = (sz ? sz.split(' ').map(fSz_).join(' ') : (sizes.length > 1 ? fSz_('ふつう') : '')) + (pr.length === 1 && pr[0] > 0 ? '　' + yen(pr[0]) : ''); if (lb.textContent.trim()) sh.appendChild(lb);
       const row = document.createElement('div'); row.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px';
       its.forEach(x => { const b = document.createElement('button'); b.type = 'button'; const sold = SOLD_(x.m.name), c = cart[x.m.name] || 0;
         b.style.cssText = 'padding:12px 4px;border-radius:12px;border:2px solid ' + (c ? '#a8231c' : '#ddd') + ';background:' + (sold ? '#eee' : c ? '#fdecea' : '#fff') + ';color:' + (sold ? '#999' : '#231f1c') + ';font-weight:800;font-size:17px;line-height:1.3';
-        b.textContent = x.sty; const sub = document.createElement('div'); sub.style.cssText = 'font-size:12px;font-weight:700;color:#777';
-        sub.textContent = sold ? '売り切れ' : (pr.length > 1 ? yen(x.m.price) : '') + (c ? (pr.length > 1 ? ' ' : '') + '注文中 ×' + c : ''); if (sub.textContent) b.appendChild(sub);
+        // 紹興酒は常温がおすすめ（2026-11-22 麗珠さんから）
+        if (/紹興酒/.test(x.m.name) && x.sty === '常温' && !sold) { const rb = document.createElement('div'); rb.style.cssText = 'display:inline-block;margin-bottom:3px;padding:1px 8px;border-radius:999px;background:#c0281c;color:#fff;font-size:11px;font-weight:800'; rb.textContent = fUi_('rec', 'おすすめ'); b.appendChild(rb); b.appendChild(document.createElement('br')); if (!c) b.style.borderColor = '#e8a29c'; }
+        b.appendChild(document.createTextNode(fSty_(x.sty))); const sub = document.createElement('div'); sub.style.cssText = 'font-size:12px;font-weight:700;color:#777';
+        sub.textContent = sold ? fUi_('sold', '売り切れ') : (pr.length > 1 ? yen(x.m.price) : '') + (c ? (pr.length > 1 ? ' ' : '') + fUi_('inCart', '注文中') + ' ×' + c : ''); if (sub.textContent) b.appendChild(sub);
         if (sold) b.disabled = true;
         else b.onclick = () => { cart[x.m.name] = Math.min(50, (cart[x.m.name] || 0) + 1); (famHist_[key] = famHist_[key] || []).push(x.m.name); bx.remove(); allOf(x.m.name); };
         row.appendChild(b); });
       sh.appendChild(row);
     });
-    const cx = document.createElement('button'); cx.type = 'button'; cx.textContent = 'やめる'; cx.style.cssText = 'display:block;width:100%;margin-top:16px;padding:12px;border:1px solid #ccc;border-radius:12px;background:#fff;font-size:16px;color:#555';
+    const cx = document.createElement('button'); cx.type = 'button'; cx.textContent = fUi_('cancel', 'やめる'); cx.style.cssText = 'display:block;width:100%;margin-top:16px;padding:12px;border:1px solid #ccc;border-radius:12px;background:#fff;font-size:16px;color:#555';
     cx.onclick = () => bx.remove(); sh.appendChild(cx);
     bx.onclick = e => { if (e.target === bx) bx.remove(); };
     bx.appendChild(sh); document.body.appendChild(bx);
