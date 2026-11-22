@@ -518,7 +518,7 @@
     if (VIEW) { const p = document.createElement('p'); p.className = 'deal'; p.textContent = VT('note'); root.appendChild(p); }
     const mm = (TAKEOUT ? menu.filter(m => /^テイクアウト/.test(m.cat)) : menu.filter(m => !/^テイクアウト/.test(m.cat))).filter(m => m.cat !== 'リクエスト' && !/^【グラス】/.test(m.name));
     // 黒板メニューの品は、ふだんのカテゴリーにも「黒板メニュー」の印つきで出す
-    const BOARD_DUP = { '横浜名物 公珠サンマー麺': '麺類', '馬拉糕（中国風蒸しカステラ）2個': '小菜・点心', 'ジャスミン柚子の冷茶（茉莉柚茶）': 'ソフトドリンク', '烏蘇（ウースー）ビール 500ml': '瓶ビール・ビアカクテル', 'ハルピンビール': '瓶ビール・ビアカクテル', 'ギネスビール': '瓶ビール・ビアカクテル', '青島スタウト': '瓶ビール・ビアカクテル', '横浜IPAブラック（はま黒）': '瓶ビール・ビアカクテル' };
+    const BOARD_DUP = { '横浜名物 公珠サンマー麺': '麺類', '馬拉糕（中国風蒸しカステラ）2個': ['小菜・点心', 'デザート'] /* デザートにも（2026-11-23） */, 'ジャスミン柚子の冷茶（茉莉柚茶）': 'ソフトドリンク', '烏蘇（ウースー）ビール 500ml': '瓶ビール・ビアカクテル', 'ハルピンビール': '瓶ビール・ビアカクテル', 'ギネスビール': '瓶ビール・ビアカクテル', '青島スタウト': '瓶ビール・ビアカクテル', '横浜IPAブラック（はま黒）': '瓶ビール・ビアカクテル' };
     // ふだんのカテゴリーの品を、黒板メニューにも出す（ふだんの方に「黒板メニュー」の印）
     const BOARD_ALSO = ['季節の餃子（プチトマト） 5個', '季節の餃子 追加1粒'];
     for (let i = 0; i < mm.length; i++) if (BOARD_ALSO.includes(mm[i].name) && !mm[i].board) mm[i] = Object.assign({}, mm[i], { board: true });
@@ -526,8 +526,9 @@
       if (last >= 0) mm.filter(x => x.board && BOARD_ALSO.includes(x.name)).forEach(x => { mm.splice(++last, 0, Object.assign({}, x, { cat: '黒板メニュー', board: false })); }); }
     mm.filter(m => (m.cat === '黒板メニュー' || m.cat === '黒ビール（3種の黒ビールシリーズ）') && BOARD_DUP[m.name]).forEach(m => {
       // そのカテゴリーの最後（「【麺に追加】」などの追加品より前）に入れる
-      let at = -1; mm.forEach((x, i) => { if (x.cat === BOARD_DUP[m.name] && !/^【/.test(x.name)) at = i; });
-      if (at >= 0) mm.splice(at + 1, 0, Object.assign({}, m, { cat: BOARD_DUP[m.name], board: true }));
+      [].concat(BOARD_DUP[m.name]).forEach(dc => { /* 1つの品を複数のカテゴリーに出せる */
+      let at = -1; mm.forEach((x, i) => { if (x.cat === dc && !/^【/.test(x.name)) at = i; });
+      if (at >= 0) mm.splice(at + 1, 0, Object.assign({}, m, { cat: dc, board: true })); });
     });
     // ウーロンハイ・緑茶ハイはサワーの一番上にも出す（焼酎の中にもそのまま。2026-11-22 麗珠さんから）
     { let gi = mm.findIndex(x => x.cat === 'サワー' && x.name === 'おかわりサワー（中身のみ）'); if (gi < 0) gi = mm.findIndex(x => x.cat === 'サワー' && x.name === '生グレープフルーツサワー'); const at = gi >= 0 ? gi + 1 : mm.findIndex(x => x.cat === 'サワー'); /* レモンサワー・グレープフルーツサワーの下（2026-11-23） */ if (at >= 0) ['緑茶ハイ', '烏龍ハイ'].forEach(n => { const x = mm.find(y => y.name === n && y.cat !== 'サワー'); if (x) mm.splice(at, 0, Object.assign({}, x, { cat: 'サワー' })); }); }
