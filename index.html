@@ -510,7 +510,7 @@
   const REGP = { 'ひとくちジョッキ 生ビール': 420, 'ランチ生中ビール': 620 };
   const TO_DRINK = /ビール|サワー|ハイボール|ウイスキー|焼酎|リキュール|紹興酒|白酒|その他|ドリンク|中国茶/;
   const ITEMIMG = { '香港焼きソバ': 'i_hkyakisoba', '揚げ胡麻団子（3個）': 'i_gomadango' };
-  const ITEMRE = [[/觔斗雲/, 'i_gyukintoun'], [/^貴州牛肉麺/, 'i_guizhou'], [/^牛肚葱油麺/, 'i_gyumotsu'], [/^十年紹興酒/, 'c_shaoxing'], [/^紹興酒3年/, 'i_shao3'], [/スペシャルダブル/, 'i_dbl'], [/酸素ドリンク/, 'i_act'], [/ミネラルドリンク/, 'i_min'], [/^きんとうん炒飯$|筋斗雲チャーハン/, 'i_kintoun'], [/^シンガポール風/, 'i_sgfr'], [/^口水鶏|ヨダレ鶏/, 'i_yodare'], [/^台式花巻/, 'i_hanamaki'], [/^担々麻辣飯|坦々マーラーご飯/, 'i_tanmala'], [/^春巻（2本）|^【持帰】春巻き 2本/, 'i_harumaki'], [/^桜海老炒飯/, 'i_sakurafr'], [/^棒棒鶏沙律/, 'i_bbjsalad'], [/^横浜大焼売 3個/, 'i_shumai'], [/^正宗小籠包/, 'i_xlb'], [/牛バラあんかけご飯/, 'c_gohan'], [/^珍珠奶茶/, 'i_tapioca'], [/^番茄浅蜊麺/, 'i_tomatoasari'], [/^豚肉包子/, 'i_butaman'], [/^赤麻婆豆腐|^【持帰】麻婆豆腐/, 'i_mabo'], [/^緑麻婆豆腐/, 'i_mabog'], [/^鮮奶番茄浅蜊麺/, 'i_creamasari'], [/^黄金蒜油麺/, 'i_ougon'], [/^スペシャル麺/, 'c_men'], [/^生レモンスカッシュ/, 'i_lemonsq'], [/^生グレープフルーツスカッシュ/, 'i_gfsq']];
+  const ITEMRE = [[/^季節野菜の炒め/, 'i_komatsuna'], [/觔斗雲/, 'i_gyukintoun'], [/^貴州牛肉麺/, 'i_guizhou'], [/^牛肚葱油麺/, 'i_gyumotsu'], [/^十年紹興酒/, 'c_shaoxing'], [/^紹興酒3年/, 'i_shao3'], [/スペシャルダブル/, 'i_dbl'], [/酸素ドリンク/, 'i_act'], [/ミネラルドリンク/, 'i_min'], [/^きんとうん炒飯$|筋斗雲チャーハン/, 'i_kintoun'], [/^シンガポール風/, 'i_sgfr'], [/^口水鶏|ヨダレ鶏/, 'i_yodare'], [/^台式花巻/, 'i_hanamaki'], [/^担々麻辣飯|坦々マーラーご飯/, 'i_tanmala'], [/^春巻（2本）|^【持帰】春巻き 2本/, 'i_harumaki'], [/^桜海老炒飯/, 'i_sakurafr'], [/^棒棒鶏沙律/, 'i_bbjsalad'], [/^横浜大焼売 3個/, 'i_shumai'], [/^正宗小籠包/, 'i_xlb'], [/牛バラあんかけご飯/, 'c_gohan'], [/^珍珠奶茶/, 'i_tapioca'], [/^番茄浅蜊麺/, 'i_tomatoasari'], [/^豚肉包子/, 'i_butaman'], [/^赤麻婆豆腐|^【持帰】麻婆豆腐/, 'i_mabo'], [/^緑麻婆豆腐/, 'i_mabog'], [/^鮮奶番茄浅蜊麺/, 'i_creamasari'], [/^黄金蒜油麺/, 'i_ougon'], [/^スペシャル麺/, 'c_men'], [/^生レモンスカッシュ/, 'i_lemonsq'], [/^生グレープフルーツスカッシュ/, 'i_gfsq']];
   const GIMG = { '上海蟹（特別入荷）':'crab_photo', 'テイクアウト 飯類':'gohan', 'テイクアウト 餃子':'gyoza', 'テイクアウト その他':'ippin', 'テイクアウト 冷凍':'tenshin', 'ランチ':'lunch2', '黒板メニュー':'board', '餃子':'gyoza', 'ワンタン':'wantan', '麺類':'men', 'ご飯類':'gohan', '焼きそば':'yakisoba', '一品料理':'ippin', '点心':'tenshin', '前菜':'zensai', 'デザート':'dessert', '中国茶':'tea', 'サワー':'sour', 'ビール':'beer2', '紹興酒・白酒':'shaoxing', 'ハイボールその他':'highball', 'ソフトドリンク':'soft' };
   const groupOf = cat => { const g = GROUPS.find(([, cs]) => cs.includes(cat)); return g ? g[0] : 'ハイボールその他'; };
 
@@ -670,6 +670,8 @@
   function famParse_(shown, cat) { const t = String(shown).trim().split(/\s+/);
     // 餃子は「5個／6個」をタップ後に選ぶ（2026-11-23 麗珠さんから）
     // チャーハンは「ふつう／大盛（＋¥400）」をタップ後に選ぶ（2026-11-23 麗珠さんから）
+    // 季節野菜の炒めは1枚にして、味を選んでもらう（2026-11-23 麗珠さんから）
+    if (cat === '野菜料理' && t.length === 2 && t[0] === '季節野菜の炒め') return { fam: t[0], size: '', sty: t[1], veg: true };
     // ライスは「小・中・大」、ご飯類（ライス・ちまき以外）は「ふつう／大盛」。チャーハンの大盛は＋¥400、ほかのご飯は「ご飯大盛追加」（2026-11-23 麗珠さんから）
     if (cat === 'ご飯類') { const rb = String(shown).match(/^ライス\s*(小|中|大)$/); if (rb) return { fam: 'ライス', size: '', sty: rb[1], bowl: true };
       if (/追加|ちまき|糯米/.test(shown)) return null; const fr = /チャーハン|炒飯/.test(shown), big = fr ? 'チャーハン大盛追加' : 'ご飯大盛追加';
@@ -679,13 +681,14 @@
     const sty = t.pop(); const size = t.filter(x => SZ_.test(x)).join(' '); const fam = t.filter(x => !SZ_.test(x)).join(' '); return fam ? { fam, size, sty } : null; }
   // 英語・中国語でも同じ形にする（大きさ・飲み方の言葉と、画面の言葉）
   const FSTY_ = { '燗': ['Warm', '温热', '溫熱'], '常温': ['Room temp', '常温', '常溫'], 'ロック': ['On the rocks', '加冰', '加冰'], 'ストレート': ['Straight', '纯饮', '純飲'], '水割り': ['With water', '兑水', '兌水'],
-    '炭酸割り': ['With soda', '兑苏打', '兌蘇打'], 'ソーダ割り': ['With soda', '兑苏打', '兌蘇打'], '烏龍割り': ['With oolong tea', '兑乌龙茶', '兌烏龍茶'], '緑茶割り': ['With green tea', '兑绿茶', '兌綠茶'], 'お湯割り': ['With hot water', '兑热水', '兌熱水'], '大盛': ['Large', '大份', '大份'], 'ふつう': ['Regular', '普通', '普通'], '小': ['Small', '小', '小'], '中': ['Medium', '中', '中'], '大': ['Large', '大', '大'] };
+    '炭酸割り': ['With soda', '兑苏打', '兌蘇打'], 'ソーダ割り': ['With soda', '兑苏打', '兌蘇打'], '烏龍割り': ['With oolong tea', '兑乌龙茶', '兌烏龍茶'], '緑茶割り': ['With green tea', '兑绿茶', '兌綠茶'], 'お湯割り': ['With hot water', '兑热水', '兌熱水'], '大盛': ['Large', '大份', '大份'], 'ふつう': ['Regular', '普通', '普通'], '小': ['Small', '小', '小'], 'オリジナルにんにく炒め': ['Garlic (original)', '招牌蒜蓉炒', '招牌蒜蓉炒'], 'エビ味噌炒め': ['Shrimp paste', '虾酱炒', '蝦醬炒'], '魚介味噌炒め': ['Seafood paste', '海鲜酱炒', '海鮮醬炒'], '中': ['Medium', '中', '中'], '大': ['Large', '大', '大'] };
   const FSZ_ = { 'グラス': ['Glass', '杯', '杯'], 'ボトル640ml': ['Bottle 640ml', '瓶装640ml', '瓶裝640ml'], '濃いめ': ['Double', '双份', '雙份'], 'ふつう': ['Regular', '普通', '普通'] };
-  const FUI_ = { q: ['Which one?', '请选择', '請選擇'], cancel: ['Cancel', '取消', '取消'], sold: ['Sold out', '售罄', '售罄'], inCart: ['In cart', '已选', '已選'], pop: ['No.1 Popular', '人气第一', '人氣第一'], rec: ['Recommended', '推荐', '推薦'] };
+  const FUI_ = { q: ['Which one?', '请选择', '請選擇'], cancel: ['Cancel', '取消', '取消'], sold: ['Sold out', '售罄', '售罄'], inCart: ['In cart', '已选', '已選'], pop: ['No.1 Popular', '人气第一', '人氣第一'], rec: ['Recommended', '推荐', '推薦'], flavor: ['Choose a flavor', '请选择口味', '請選擇口味'] };
   const fL_ = (d, k, ja) => { const i = ({ en: 0, zhs: 1, zht: 2 })[lang]; return i === undefined ? ja : ((d[k] || [])[i] || ja); };
   const fSty_ = j => { const c = String(j).match(/^(\d+)個$/); if (c) return ({ en: c[1] + ' pcs', zhs: c[1] + '个', zht: c[1] + '個' })[lang] || j; return fL_(FSTY_, j, j); }, fSz_ = j => fL_(FSZ_, j, j), fUi_ = (k, ja) => fL_(FUI_, k, ja);
   function famLabel_(f) {
     if (lang === 'ja') return f[0].fam;
+    if (f[0].veg) return ({ en: 'Seasonal Vegetable Stir-fry', zhs: '时令蔬菜炒', zht: '時令蔬菜炒' })[lang] || f[0].fam;
     if (f[0].bowl) return ({ en: 'Rice', zhs: '米饭', zht: '米飯' })[lang] || 'ライス';
     if (f[0].rice) { const r0 = f.find(x => x.sty === 'ふつう') || f[0]; return N(r0.m.name) || f[0].fam; }
     const tr = (typeof I !== 'undefined' && I.items && I.items[f[0].m.name] && I.items[f[0].m.name][lang]) || ''; if (!tr) return f[0].fam;
@@ -733,13 +736,13 @@
     const bx = document.createElement('div'); bx.id = 'famSheet';
     bx.style.cssText = 'position:fixed;inset:0;z-index:10040;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
     const sh = document.createElement('div'); sh.style.cssText = 'background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:18px 16px calc(16px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto';
-    const h = document.createElement('div'); h.style.cssText = 'font-weight:900;font-size:19px;color:#231f1c;margin-bottom:4px'; h.textContent = famLabel_(f) + '　' + fUi_('q', 'どれにしますか？'); sh.appendChild(h);
+    const h = document.createElement('div'); h.style.cssText = 'font-weight:900;font-size:19px;color:#231f1c;margin-bottom:4px'; h.textContent = famLabel_(f) + '　' + (f[0].veg ? fUi_('flavor', '味を選んでください') : fUi_('q', 'どれにしますか？')); sh.appendChild(h);
     const sizes = []; f.forEach(x => { if (!sizes.includes(x.size)) sizes.push(x.size); });
     sizes.forEach(sz => {
       const its = f.filter(x => x.size === sz), pr = [...new Set(its.map(priceOf_))];
       const lb = document.createElement('div'); lb.style.cssText = 'font-weight:800;font-size:16px;color:#231f1c;margin:12px 0 6px';
-      lb.textContent = (sz ? sz.split(' ').map(fSz_).join(' ') : (sizes.length > 1 ? fSz_('ふつう') : '')) + (pr.length === 1 && pr[0] > 0 ? '　' + yen(pr[0]) : ''); if (lb.textContent.trim()) sh.appendChild(lb);
-      const row = document.createElement('div'); row.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px';
+      lb.textContent = (sz ? sz.split(' ').map(fSz_).join(' ') : (sizes.length > 1 ? fSz_('ふつう') : '')) + (pr.length === 1 && pr[0] > 0 ? '　' + yen(pr[0]) : ''); lb.textContent = lb.textContent.trim(); if (lb.textContent) sh.appendChild(lb);
+      const row = document.createElement('div'); row.style.cssText = 'display:grid;grid-template-columns:' + (f[0].veg ? '1fr' : 'repeat(3,1fr)') + ';gap:8px';
       its.forEach(x => { const b = document.createElement('button'); b.type = 'button'; const sold = SOLD_(x.m.name), c = cntOf_(f, x);
         b.style.cssText = 'padding:12px 4px;border-radius:12px;border:2px solid ' + (c ? '#a8231c' : '#ddd') + ';background:' + (sold ? '#eee' : c ? '#fdecea' : '#fff') + ';color:' + (sold ? '#999' : '#231f1c') + ';font-weight:800;font-size:17px;line-height:1.3';
         // 紹興酒は常温がおすすめ（2026-11-22 麗珠さんから）
