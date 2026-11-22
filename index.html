@@ -520,7 +520,7 @@
     // 黒板メニューの品は、ふだんのカテゴリーにも「黒板メニュー」の印つきで出す
     const BOARD_DUP = { '横浜名物 公珠サンマー麺': '麺類', '馬拉糕（中国風蒸しカステラ）2個': ['小菜・点心', 'デザート'] /* デザートにも（2026-11-23） */, 'ジャスミン柚子の冷茶（茉莉柚茶）': 'ソフトドリンク', '烏蘇（ウースー）ビール 500ml': '瓶ビール・ビアカクテル', 'ハルピンビール': '瓶ビール・ビアカクテル', 'ギネスビール': '瓶ビール・ビアカクテル', '青島スタウト': '瓶ビール・ビアカクテル', '横浜IPAブラック（はま黒）': '瓶ビール・ビアカクテル' };
     // ふだんのカテゴリーの品を、黒板メニューにも出す（ふだんの方に「黒板メニュー」の印）
-    const BOARD_ALSO = ['季節の餃子（プチトマト） 5個', '季節の餃子 追加1粒'];
+    const BOARD_ALSO = ['季節の餃子（プチトマト） 5個', '季節の餃子（プチトマト） 6個', '季節の餃子 追加1粒'];
     for (let i = 0; i < mm.length; i++) if (BOARD_ALSO.includes(mm[i].name) && !mm[i].board) mm[i] = Object.assign({}, mm[i], { board: true });
     { let last = -1; mm.forEach((x, i) => { if (x.cat === '黒板メニュー') last = i; });
       if (last >= 0) mm.filter(x => x.board && BOARD_ALSO.includes(x.name)).forEach(x => { mm.splice(++last, 0, Object.assign({}, x, { cat: '黒板メニュー', board: false })); }); }
@@ -591,12 +591,12 @@
       // お酒の「大きさ・飲み方だけ違う品」は1枚のカードにまとめ、＋で選んでもらう（2026-11-22 麗珠さんから。案C）
       const famOf_ = {}, famDone_ = {};
       if (!TAKEOUT && !VIEW) { const fs = {};
-        mm.filter(m => m.cat === cat && !ADDON_(m) && !m.board).forEach(m => { const p = famParse_(KANA((JDISP[m.name] || m.name).replace(/^【持帰】/, '')), m.cat); if (!p) return; const k = p.fam; (fs[k] = fs[k] || []).push(Object.assign({ m }, p)); });
+        mm.filter(m => m.cat === cat && !ADDON_(m)).forEach(m => { const p = famParse_(KANA((JDISP[m.name] || m.name).replace(/^【持帰】/, '')), m.cat); if (!p) return; const k = p.fam; (fs[k] = fs[k] || []).push(Object.assign({ m }, p)); });
         Object.keys(fs).forEach(k => { const g = fs[k]; if (!g[0].rice) return; g.sort((a, b) => (a.sty === '大盛') - (b.sty === '大盛'));
           if (!g.some(x => x.sty === '大盛') && menu.some(x => x.name === RICE_BIG_)) g.push({ m: g[0].m, size: '', sty: '大盛', rice: true, virt: true, price: (Number(g[0].m.price) || 0) + 400 }); });
         Object.keys(fs).forEach(k => { if (fs[k].length >= 2) fs[k].forEach(x => { famOf_[x.m.name] = fs[k]; }); }); }
       mm.filter(m => m.cat === cat && !ADDON_(m) && !(m.name === RICE_BIG_ && !TAKEOUT && !VIEW)).forEach(m => {
-        if (famOf_[m.name] && !m.board) { const f = famOf_[m.name]; if (!famDone_[f[0].fam]) { famDone_[f[0].fam] = 1; wrap.appendChild(famCard_(f)); } return; }
+        if (famOf_[m.name]) { const f = famOf_[m.name]; if (!famDone_[f[0].fam]) { famDone_[f[0].fam] = 1; wrap.appendChild(famCard_(f)); } return; }
         if (cat === 'テイクアウト 冷凍') { const g = FZG.find(x => x[0].test(m.name)); if (g && g[1].ja !== curSub) { curSub = g[1].ja; const h = document.createElement('div'); h.textContent = g[1][lang] || g[1].ja; h.style.cssText = 'display:block;margin:16px 0 4px;padding:4px 12px;border-radius:5px;color:#fff;font-weight:700;font-size:15px;background:#b5262b'; wrap.appendChild(h); } }
         if (cat === '焼きそば' && /刀削麺/.test(m.name) && curSub !== 'tosho') { curSub = 'tosho'; const h = document.createElement('h2'); h.textContent = ({ en: 'Stir-fried Knife-cut Noodles', zhs: '炒刀削面', zht: '炒刀削麵' })[lang] || '焼き刀削麺'; const im = document.createElement('img'); im.src = 'i_tosho.webp?v=1'; im.alt = ''; im.loading = 'lazy'; im.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:10px'; h.prepend(im); wrap.appendChild(h); }
         if (cat === '麺類') { const sb = nsubOf(m); if (sb !== curSub) { curSub = sb; const L = NSUBL[sb]; if (L) { const h = document.createElement('div'); h.textContent = L[({ en: 1, zhs: 2, zht: 3 })[lang] || 0]; h.style.cssText = 'display:inline-block;margin:16px 0 4px;padding:3px 12px;border-radius:5px;color:#fff;font-weight:700;font-size:15px;background:' + L[4]; wrap.appendChild(h); } } }
@@ -669,7 +669,7 @@
     // 餃子は「5個／6個」をタップ後に選ぶ（2026-11-23 麗珠さんから）
     // チャーハンは「ふつう／大盛（＋¥400）」をタップ後に選ぶ（2026-11-23 麗珠さんから）
     if (cat === 'ご飯類' && /チャーハン|炒飯/.test(shown) && !/追加/.test(shown)) { if (t.length >= 2 && t[t.length - 1] === '大盛') { t.pop(); return { fam: t.join(' '), size: '', sty: '大盛', rice: true }; } return { fam: t.join(' '), size: '', sty: 'ふつう', rice: true }; }
-    if (/餃子/.test(cat || '') && t.length >= 2 && /^\d+個$/.test(t[t.length - 1])) { const sty = t.pop(); return { fam: t.join(' '), size: '', sty, cnt: true }; }
+    if ((/餃子/.test(cat || '') || (cat === '黒板メニュー' && /餃子|ギョーザ/.test(shown))) && t.length >= 2 && /^\d+個$/.test(t[t.length - 1])) { const sty = t.pop(); return { fam: t.join(' '), size: '', sty, cnt: true }; }
     if (t.length < 2 || !STY_.test(t[t.length - 1])) return null;
     const sty = t.pop(); const size = t.filter(x => SZ_.test(x)).join(' '); const fam = t.filter(x => !SZ_.test(x)).join(' '); return fam ? { fam, size, sty } : null; }
   // 英語・中国語でも同じ形にする（大きさ・飲み方の言葉と、画面の言葉）
@@ -701,6 +701,7 @@
       '<div class="step"><button class="minus">−</button><span class="q"></span><button class="plus">＋</button></div>';
     el.querySelector('.name').textContent = famLabel_(f);
     if (f.some(x => x.m.pop)) { const pb = document.createElement('span'); pb.textContent = '👑' + fUi_('pop', '人気No.1'); pb.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#c0281c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(pb); }
+    if (f.some(x => x.m.board)) { const bt = document.createElement('span'); bt.textContent = ({ en: 'Chalkboard', zhs: '黑板菜单', zht: '黑板菜單' })[lang] || '黒板メニュー'; bt.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#2f3b33;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(bt); }
     const n0 = names[0], ii = ITEMIMG[n0] || (ITEMRE.find(([re]) => re.test(n0)) || [])[1];
     if (ii) { const im = document.createElement('img'); im.className = 'thumb'; im.src = ii + '.webp?v=2'; im.alt = ''; im.loading = 'lazy'; el.prepend(im); }
     const ps = f.map(priceOf_).filter(p => p > 0), lo = Math.min(...ps), hi = Math.max(...ps);
