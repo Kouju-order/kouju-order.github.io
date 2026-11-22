@@ -508,7 +508,7 @@
   const REGP = { 'ひとくちジョッキ 生ビール': 420, 'ランチ生中ビール': 620 };
   const TO_DRINK = /ビール|サワー|ハイボール|ウイスキー|焼酎|リキュール|紹興酒|白酒|その他|ドリンク|中国茶/;
   const ITEMIMG = { '香港焼きソバ': 'i_hkyakisoba', '揚げ胡麻団子（3個）': 'i_gomadango' };
-  const ITEMRE = [[/^十年紹興酒/, 'c_shaoxing'], [/スペシャルダブル/, 'i_dbl'], [/酸素ドリンク/, 'i_act'], [/ミネラルドリンク/, 'i_min'], [/^きんとうん炒飯$|筋斗雲チャーハン/, 'i_kintoun'], [/^シンガポール風/, 'i_sgfr'], [/^口水鶏|ヨダレ鶏/, 'i_yodare'], [/^台式花巻/, 'i_hanamaki'], [/^担々麻辣飯|坦々マーラーご飯/, 'i_tanmala'], [/^春巻（2本）|^【持帰】春巻き 2本/, 'i_harumaki'], [/^桜海老炒飯/, 'i_sakurafr'], [/^棒棒鶏沙律/, 'i_bbjsalad'], [/^横浜大焼売 3個/, 'i_shumai'], [/^正宗小籠包/, 'i_xlb'], [/牛バラあんかけご飯/, 'c_gohan'], [/^珍珠奶茶/, 'i_tapioca'], [/^番茄浅蜊麺/, 'i_tomatoasari'], [/^豚肉包子/, 'i_butaman'], [/^赤麻婆豆腐|^【持帰】麻婆豆腐/, 'i_mabo'], [/^緑麻婆豆腐/, 'i_mabog'], [/^鮮奶番茄浅蜊麺/, 'i_creamasari'], [/^黄金蒜油麺/, 'i_ougon'], [/^スペシャル麺/, 'c_men'], [/^生レモンスカッシュ/, 'i_lemonsq'], [/^生グレープフルーツスカッシュ/, 'i_gfsq']];
+  const ITEMRE = [[/^十年紹興酒/, 'c_shaoxing'], [/^紹興酒3年/, 'i_shao3'], [/スペシャルダブル/, 'i_dbl'], [/酸素ドリンク/, 'i_act'], [/ミネラルドリンク/, 'i_min'], [/^きんとうん炒飯$|筋斗雲チャーハン/, 'i_kintoun'], [/^シンガポール風/, 'i_sgfr'], [/^口水鶏|ヨダレ鶏/, 'i_yodare'], [/^台式花巻/, 'i_hanamaki'], [/^担々麻辣飯|坦々マーラーご飯/, 'i_tanmala'], [/^春巻（2本）|^【持帰】春巻き 2本/, 'i_harumaki'], [/^桜海老炒飯/, 'i_sakurafr'], [/^棒棒鶏沙律/, 'i_bbjsalad'], [/^横浜大焼売 3個/, 'i_shumai'], [/^正宗小籠包/, 'i_xlb'], [/牛バラあんかけご飯/, 'c_gohan'], [/^珍珠奶茶/, 'i_tapioca'], [/^番茄浅蜊麺/, 'i_tomatoasari'], [/^豚肉包子/, 'i_butaman'], [/^赤麻婆豆腐|^【持帰】麻婆豆腐/, 'i_mabo'], [/^緑麻婆豆腐/, 'i_mabog'], [/^鮮奶番茄浅蜊麺/, 'i_creamasari'], [/^黄金蒜油麺/, 'i_ougon'], [/^スペシャル麺/, 'c_men'], [/^生レモンスカッシュ/, 'i_lemonsq'], [/^生グレープフルーツスカッシュ/, 'i_gfsq']];
   const GIMG = { '上海蟹（特別入荷）':'crab_photo', 'テイクアウト 飯類':'gohan', 'テイクアウト 餃子':'gyoza', 'テイクアウト その他':'ippin', 'テイクアウト 冷凍':'tenshin', 'ランチ':'lunch2', '黒板メニュー':'board', '餃子':'gyoza', 'ワンタン':'wantan', '麺類':'men', 'ご飯類':'gohan', '焼きそば':'yakisoba', '一品料理':'ippin', '点心':'tenshin', '前菜':'zensai', 'デザート':'dessert', '中国茶':'tea', 'サワー':'sour', 'ビール':'beer2', '紹興酒・白酒':'shaoxing', 'ハイボールその他':'highball', 'ソフトドリンク':'soft' };
   const groupOf = cat => { const g = GROUPS.find(([, cs]) => cs.includes(cat)); return g ? g[0] : 'ハイボールその他'; };
 
@@ -585,7 +585,13 @@
       if (CATNOTE[cat] && cat !== '健康ドリンク') { const p = document.createElement('p'); p.className = 'deal'; p.textContent = T(CATNOTE[cat]); wrap.appendChild(p); }
       if (cat === 'テイクアウト 冷凍') { const im = document.createElement('img'); im.src = 'c_sets.webp?v=1'; im.alt = T('frozenSets'); im.loading = 'lazy'; im.style.cssText = 'display:block;width:100%;max-width:640px;margin:8px auto;border-radius:8px'; wrap.appendChild(im); const dt = document.createElement('details'); dt.style.cssText = 'margin:6px 0 10px;font-size:13px;background:#fff8ee;border:1px solid #ecd9bd;border-radius:8px;padding:8px 10px'; const sm = document.createElement('summary'); sm.textContent = '🍳 ' + T('frozenHowT'); sm.style.cssText = 'font-weight:700;cursor:pointer'; dt.appendChild(sm); const pr = document.createElement('div'); pr.style.cssText = 'white-space:pre-line;margin-top:6px;line-height:1.6'; pr.textContent = T('frozenHow'); dt.appendChild(pr); wrap.appendChild(dt); }
       let toNote = false, curSub = null;
+      // お酒の「大きさ・飲み方だけ違う品」は1枚のカードにまとめ、＋で選んでもらう（2026-11-22 麗珠さんから。案C）
+      const famOf_ = {}, famDone_ = {};
+      if (lang === 'ja' && !TAKEOUT && !VIEW) { const fs = {};
+        mm.filter(m => m.cat === cat && !ADDON_(m) && !m.board).forEach(m => { const p = famParse_(N(m.name)); if (!p) return; const k = p.fam; (fs[k] = fs[k] || []).push(Object.assign({ m }, p)); });
+        Object.keys(fs).forEach(k => { if (fs[k].length >= 2) fs[k].forEach(x => { famOf_[x.m.name] = fs[k]; }); }); }
       mm.filter(m => m.cat === cat && !ADDON_(m)).forEach(m => {
+        if (famOf_[m.name] && !m.board) { const f = famOf_[m.name]; if (!famDone_[f[0].fam]) { famDone_[f[0].fam] = 1; wrap.appendChild(famCard_(f)); } return; }
         if (cat === 'テイクアウト 冷凍') { const g = FZG.find(x => x[0].test(m.name)); if (g && g[1].ja !== curSub) { curSub = g[1].ja; const h = document.createElement('div'); h.textContent = g[1][lang] || g[1].ja; h.style.cssText = 'display:block;margin:16px 0 4px;padding:4px 12px;border-radius:5px;color:#fff;font-weight:700;font-size:15px;background:#b5262b'; wrap.appendChild(h); } }
         if (cat === '焼きそば' && /刀削麺/.test(m.name) && curSub !== 'tosho') { curSub = 'tosho'; const h = document.createElement('h2'); h.textContent = ({ en: 'Stir-fried Knife-cut Noodles', zhs: '炒刀削面', zht: '炒刀削麵' })[lang] || '焼き刀削麺'; const im = document.createElement('img'); im.src = 'i_tosho.webp?v=1'; im.alt = ''; im.loading = 'lazy'; im.style.cssText = 'width:56px;height:56px;object-fit:cover;border-radius:8px;vertical-align:middle;margin-right:10px'; h.prepend(im); wrap.appendChild(h); }
         if (cat === '麺類') { const sb = nsubOf(m); if (sb !== curSub) { curSub = sb; const L = NSUBL[sb]; if (L) { const h = document.createElement('div'); h.textContent = L[({ en: 1, zhs: 2, zht: 3 })[lang] || 0]; h.style.cssText = 'display:inline-block;margin:16px 0 4px;padding:3px 12px;border-radius:5px;color:#fff;font-weight:700;font-size:15px;background:' + L[4]; wrap.appendChild(h); } } }
@@ -649,6 +655,62 @@
       });
     }
     renderTabs(usedGroups);
+  }
+
+  // ===== 飲み方まとめ（案C）：カードの＋を押すと「大きさ×飲み方」のボタンが出て、1回押すとカートに入る =====
+  const STY_ = /^(燗|常温|ロック|ストレート|水割り|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|お湯割り)$/;
+  const SZ_ = /ml$|^グラス$|^ボトル|^濃いめ$/;
+  function famParse_(shown) { const t = String(shown).trim().split(/\s+/); if (t.length < 2 || !STY_.test(t[t.length - 1])) return null;
+    const sty = t.pop(); const size = t.filter(x => SZ_.test(x)).join(' '); const fam = t.filter(x => !SZ_.test(x)).join(' '); return fam ? { fam, size, sty } : null; }
+  const famHist_ = {};
+  function famCard_(f) {
+    const names = f.map(x => x.m.name), key = f[0].fam;
+    const el = document.createElement('div'); el.className = 'item';
+    el.innerHTML = '<div class="info"><div class="name"></div><div class="fsel" style="font-size:13px;color:#a8231c;font-weight:700;margin-top:2px"></div><div class="price"></div></div>' +
+      '<div class="step"><button class="minus">−</button><span class="q"></span><button class="plus">＋</button></div>';
+    el.querySelector('.name').textContent = key;
+    if (f.some(x => x.m.pop)) { const pb = document.createElement('span'); pb.textContent = '👑人気No.1'; pb.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 7px;border-radius:4px;background:#c0281c;color:#fff;font-size:11px;font-weight:700;vertical-align:middle'; el.querySelector('.name').appendChild(pb); }
+    const n0 = names[0], ii = ITEMIMG[n0] || (ITEMRE.find(([re]) => re.test(n0)) || [])[1];
+    if (ii) { const im = document.createElement('img'); im.className = 'thumb'; im.src = ii + '.webp?v=2'; im.alt = ''; im.loading = 'lazy'; el.prepend(im); }
+    const ps = f.map(x => Number(x.m.price) || 0).filter(p => p > 0), lo = Math.min(...ps), hi = Math.max(...ps);
+    el.querySelector('.price').textContent = ps.length ? yen(lo) + (hi > lo ? '〜' : '') : T('askPrice');
+    const q = el.querySelector('.q'), minus = el.querySelector('.minus');
+    const sync = () => { const tot = names.reduce((a, nm) => a + (cart[nm] || 0), 0); q.textContent = tot; q.hidden = minus.hidden = tot === 0;
+      el.querySelector('.fsel').textContent = f.filter(x => cart[x.m.name]).map(x => '✓ ' + (x.size ? x.size + ' ' : '') + x.sty + ' ×' + cart[x.m.name]).join('　'); updateBar(); };
+    names.forEach(nm => (window._SY[nm] = window._SY[nm] || []).push(sync));
+    const allOf = nm => (window._SY[nm] || []).forEach(fn => fn());
+    if (f.every(x => SOLD_(x.m.name))) { el.style.opacity = '.55'; const st = el.querySelector('.step'); st.innerHTML = '<span style="display:inline-block;padding:6px 12px;border-radius:8px;background:#555;color:#fff;font-weight:800;font-size:14px;white-space:nowrap">売り切れ</span>'; return el; }
+    // −：最後に入れたものから1つ減らす
+    minus.onclick = () => { const h = famHist_[key] || []; let nm = null; while (h.length && !cart[nm = h.pop()]) nm = null; if (!nm) nm = names.find(x => cart[x]); if (!nm) return;
+      cart[nm] = Math.max(0, cart[nm] - 1); if (!cart[nm]) delete cart[nm]; allOf(nm); };
+    el.querySelector('.plus').onclick = () => famSheet_(f, key, allOf);
+    sync(); return el;
+  }
+  function famSheet_(f, key, allOf) {
+    const old = document.getElementById('famSheet'); if (old) old.remove();
+    const bx = document.createElement('div'); bx.id = 'famSheet';
+    bx.style.cssText = 'position:fixed;inset:0;z-index:10040;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+    const sh = document.createElement('div'); sh.style.cssText = 'background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:18px 16px calc(16px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto';
+    const h = document.createElement('div'); h.style.cssText = 'font-weight:900;font-size:19px;color:#231f1c;margin-bottom:4px'; h.textContent = key + '　どれにしますか？'; sh.appendChild(h);
+    const sizes = []; f.forEach(x => { if (!sizes.includes(x.size)) sizes.push(x.size); });
+    sizes.forEach(sz => {
+      const its = f.filter(x => x.size === sz), pr = [...new Set(its.map(x => Number(x.m.price) || 0))];
+      const lb = document.createElement('div'); lb.style.cssText = 'font-weight:800;font-size:16px;color:#231f1c;margin:12px 0 6px';
+      lb.textContent = (sz || (sizes.length > 1 ? 'ふつう' : '')) + (pr.length === 1 && pr[0] > 0 ? '　' + yen(pr[0]) : ''); if (lb.textContent.trim()) sh.appendChild(lb);
+      const row = document.createElement('div'); row.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px';
+      its.forEach(x => { const b = document.createElement('button'); b.type = 'button'; const sold = SOLD_(x.m.name), c = cart[x.m.name] || 0;
+        b.style.cssText = 'padding:12px 4px;border-radius:12px;border:2px solid ' + (c ? '#a8231c' : '#ddd') + ';background:' + (sold ? '#eee' : c ? '#fdecea' : '#fff') + ';color:' + (sold ? '#999' : '#231f1c') + ';font-weight:800;font-size:17px;line-height:1.3';
+        b.textContent = x.sty; const sub = document.createElement('div'); sub.style.cssText = 'font-size:12px;font-weight:700;color:#777';
+        sub.textContent = sold ? '売り切れ' : (pr.length > 1 ? yen(x.m.price) : '') + (c ? (pr.length > 1 ? ' ' : '') + '注文中 ×' + c : ''); if (sub.textContent) b.appendChild(sub);
+        if (sold) b.disabled = true;
+        else b.onclick = () => { cart[x.m.name] = Math.min(50, (cart[x.m.name] || 0) + 1); (famHist_[key] = famHist_[key] || []).push(x.m.name); bx.remove(); allOf(x.m.name); };
+        row.appendChild(b); });
+      sh.appendChild(row);
+    });
+    const cx = document.createElement('button'); cx.type = 'button'; cx.textContent = 'やめる'; cx.style.cssText = 'display:block;width:100%;margin-top:16px;padding:12px;border:1px solid #ccc;border-radius:12px;background:#fff;font-size:16px;color:#555';
+    cx.onclick = () => bx.remove(); sh.appendChild(cx);
+    bx.onclick = e => { if (e.target === bx) bx.remove(); };
+    bx.appendChild(sh); document.body.appendChild(bx);
   }
 
   function renderTabs(groups) {
