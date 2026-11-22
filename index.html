@@ -591,7 +591,7 @@
       // お酒の「大きさ・飲み方だけ違う品」は1枚のカードにまとめ、＋で選んでもらう（2026-11-22 麗珠さんから。案C）
       const famOf_ = {}, famDone_ = {};
       if (!TAKEOUT && !VIEW) { const fs = {};
-        mm.filter(m => m.cat === cat && !ADDON_(m) && !m.board).forEach(m => { const p = famParse_(KANA((JDISP[m.name] || m.name).replace(/^【持帰】/, ''))); if (!p) return; const k = p.fam; (fs[k] = fs[k] || []).push(Object.assign({ m }, p)); });
+        mm.filter(m => m.cat === cat && !ADDON_(m) && !m.board).forEach(m => { const p = famParse_(KANA((JDISP[m.name] || m.name).replace(/^【持帰】/, '')), m.cat); if (!p) return; const k = p.fam; (fs[k] = fs[k] || []).push(Object.assign({ m }, p)); });
         Object.keys(fs).forEach(k => { if (fs[k].length >= 2) fs[k].forEach(x => { famOf_[x.m.name] = fs[k]; }); }); }
       mm.filter(m => m.cat === cat && !ADDON_(m)).forEach(m => {
         if (famOf_[m.name] && !m.board) { const f = famOf_[m.name]; if (!famDone_[f[0].fam]) { famDone_[f[0].fam] = 1; wrap.appendChild(famCard_(f)); } return; }
@@ -663,7 +663,10 @@
   // ===== 飲み方まとめ（案C）：カードの＋を押すと「大きさ×飲み方」のボタンが出て、1回押すとカートに入る =====
   const STY_ = /^(燗|常温|ロック|ストレート|水割り|炭酸割り|烏龍割り|緑茶割り|ソーダ割り|お湯割り)$/;
   const SZ_ = /ml$|^グラス$|^ボトル|^濃いめ$/;
-  function famParse_(shown) { const t = String(shown).trim().split(/\s+/); if (t.length < 2 || !STY_.test(t[t.length - 1])) return null;
+  function famParse_(shown, cat) { const t = String(shown).trim().split(/\s+/);
+    // 餃子は「5個／6個」をタップ後に選ぶ（2026-11-23 麗珠さんから）
+    if (/餃子/.test(cat || '') && t.length >= 2 && /^\d+個$/.test(t[t.length - 1])) { const sty = t.pop(); return { fam: t.join(' '), size: '', sty, cnt: true }; }
+    if (t.length < 2 || !STY_.test(t[t.length - 1])) return null;
     const sty = t.pop(); const size = t.filter(x => SZ_.test(x)).join(' '); const fam = t.filter(x => !SZ_.test(x)).join(' '); return fam ? { fam, size, sty } : null; }
   // 英語・中国語でも同じ形にする（大きさ・飲み方の言葉と、画面の言葉）
   const FSTY_ = { '燗': ['Warm', '温热', '溫熱'], '常温': ['Room temp', '常温', '常溫'], 'ロック': ['On the rocks', '加冰', '加冰'], 'ストレート': ['Straight', '纯饮', '純飲'], '水割り': ['With water', '兑水', '兌水'],
@@ -671,12 +674,13 @@
   const FSZ_ = { 'グラス': ['Glass', '杯', '杯'], 'ボトル640ml': ['Bottle 640ml', '瓶装640ml', '瓶裝640ml'], '濃いめ': ['Double', '双份', '雙份'], 'ふつう': ['Regular', '普通', '普通'] };
   const FUI_ = { q: ['Which one?', '请选择', '請選擇'], cancel: ['Cancel', '取消', '取消'], sold: ['Sold out', '售罄', '售罄'], inCart: ['In cart', '已选', '已選'], pop: ['No.1 Popular', '人气第一', '人氣第一'], rec: ['Recommended', '推荐', '推薦'] };
   const fL_ = (d, k, ja) => { const i = ({ en: 0, zhs: 1, zht: 2 })[lang]; return i === undefined ? ja : ((d[k] || [])[i] || ja); };
-  const fSty_ = j => fL_(FSTY_, j, j), fSz_ = j => fL_(FSZ_, j, j), fUi_ = (k, ja) => fL_(FUI_, k, ja);
+  const fSty_ = j => { const c = String(j).match(/^(\d+)個$/); if (c) return ({ en: c[1] + ' pcs', zhs: c[1] + '个', zht: c[1] + '個' })[lang] || j; return fL_(FSTY_, j, j); }, fSz_ = j => fL_(FSZ_, j, j), fUi_ = (k, ja) => fL_(FUI_, k, ja);
   function famLabel_(f) {
     if (lang === 'ja') return f[0].fam;
     const tr = (typeof I !== 'undefined' && I.items && I.items[f[0].m.name] && I.items[f[0].m.name][lang]) || ''; if (!tr) return f[0].fam;
     let out;
-    if (lang === 'en') out = String(tr).split(',')[0].replace(/\s+(with .*|on the rocks|straight|neat|warm|room temp.*)$/i, '').trim();
+    if (f[0].cnt) out = lang === 'en' ? String(tr).replace(/\s*\(\d+\s*pcs\)\s*$/i, '').trim() : String(tr).replace(/\s*\d+[个個]\s*$/, '').trim();
+    else if (lang === 'en') out = String(tr).split(',')[0].replace(/\s+(with .*|on the rocks|straight|neat|warm|room temp.*)$/i, '').trim();
     else { const drop = new Set(); f.forEach(x => { drop.add(fSty_(x.sty)); x.size.split(' ').forEach(z => z && drop.add(fSz_(z))); }); out = String(tr).split(/\s+/).filter(z => !drop.has(z)).join(' '); }
     return out || f[0].fam;
   }
