@@ -193,6 +193,10 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
       const r = await fetch(API, { method: 'POST', credentials: 'omit', body: JSON.stringify(Object.assign({ action: 'seat', rid, lang }, v)) }).then(r => r.json());
       if (!r.ok) throw new Error(r.error || '');
       try { localStorage.setItem('kouju_rsv_me', JSON.stringify({ name: v.name, tel: v.tel })); } catch (e) {}
+      // お店のiPad（注文一覧）にも黄色いカードで知らせる（営業中はiPadしか見ないため。2026-11-23 麗珠さんから）
+      try { const d0 = new Date(v.date + 'T12:00:00'); const ds = (d0.getMonth() + 1) + '/' + d0.getDate() + '(' + '日月火水木金土'[d0.getDay()] + ') ' + v.time;
+        const nt = '【席予約】' + v.name + '様 ' + ds + ' ' + v.ppl + '名' + (v.kd ? '（子ども' + v.kd + '）' : '') + (v.chair ? '・子ども椅子' : '') + ' TEL ' + v.tel + (v.memo ? ' / ' + v.memo : '') + (lang !== 'ja' ? ' 【' + lang + '】' : '');
+        fetch(API, { method: 'POST', credentials: 'omit', body: JSON.stringify({ action: 'order', rid: rid + 's', table: '予約', items: [{ name: '【予約】お席', qty: 1 }], note: nt.slice(0, 200) }) }).catch(() => {}); } catch (e) {}
       const d = new Date(v.date + 'T12:00:00');
       const when = (d.getMonth() + 1) + '/' + d.getDate() + ' (' + T('wk')[d.getDay()] + ') ' + v.time;
       const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
