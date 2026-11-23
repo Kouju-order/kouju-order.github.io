@@ -680,7 +680,7 @@
     if (cat === 'ご飯類') { const rb = String(shown).match(/^ライス\s*(小|中|大)$/); if (rb) return { fam: 'ライス', size: '', sty: rb[1], bowl: true };
       if (/追加|ちまき|糯米/.test(shown)) return null; const fr = /チャーハン|炒飯/.test(shown), big = fr ? 'チャーハン大盛追加' : 'ご飯大盛追加';
       if (t.length >= 2 && t[t.length - 1] === '大盛') { t.pop(); return { fam: t.join(' '), size: '', sty: '大盛', rice: true, big }; } return { fam: t.join(' '), size: '', sty: 'ふつう', rice: true, big }; }
-    if ((/餃子/.test(cat || '') || (cat === '黒板メニュー' && /餃子|ギョーザ/.test(shown)) || /小籠包/.test(shown) /* 小籠包も3個・4個を選ぶ（2026-11-23） */ || /焼売/.test(shown) /* 焼売も3個・追加1個を選ぶ（2026-11-23） */) && t.length >= 2 && /^(追加)?\d+個$/.test(t[t.length - 1])) { const sty = t.pop(); return { fam: t.join(' '), size: '', sty, cnt: true }; }
+    if ((/餃子/.test(cat || '') || (cat === '黒板メニュー' && /餃子|ギョーザ/.test(shown)) || /小籠包/.test(shown) /* 小籠包も3個・4個を選ぶ（2026-11-23） */ || /焼売/.test(shown) /* 焼売も3個・追加1個を選ぶ（2026-11-23） */) && t.length >= 2 && /^(追加)?\d+個$/.test(t[t.length - 1])) { const sty = t.pop(); return { fam: t.join(' '), size: '', sty: /焼売/.test(shown) && /^\d+個$/.test(sty) ? sty + '入' : sty, cnt: true }; }
     if (t.length < 2 || !STY_.test(t[t.length - 1])) return null;
     const sty = t.pop(); const size = t.filter(x => SZ_.test(x)).join(' '); const fam = t.filter(x => !SZ_.test(x)).join(' '); return fam ? { fam, size, sty } : null; }
   // 英語・中国語でも同じ形にする（大きさ・飲み方の言葉と、画面の言葉）
@@ -689,7 +689,7 @@
   const FSZ_ = { 'グラス': ['Glass', '杯', '杯'], 'ボトル640ml': ['Bottle 640ml', '瓶装640ml', '瓶裝640ml'], '濃いめ': ['Double', '双份', '雙份'], 'ふつう': ['Regular', '普通', '普通'] };
   const FUI_ = { q: ['Which one?', '请选择', '請選擇'], cancel: ['Cancel', '取消', '取消'], sold: ['Sold out', '售罄', '售罄'], inCart: ['In cart', '已选', '已選'], pop: ['No.1 Popular', '人气第一', '人氣第一'], rec: ['Recommended', '推荐', '推薦'], flavor: ['Choose a flavor', '请选择口味', '請選擇口味'] };
   const fL_ = (d, k, ja) => { const i = ({ en: 0, zhs: 1, zht: 2 })[lang]; return i === undefined ? ja : ((d[k] || [])[i] || ja); };
-  const fSty_ = j => { const ad = String(j).match(/^追加(\d+)個$/); if (ad) return ({ en: 'Extra ' + ad[1] + ' pc', zhs: '加' + ad[1] + '个', zht: '加' + ad[1] + '個' })[lang] || ('追加' + ad[1] + '個');
+  const fSty_ = j => { const ir = String(j).match(/^(\d+)個入$/); if (ir) return ({ en: ir[1] + ' pcs', zhs: ir[1] + '个装', zht: ir[1] + '個裝' })[lang] || j; const ad = String(j).match(/^追加(\d+)個$/); if (ad) return ({ en: 'Extra ' + ad[1] + ' pc', zhs: '加' + ad[1] + '个', zht: '加' + ad[1] + '個' })[lang] || ('追加' + ad[1] + '個');
     const w = String(j).match(/^(通常|小)(\d+)個$/); if (w) { const sm = w[1] === '小'; return ({ en: (sm ? 'Small' : 'Regular') + ' (' + w[2] + ' pcs)', zhs: (sm ? '小份 ' : '普通 ') + w[2] + '个', zht: (sm ? '小份 ' : '普通 ') + w[2] + '個' })[lang] || (w[1] + ' ' + w[2] + '個'); }
     const c = String(j).match(/^(\d+)個$/); if (c) return ({ en: c[1] + ' pcs', zhs: c[1] + '个', zht: c[1] + '個' })[lang] || j; return fL_(FSTY_, j, j); }, fSz_ = j => fL_(FSZ_, j, j), fUi_ = (k, ja) => fL_(FUI_, k, ja);
   function famLabel_(f) {
