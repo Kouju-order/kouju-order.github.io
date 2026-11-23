@@ -680,7 +680,7 @@
     if (cat === 'ご飯類') { const rb = String(shown).match(/^ライス\s*(小|中|大)$/); if (rb) return { fam: 'ライス', size: '', sty: rb[1], bowl: true };
       if (/追加|ちまき|糯米/.test(shown)) return null; const fr = /チャーハン|炒飯/.test(shown), big = fr ? 'チャーハン大盛追加' : 'ご飯大盛追加';
       if (t.length >= 2 && t[t.length - 1] === '大盛') { t.pop(); return { fam: t.join(' '), size: '', sty: '大盛', rice: true, big }; } return { fam: t.join(' '), size: '', sty: 'ふつう', rice: true, big }; }
-    if ((/餃子/.test(cat || '') || (cat === '黒板メニュー' && /餃子|ギョーザ/.test(shown))) && t.length >= 2 && /^\d+個$/.test(t[t.length - 1])) { const sty = t.pop(); return { fam: t.join(' '), size: '', sty, cnt: true }; }
+    if ((/餃子/.test(cat || '') || (cat === '黒板メニュー' && /餃子|ギョーザ/.test(shown)) || /小籠包/.test(shown) /* 小籠包も3個・4個を選ぶ（2026-11-23） */) && t.length >= 2 && /^\d+個$/.test(t[t.length - 1])) { const sty = t.pop(); return { fam: t.join(' '), size: '', sty, cnt: true }; }
     if (t.length < 2 || !STY_.test(t[t.length - 1])) return null;
     const sty = t.pop(); const size = t.filter(x => SZ_.test(x)).join(' '); const fam = t.filter(x => !SZ_.test(x)).join(' '); return fam ? { fam, size, sty } : null; }
   // 英語・中国語でも同じ形にする（大きさ・飲み方の言葉と、画面の言葉）
